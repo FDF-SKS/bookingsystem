@@ -123,6 +123,7 @@ INSTALLED_APPS = [
     'SOS',
     'Foto',
     'Depot',
+    'Loeb',
     #"debug_toolbar",
 
 ]
@@ -204,6 +205,7 @@ CONSTANCE_CONFIG = {
     'APP_ENABLE_FOTO': (True, 'Slå Foto modul til/fra'),
     'APP_ENABLE_BUTIKKEN': (True, 'Slå Butikken modul til/fra'),
     'APP_ENABLE_SJAK': (True, 'Slå Sjak modul til/fra'),
+    'APP_ENABLE_LOEB': (True, 'Slå Løb modul til/fra'),
     'APP_ENABLE_CONTACTS': (True, 'Slå kontaktbog modul til/fra'),
     'APP_ENABLE_LEGEAFTALER': (True, 'Slå legeaftale modul til/fra'),
     'APP_ENABLE_DEPOT': (True, 'Slå Depot (inventar) modul til/fra'),

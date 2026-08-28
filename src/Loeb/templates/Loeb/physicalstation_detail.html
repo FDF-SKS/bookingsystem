@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold text-dark mb-1">{{ object.name }}</h1>
+            <p class="text-muted mb-0">Fysisk station</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'Loeb_PhysicalStation_update' object.pk %}" class="btn btn-outline-secondary">Rediger</a>
+            <a href="{% url 'Loeb_PhysicalStation_list' %}" class="btn btn-primary">Tilbage</a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="small text-uppercase text-muted mb-1">Beskrivelse</div>
+                    <div>{{ object.description|default:'Ingen beskrivelse' }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-uppercase text-muted mb-1">QR-kode</div>
+                    <div>{{ object.qr_code|default:'Ingen QR-kode' }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-uppercase text-muted mb-1">Status</div>
+                    {% if object.is_active %}
+                        <span class="badge bg-success">Aktiv</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Inaktiv</span>
+                    {% endif %}
+                </div>
+                {% if object.location %}
+                    <div class="col-12">
+                        <div class="small text-uppercase text-muted mb-1">Lokation</div>
+                        <div>{{ object.location }}</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

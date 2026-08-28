@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 p-lg-5">
+                    <div class="text-center mb-4">
+                        <div class="display-6 mb-2">🔐</div>
+                        <h1 class="h3 fw-bold mb-1">Log ind på løb</h1>
+                        <p class="text-muted mb-0">{{ loeb.name }}</p>
+                    </div>
+
+                    {% if error %}
+                        <div class="alert alert-danger" role="alert">{{ error }}</div>
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="pin_code" class="form-label fw-semibold">Pin-kode</label>
+                            <input type="text" name="pin_code" id="pin_code" class="form-control form-control-lg text-uppercase" autocomplete="one-time-code" placeholder="Indtast holdets pin-kode" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-lg">Log ind</button>
+                    </form>
+
+                    {% if preview_hold %}
+                        <div class="mt-4 small text-muted border rounded p-3 bg-light">
+                            Eksempel: prøv pin-koden <strong>{{ preview_hold.pin_code }}</strong> for at se hvordan holdets dashboard ser ud.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

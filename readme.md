@@ -18,7 +18,7 @@ https://docs.djangoproject.com/en/5.2/intro/install/
 
 Først kloner du git repository
 ```bash 
-git clone https://github.com/mglavind/booking-docker
+git clone https://github.com/FDF-SKS/bookingsystem
 ```
 Så hopper vi ind i det ny hentede repository
 ```bash
@@ -32,7 +32,7 @@ python -m venv venv
 herefter skal der laves et virtuelt enviroment som vi kan køre python med diverse pakker afgrænset i
 **Mac/Linux:**
 ```bash 
-source .venv/bin/activate
+source venv/bin/activate
 ```
 **Windows (PowerShell):**
 ```powershell
@@ -145,7 +145,7 @@ docker compose -f docker-compose.yaml -f docker-compose.staging.yaml --env-file 
 
 **Kør database migrationer:**
 ```bash
-docker compose exec web python manage.py migrate
+docker compose exec web python manage.py createsuperuser
 ```
 
 ---

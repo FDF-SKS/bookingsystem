@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% load bootstrap_icons %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold text-dark mb-1">Løb</h1>
+            <p class="text-muted mb-0">Oversigt over løb for dit team</p>
+        </div>
+        <a href="{% url 'Loeb_Loeb_create' %}" class="btn btn-primary">Nyt løb</a>
+    </div>
+
+    {% if loeb_list %}
+        <div class="row g-3">
+            {% for loeb in loeb_list %}
+                <div class="col-md-6 col-xl-4">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h2 class="h5 fw-bold mb-1">{{ loeb.name }}</h2>
+                                    <p class="text-muted mb-0">{{ loeb.team.name }}</p>
+                                </div>
+                                {% if loeb.is_active %}
+                                    <span class="badge bg-success">Aktivt</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inaktiv</span>
+                                {% endif %}
+                            </div>
+
+                            {% if loeb.description %}
+                                <p class="text-muted small mb-3">{{ loeb.description|truncatechars:140 }}</p>
+                            {% endif %}
+
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="{% url 'Loeb_Loeb_detail' loeb.pk %}" class="btn btn-sm btn-outline-primary">Vis</a>
+                                <a href="{% url 'Loeb_Loeb_update' loeb.pk %}" class="btn btn-sm btn-outline-secondary">Rediger</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <div class="mb-3">
+                    <bs_icon class="bi bi-flag-fill fs-1 text-muted"></bs_icon>
+                </div>
+                <h2 class="h5 fw-bold">Ingen løb oprettet endnu</h2>
+                <p class="text-muted mb-3">Opret dit første løb for dit team.</p>
+                <a href="{% url 'Loeb_Loeb_create' %}" class="btn btn-primary">Opret løb</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

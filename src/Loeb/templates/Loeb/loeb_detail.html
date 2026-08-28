@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+{% load bootstrap_icons %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold text-dark mb-1">{{ object.name }}</h1>
+            <p class="text-muted mb-0">{{ object.team.name }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'Loeb_Loeb_update' object.pk %}" class="btn btn-outline-secondary">Rediger</a>
+            <a href="{% url 'Loeb_Loeb_list' %}" class="btn btn-primary">Tilbage</a>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="small text-uppercase text-muted mb-1">Beskrivelse</div>
+                    <div>{{ object.description|default:'Ingen beskrivelse' }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-uppercase text-muted mb-1">Status</div>
+                    {% if object.is_active %}
+                        <span class="badge bg-success">Aktivt</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Inaktiv</span>
+                    {% endif %}
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-uppercase text-muted mb-1">Visning</div>
+                    <div>Kort: {% if object.show_map %}Ja{% else %}Nej{% endif %}</div>
+                    <div>Punktvisning: {% if object.show_points %}Ja{% else %}Nej{% endif %}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-uppercase text-muted">Opgaver</div>
+                    <div class="display-6 fw-bold">{{ tasks|length }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-uppercase text-muted">Hold</div>
+                    <div class="display-6 fw-bold">{{ holds|length }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="small text-uppercase text-muted">Færdige</div>
+                    <div class="display-6 fw-bold">{{ task_progress|length }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h4 fw-bold mb-0">Hold</h2>
+                        <a href="{% url 'Loeb_Hold_create' %}?loeb={{ object.pk }}" class="btn btn-primary btn-sm">Nyt hold</a>
+                    </div>
+
+                    {% if holds %}
+                        <div class="list-group list-group-flush">
+                            {% for hold in holds %}
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-center gap-3">
+                                        <div>
+                                            <div class="fw-semibold">{{ hold.name }}</div>
+                                            <div class="small text-muted">Pin: {{ hold.pin_code }}{% if not hold.is_active %} · Inaktiv{% endif %}</div>
+                                        </div>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{% url 'Loeb_Hold_update' hold.pk %}" class="btn btn-outline-primary">Rediger</a>
+                                            <a href="{% url 'Loeb_Hold_delete' hold.pk %}" class="btn btn-outline-danger">Slet</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">Der er endnu ingen hold tilknyttet dette løb.</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="h4 fw-bold mb-0">Fremskridt pr. opgave</h2>
+                        <a href="{% url 'Loeb_Task_create' %}?loeb={{ object.pk }}" class="btn btn-primary btn-sm">Ny opgave</a>
+                    </div>
+
+                    {% if task_progress %}
+                        <div class="list-group list-group-flush">
+                            {% for item in task_progress %}
+                                <div class="list-group-item px-0">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <div class="fw-semibold">{{ item.task.title }}</div>
+                                            <div class="small text-muted">{{ item.task.get_task_type_display }}</div>
+                                        </div>
+                                        <div class="small text-muted">{{ item.completed }}/{{ item.total_holds }} færdige</div>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ item.percentage }}%;"></div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">Der er ingen opgaver i dette løb.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h4 fw-bold mb-3">Hold-fremskridt</h2>
+                    {% if hold_progress %}
+                        {% for item in hold_progress %}
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span>{{ item.hold.name }}</span>
+                                    <span>{{ item.percentage }}%</span>
+                                </div>
+                                <div class="progress" style="height: 8px;">
+                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ item.percentage }}%;"></div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-muted">Ingen hold er tilknyttet dette løb.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h2 class="h4 fw-bold mb-3">Kortoversigt</h2>
+                    <div id="loeb-map" style="height: 360px; width: 100%; border-radius: 0.75rem; overflow: hidden;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h4 fw-bold mb-0">Opgaver i løbet</h2>
+                <a href="{% url 'Loeb_Task_create' %}?loeb={{ object.pk }}" class="btn btn-primary btn-sm">Ny opgave</a>
+            </div>
+
+            {% if object.tasks.all %}
+                <div class="list-group">
+                    {% for task in tasks %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start gap-3">
+                                <div>
+                                    <div class="fw-semibold">{{ task.title }}</div>
+                                    <div class="small text-muted">{{ task.get_task_type_display }}{% if task.station %} · {{ task.station.name }}{% endif %}</div>
+                                </div>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'Loeb_Task_move_up' task.pk %}" class="btn btn-outline-secondary" aria-label="Flyt op">↑</a>
+                                    <a href="{% url 'Loeb_Task_move_down' task.pk %}" class="btn btn-outline-secondary" aria-label="Flyt ned">↓</a>
+                                    <a href="{% url 'Loeb_Task_update' task.pk %}" class="btn btn-outline-primary">Rediger</a>
+                                    <a href="{% url 'Loeb_Task_delete' task.pk %}" class="btn btn-outline-danger">Slet</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center text-muted py-4">
+                    Der er endnu ingen opgaver for dette løb.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+(function () {
+    const markers = [];
+    const tasks = {{ tasks|safe }};
+    const map = L.map('loeb-map').setView([56.113991, 9.665244], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    const taskPoints = [];
+    {% for task in tasks %}
+        {% if task.location %}
+            taskPoints.push({
+                name: '{{ task.title|escapejs }}',
+                coords: '{{ task.location|escapejs }}',
+                color: '#0d6efd'
+            });
+        {% endif %}
+        {% if task.station and task.station.location %}
+            taskPoints.push({
+                name: '{{ task.station.name|escapejs }}',
+                coords: '{{ task.station.location|escapejs }}',
+                color: '#fd7e14'
+            });
+        {% endif %}
+    {% endfor %}
+
+    taskPoints.forEach(function (point) {
+        const parts = String(point.coords).split(',');
+        if (parts.length !== 2) return;
+        const lat = parseFloat(parts[0]);
+        const lng = parseFloat(parts[1]);
+        if (!isFinite(lat) || !isFinite(lng)) return;
+        L.circleMarker([lat, lng], {
+            radius: 8,
+            color: point.color,
+            fillColor: point.color,
+            fillOpacity: 0.9,
+            weight: 2
+        }).addTo(map).bindPopup(point.name);
+    });
+
+    if (taskPoints.length) {
+        const first = taskPoints[0];
+        const firstParts = String(first.coords).split(',');
+        if (firstParts.length === 2) {
+            const lat = parseFloat(firstParts[0]);
+            const lng = parseFloat(firstParts[1]);
+            if (isFinite(lat) && isFinite(lng)) {
+                map.setView([lat, lng], 12);
+            }
+        }
+    }
+
+    if (taskPoints.length > 1) {
+        const group = L.featureGroup(taskPoints.map(function (point) {
+            const parts = String(point.coords).split(',');
+            if (parts.length !== 2) return null;
+            const lat = parseFloat(parts[0]);
+            const lng = parseFloat(parts[1]);
+            if (!isFinite(lat) || !isFinite(lng)) return null;
+            return L.circleMarker([lat, lng], {
+                radius: 7,
+                color: point.color,
+                fillColor: point.color,
+                fillOpacity: 0.8,
+                weight: 2
+            });
+        }).filter(Boolean));
+        map.fitBounds(group.getBounds(), { padding: [25, 25] });
+    }
+})();
+</script>
+{% endblock %}

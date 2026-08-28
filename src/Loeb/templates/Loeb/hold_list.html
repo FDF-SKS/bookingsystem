@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold text-dark mb-1">Hold</h1>
+            <p class="text-muted mb-0">Oversigt over hold på tværs af løb</p>
+        </div>
+    </div>
+
+    {% if hold_list %}
+        <div class="list-group">
+            {% for hold in hold_list %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-semibold">{{ hold.name }}</div>
+                        <small class="text-muted">{{ hold.loeb.name }} · Pin: {{ hold.pin_code }}</small>
+                    </div>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'Loeb_Loeb_detail' hold.loeb.pk %}" class="btn btn-outline-primary">Vis løb</a>
+                        <a href="{% url 'Loeb_Hold_update' hold.pk %}" class="btn btn-outline-secondary">Rediger</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5 text-muted">
+                Der er endnu ingen hold i systemet.
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

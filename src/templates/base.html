@@ -96,6 +96,18 @@
                         </li>
                         {% endif %}
 
+                        {% if config.APP_ENABLE_LOEB %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Løb
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'Loeb_Loeb_list' %}">Mine løb</a></li>
+                                <li><a class="dropdown-item" href="{% url 'Loeb_Loeb_create' %}">Nyt løb</a></li>
+                            </ul>
+                        </li>
+                        {% endif %}
+
                         {% if config.APP_ENABLE_SOS %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -222,6 +234,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="{% static 'js/loeb_map_positioning.js' %}"></script>
     {% comment %} <script src="{% static 'js/sidebars.js' %}"></script> {% endcomment %}
 
     <script type="text/javascript">window.$sleek=[];window.SLEEK_PRODUCT_ID=535324369;(function(){d=document;s=d.createElement("script");s.src="https://client.sleekplan.com/sdk/e.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>  

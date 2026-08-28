@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold text-dark mb-1">{% if object %}Rediger hold{% else %}Nyt hold{% endif %}</h1>
+            <p class="text-muted mb-0">Administrér hold til dette løb</p>
+        </div>
+        {% if object and object.loeb %}
+            <a href="{% url 'Loeb_Loeb_detail' object.loeb.pk %}" class="btn btn-outline-secondary">Tilbage til løb</a>
+        {% endif %}
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form method="post">
+                {% csrf_token %}
+                {% bootstrap_form form %}
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-primary">Gem hold</button>
+                    {% if object and object.loeb %}
+                        <a href="{% url 'Loeb_Loeb_detail' object.loeb.pk %}" class="btn btn-outline-secondary">Annuller</a>
+                    {% else %}
+                        <a href="{% url 'Loeb_Loeb_list' %}" class="btn btn-outline-secondary">Annuller</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

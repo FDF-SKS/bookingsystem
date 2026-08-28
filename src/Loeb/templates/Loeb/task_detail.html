@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% load bootstrap_icons %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold text-dark mb-1">{{ object.title }}</h1>
+            <p class="text-muted mb-0">{{ object.loeb.name }}</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'Loeb_Task_update' object.pk %}" class="btn btn-outline-secondary">Rediger</a>
+            <a href="{% url 'Loeb_Loeb_detail' object.loeb.pk %}" class="btn btn-primary">Tilbage til løb</a>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="small text-uppercase text-muted mb-1">Beskrivelse</div>
+                    <div>{{ object.description|default:'Ingen beskrivelse' }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-uppercase text-muted mb-1">Type</div>
+                    <div>{{ object.get_task_type_display }}</div>
+                </div>
+                <div class="col-md-3">
+                    <div class="small text-uppercase text-muted mb-1">Point</div>
+                    <div>{{ object.points }}</div>
+                </div>
+                {% if object.station %}
+                    <div class="col-md-6">
+                        <div class="small text-uppercase text-muted mb-1">Station</div>
+                        <div>{{ object.station.name }}</div>
+                    </div>
+                {% endif %}
+                {% if object.location %}
+                    <div class="col-md-6">
+                        <div class="small text-uppercase text-muted mb-1">Lokation</div>
+                        <div>{{ object.location }}</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

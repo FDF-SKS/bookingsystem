@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load django_bootstrap5 %}
+{% load bootstrap_icons %}
+
+{% block content %}
+{{ form.media }}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+<style>
+    .map-container {
+        border-radius: 1rem;
+        overflow: hidden;
+        border: 1px solid #dee2e6;
+        margin-bottom: 1rem;
+        height: 360px !important;
+        min-height: 360px !important;
+    }
+    .location-map, .map_location-map, .leaflet-container {
+        height: 360px !important;
+        min-height: 360px !important;
+        width: 100% !important;
+        display: block !important;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold text-dark mb-1">{% if object %}Rediger opgave{% else %}Ny opgave{% endif %}</h1>
+            <p class="text-muted mb-0">Tilføj eller justér opgaven i løbet</p>
+        </div>
+        {% if object and object.loeb %}
+            <a href="{% url 'Loeb_Loeb_detail' object.loeb.pk %}" class="btn btn-outline-secondary">Tilbage til løb</a>
+        {% endif %}
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="card-body p-4 p-md-5">
+            <form method="post" class="needs-validation">
+                {% csrf_token %}
+                {% bootstrap_form_errors form type='non_fields' %}
+
+                <div class="row g-3">
+                    <div class="col-md-6">{% bootstrap_field form.loeb %}</div>
+                    <div class="col-md-6">{% bootstrap_field form.task_type %}</div>
+                    <div class="col-12">{% bootstrap_field form.title %}</div>
+                    <div class="col-12">{% bootstrap_field form.description %}</div>
+                    <div class="col-md-6">{% bootstrap_field form.station %}</div>
+                    <div class="col-md-6">{% bootstrap_field form.points %}</div>
+                    <div class="col-md-4">{% bootstrap_field form.gps_radius_meters %}</div>
+                    <div class="col-md-4">{% bootstrap_field form.qr_code %}</div>
+                    <div class="col-md-4">{% bootstrap_field form.input_mode %}</div>
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Kortplacering</label>
+                        <div class="map-container">
+                            {% bootstrap_field form.location show_label=False %}
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="form-check form-switch mt-2">
+                            {{ form.is_published }}
+                            <label class="form-check-label" for="{{ form.is_published.id_for_label }}">Offentliggjort</label>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    window.addEventListener('load', function () {
+                        setTimeout(function () {
+                            var locationInput = document.querySelector('input[name="location"]');
+                            var radiusInput = document.querySelector('input[name="gps_radius_meters"]');
+                            var mapContainer = document.querySelector('.leaflet-container');
+                            if (!mapContainer || !mapContainer._leaflet_map || !locationInput || !radiusInput) {
+                                return;
+                            }
+
+                            var map = mapContainer._leaflet_map;
+                            var parseCoords = function () {
+                                var value = (locationInput.value || '56.113991,9.665244').trim();
+                                var parts = value.split(',');
+                                if (parts.length !== 2) {
+                                    return { lat: 56.113991, lng: 9.665244 };
+                                }
+                                var lat = parseFloat(parts[0]);
+                                var lng = parseFloat(parts[1]);
+                                if (!isFinite(lat) || !isFinite(lng)) {
+                                    return { lat: 56.113991, lng: 9.665244 };
+                                }
+                                return { lat: lat, lng: lng };
+                            };
+
+                            var coords = parseCoords();
+                            var radius = Math.max(10, Number(radiusInput.value || 30));
+                            var center = L.latLng(coords.lat, coords.lng);
+
+                            var radiusCircle = L.circle(center, {
+                                radius: radius,
+                                color: '#0d6efd',
+                                fillColor: '#0d6efd',
+                                fillOpacity: 0.16,
+                                weight: 2,
+                                dashArray: '7 7'
+                            }).addTo(map);
+
+                            var radiusHandle = L.marker(
+                                [center.lat + (radius / 111000), center.lng],
+                                {
+                                    draggable: true,
+                                    icon: L.divIcon({
+                                        className: 'radius-drag-handle',
+                                        html: '<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#0d6efd;border:2px solid white;box-shadow:0 0 0 2px rgba(13,110,253,0.25);"></span>',
+                                        iconSize: [16, 16],
+                                        iconAnchor: [8, 8]
+                                    })
+                                }
+                            ).addTo(map);
+
+                            var syncRadius = function () {
+                                var centerPoint = radiusCircle.getLatLng();
+                                var handlePoint = radiusHandle.getLatLng();
+                                var nextRadius = Math.max(10, Math.round(map.distance(centerPoint, handlePoint)));
+                                radiusCircle.setRadius(nextRadius);
+                                radiusInput.value = nextRadius;
+                            };
+
+                            radiusHandle.on('drag', function () {
+                                syncRadius();
+                            });
+
+                            var updateCircleForLocation = function () {
+                                var current = parseCoords();
+                                var centerPoint = L.latLng(current.lat, current.lng);
+                                radiusCircle.setLatLng(centerPoint);
+                                var currentRadius = Number(radiusInput.value || radius);
+                                radiusCircle.setRadius(currentRadius);
+                                var handleLat = centerPoint.lat + (currentRadius / 111000);
+                                radiusHandle.setLatLng([handleLat, centerPoint.lng]);
+                            };
+
+                            locationInput.addEventListener('change', updateCircleForLocation);
+                            radiusInput.addEventListener('change', function () {
+                                var nextRadius = Math.max(10, Number(radiusInput.value || 30));
+                                radiusCircle.setRadius(nextRadius);
+                                var centerPoint = radiusCircle.getLatLng();
+                                radiusHandle.setLatLng([centerPoint.lat + (nextRadius / 111000), centerPoint.lng]);
+                            });
+
+                            map.invalidateSize();
+                        }, 500);
+                    });
+                </script>
+
+                <div class="d-flex gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary">Gem opgave</button>
+                    {% if object and object.loeb %}
+                        <a href="{% url 'Loeb_Loeb_detail' object.loeb.pk %}" class="btn btn-outline-secondary">Annuller</a>
+                    {% else %}
+                        <a href="{% url 'Loeb_Loeb_list' %}" class="btn btn-outline-secondary">Annuller</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+window.addEventListener('load', function () {
+    setTimeout(function () {
+        window.dispatchEvent(new Event('resize'));
+        if (window.map_location) window.map_location.invalidateSize();
+        if (typeof L !== 'undefined') {
+            document.querySelectorAll('.leaflet-container').forEach(function (map) {
+                if (map._leaflet_map) map._leaflet_map.invalidateSize();
+            });
+        }
+    }, 500);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load bootstrap_icons %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold text-dark mb-1">Opgaver</h1>
+            <p class="text-muted mb-0">Oversigt over alle opgaver i dine løb</p>
+        </div>
+        <a href="{% url 'Loeb_Task_create' %}" class="btn btn-primary">Ny opgave</a>
+    </div>
+
+    {% if task_list %}
+        <div class="list-group">
+            {% for task in task_list %}
+                <div class="list-group-item">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <div class="fw-semibold">{{ task.title }}</div>
+                            <div class="small text-muted">{{ task.loeb.name }} · {{ task.get_task_type_display }}</div>
+                        </div>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{% url 'Loeb_Task_update' task.pk %}" class="btn btn-outline-primary">Rediger</a>
+                            <a href="{% url 'Loeb_Task_delete' task.pk %}" class="btn btn-outline-danger">Slet</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5 text-muted">
+                Der er endnu ingen opgaver på dine løb.
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

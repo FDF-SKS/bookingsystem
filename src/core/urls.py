@@ -23,7 +23,7 @@ urlpatterns = [
     path('SOS/', include('SOS.urls')),
     path('foto/', include('Foto.urls')),
     path('depot/', include('Depot.urls')),
-    
+    path('loeb/', include('Loeb.urls')),
     
     # NEW: Comments URLs
     path('comments/', include('django_comments_xtd.urls')),

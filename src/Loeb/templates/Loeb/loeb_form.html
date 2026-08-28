@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% load bootstrap_icons %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="fw-bold text-dark mb-1">{% if object %}Rediger løb{% else %}Nyt løb{% endif %}</h1>
+            <p class="text-muted mb-0">Opret et løb for dit team</p>
+        </div>
+        <a href="{% url 'Loeb_Loeb_list' %}" class="btn btn-outline-secondary">Tilbage</a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="{% url 'Loeb_Loeb_list' %}" class="btn btn-outline-secondary">Annuller</a>
+                    <button type="submit" class="btn btn-primary">Gem løb</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4 p-lg-5">
+                    {% if message %}
+                        <div class="alert alert-warning text-center fw-semibold mb-4">{{ message }}</div>
+                    {% endif %}
+
+                    {% if task and hold %}
+                        <div class="mb-4">
+                            <div class="small text-uppercase text-muted mb-2">Station</div>
+                            <h1 class="h3 fw-bold mb-1">{{ station.name }}</h1>
+                            <p class="text-muted mb-0">Hold: {{ hold.name }} · Løb: {{ task.loeb.name }}</p>
+                        </div>
+
+                        <div class="border rounded p-4 bg-light">
+                            <div class="small text-uppercase text-muted mb-2">Opgave</div>
+                            <h2 class="h4 fw-bold mb-2">{{ task.title }}</h2>
+                            {% if task.description %}
+                                <p class="mb-0">{{ task.description }}</p>
+                            {% endif %}
+                        </div>
+
+                        {% if show_form %}
+                            <form method="post" class="mt-4">
+                                {% csrf_token %}
+                                <div class="mb-3">
+                                    <label for="submitted_answer" class="form-label fw-semibold">Svar</label>
+                                    <textarea name="submitted_answer" id="submitted_answer" class="form-control" rows="4" placeholder="Skriv dit svar her...">{{ submission.submitted_answer|default:'' }}</textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Gem svar</button>
+                            </form>
+                        {% else %}
+                            <div class="alert alert-success mt-4 mb-0">Denne opgave kræver ingen skriftlig input.</div>
+                        {% endif %}
+                    {% elif station %}
+                        <div class="text-center py-4">
+                            <h1 class="h3 fw-bold mb-3">Bare ærgeligt - ingen post her</h1>
+                            <p class="text-muted mb-0">Denne station er ikke en del af det løb, som dit aktuelle hold er tilknyttet.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

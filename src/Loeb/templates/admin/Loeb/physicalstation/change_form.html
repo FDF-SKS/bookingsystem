@@ -1,0 +1,64 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block after_field_sets %}
+    {{ block.super }}
+    {% if original %}
+        {% with full_url=full_qr_url|default:original.get_full_url %}
+            <div class="module aligned" style="margin-top: 2rem;">
+                <h2>QR kode</h2>
+                <div style="display: grid; gap: 1rem; margin-top: 1rem;">
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600;">QR URL</label>
+                        <div id="qr-url-box" style="padding: 0.75rem 1rem; border: 1px solid #d0d7de; border-radius: 0.5rem; background: #f6f8fa; word-break: break-all; font-family: monospace;">{{ full_url }}</div>
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+                        <button type="button" class="button" onclick="navigator.clipboard.writeText(document.getElementById('qr-url-box').innerText.trim()); this.textContent='Kopieret'; setTimeout(() => this.textContent='Kopiér', 1500);">Kopiér</button>
+                        <button type="button" class="button" id="generate-qr-button">Generér QR kode</button>
+                    </div>
+
+                    <div id="qr-code-container" style="display: none; width: fit-content; padding: 1rem; border: 1px solid #d0d7de; border-radius: 0.75rem; background: white;">
+                        <img id="qr-code-image" alt="QR kode" style="display: block; max-width: 240px; width: 240px; height: 240px; background: white;" />
+                    </div>
+
+                    <div id="download-qr-row" style="display: none;">
+                        <a id="download-qr-link" class="button" href="#" download="">Download QR billede</a>
+                    </div>
+                </div>
+            </div>
+        {% endwith %}
+    {% endif %}
+
+    <script>
+        (function () {
+            const urlBox = document.getElementById('qr-url-box');
+            const button = document.getElementById('generate-qr-button');
+            const container = document.getElementById('qr-code-container');
+            const img = document.getElementById('qr-code-image');
+            const downloadLink = document.getElementById('download-qr-link');
+            if (!urlBox || !button || !container || !img || !downloadLink) return;
+
+            const generateQrCode = function () {
+                const url = urlBox.innerText.trim();
+                if (!url) return;
+
+                const imageUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(url);
+                img.src = imageUrl;
+                container.style.display = 'block';
+                downloadLink.style.display = 'inline-block';
+                const filename = (url.split('/').filter(Boolean).slice(-1)[0] || 'station').replace(/\//g, '-').replace(/[^a-zA-Z0-9._-]/g, '-');
+                downloadLink.download = filename + '.png';
+                downloadLink.href = imageUrl;
+                downloadLink.setAttribute('target', '_blank');
+                downloadLink.textContent = 'Download QR-billede';
+                document.getElementById('download-qr-row').style.display = 'block';
+            };
+
+            button.addEventListener('click', generateQrCode);
+            if (urlBox.innerText.trim()) {
+                generateQrCode();
+            }
+        })();
+    </script>
+{% endblock %}
