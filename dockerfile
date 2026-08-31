@@ -1,41 +1,53 @@
-FROM python:3.13-bookworm
-
+# Stage 1: Base build stage
+FROM python:3.13-slim AS builder
+ 
+# Create the app directory
+RUN mkdir /app
+ 
+# Set the working directory so `manage.py` in `src/` is used
+WORKDIR /app
+ 
+# Set environment variables to optimize Python
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1 
+
+# Install dependencies first for caching benefit
+RUN pip install --upgrade pip 
+COPY src/requirements.txt /app/ 
+RUN pip install --no-cache-dir -r requirements.txt
+
+
+# Stage 2: Production stage
+FROM python:3.13-slim
+
+RUN useradd -m django-user && \
+   mkdir /app && \
+   chown -R django-user /app
+
+# Copy the Python dependencies from the builder stage
+COPY --from=builder /usr/local/lib/python3.13/site-packages/ /usr/local/lib/python3.13/site-packages/
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
+
+# Set the working directory to /app
 WORKDIR /app
 
-# 1. Install system dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    gcc \
-    python3-dev \
-    libjpeg-dev \
-    zlib1g-dev \
-    libpng-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# 2. Setup uv and non-root user
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
-RUN useradd -m django-user
-
-# 3. Install requirements (Done before copying code to use Docker cache)
-COPY src/requirements.txt /app/requirements.txt
-RUN uv pip install --system -r /app/requirements.txt
-
-# 4. Copy source code
+# Copy only the application source into /app so manage.py is at /app/manage.py
 COPY --chown=django-user:django-user src/ /app/
+# Ensure the entrypoint from `src/` is placed at `/app/entrypoint.sh`
+COPY --chown=django-user:django-user src/entrypoint.sh /app/entrypoint.sh
 
-# 5. Prepare static/media folders and permissions
-# We create these in /app to match your settings.py STATIC_ROOT = '/app/staticfiles'
-RUN mkdir -p /app/staticfiles /app/media && \
-    chmod +x /app/entrypoint.sh && \
-    chown -R django-user:django-user /app/staticfiles /app/media
+# Set environment variables to optimize Python
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1 
 
-# 6. Switch to the non-root user
+# Switch to the non-root user
 USER django-user
 
-# 7. Final Prep
+# Final Prep
 EXPOSE 8000 
+
+# Make entry file executable
+RUN chmod +x /app/entrypoint.sh
 
 # Use ENTRYPOINT so the script always runs, and CMD for default arguments
 ENTRYPOINT ["/app/entrypoint.sh"]

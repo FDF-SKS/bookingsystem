@@ -1,22 +1,90 @@
 services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
   db:
     image: postgres:17
-    ports:
-      - "5432:5432"
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d ${DATABASE_NAME} -U ${DATABASE_USERNAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   web:
-    build: .
-    container_name: django_app
-    ports:
-      - "8000:8000"
+    image: mglavind/booking-app:latest
+    container_name: django_app_prod
+    restart: always
+    environment:
+      DEBUG: "False"
+      DJANGO_MEDIA_ROOT: "/app/media"
+      DJANGO_STATIC_ROOT: "/app/staticfiles"
+    expose:
+      - "8000"
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
-    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Bind to host paths so the existing server files are used and persisted.
     volumes:
-      - ./src:/app
+      - /root/booking-system/static:/app/staticfiles
+      - /root/booking-system/media:/app/media
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8002:80"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d:ro
+      # Serve the same host static/media directories (read-only for nginx)
+      - /root/booking-system/static:/var/www/static:ro
+      - /root/booking-system/media:/var/www/media:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - web
+    networks:
+      - default
+      - beanvault_net
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
 volumes:
-  postgres_data:
+  postgres_data_prod:
+
+networks:
+  default:
+  beanvault_net:
+    name: beanvault_net
+    external: true

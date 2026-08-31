@@ -4,39 +4,40 @@ djangorestframework>=3.16.1
 asgiref>=3.11.0
 
 # UI & Admin (Unfold & Import/Export)
-django-unfold>=0.76.0
-django-import-export>=4.4.0
-django-bootstrap5>=26.1
+django-unfold>=0.81.0
+django-import-export>=4.4.1
+django-bootstrap5>=26.3
 django-bootstrap-icons>=0.9.0
 django-template-partials>=25.3
 django-admin-list-filter-dropdown>=1.0.3
 
 # Infrastructure & DB
 psycopg2-binary>=2.9.11
-gunicorn>=23.0.0
+gunicorn>=26.2.0
 python-dotenv>=1.2.1
 sqlparse>=0.5.5
 
 # Utilities & Date/Time
-icalendar>=6.3.2
+icalendar>=7.3.0
 python-dateutil>=2.9.0.post0
 pytz>=2025.2
 requests>=2.32.5
 urllib3>=2.6.3
 certifi>=2026.1.4
 django-contrib-comments>=2.2.0
-django-comments-xtd>=2.10.11
-django-constance>=4.3.4
-Pillow>=10.0.0
+django-comments-xtd>=2.10.12
+django-constance>=4.3.5
+Pillow>=12.3.0
 django-embed-video==1.4.10
 django-map-location==0.9.2
 apprise==1.9.8
 
 # Static Files & Compression
-whitenoise>=6.5.0
-django-compressor>=4.3
+whitenoise>=6.12.0
+django-compressor>=4.6
 django-simple-history>=3.11.0
 django-redis>=6.0.0
+
 # Geographic Data
-geopy>=2.4.1
+geopy>=2.5.0
 geographiclib>=2.1

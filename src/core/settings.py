@@ -29,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 # Secret key
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-secret-key-change-in-production')
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 # Allowed hosts
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h]
@@ -142,31 +142,20 @@ MIDDLEWARE = [
     #"debug_toolbar.middleware.DebugToolbarMiddleware",
 ]
 INTERNAL_IPS = [
-    # ...
-    #"127.0.0.1",
-    # ...
+    "127.0.0.1",
 ]
+
 # -----------------------------
 # Static files
 # -----------------------------
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# This is where your custom CSS/JS lives (Source)
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / "media"
 
-if ENVIRONMENT in ['staging', 'production']:
-    # Change 'static/' to 'staticfiles/' to avoid the overlap error
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles/') 
-else:
-    # Local development settings
-    STATIC_ROOT = BASE_DIR / 'staticfiles'
-    
-MEDIA_ROOT = BASE_DIR / 'media'
-MEDIA_URL = '/media/'
-ROOT_URLCONF = 'core.urls'  # <--- THIS IS WHAT WAS MISSING
+ROOT_URLCONF = 'core.urls' 
 
 
 if ENVIRONMENT == 'dev':
