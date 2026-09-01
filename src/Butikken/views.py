@@ -8,7 +8,8 @@ from . import models
 from . import forms
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import MealBooking, Meal, Day, Option, Recipe, MealPlan, MealOption, TeamMealPlan, MealBooking, TeamMealPlan
-from organization.models import Event
+from organization.models import Event, TeamMembership
+from django.db.models import Count
 import logging
 from django.contrib.admin.models import LogEntry
 from django.contrib.contenttypes.models import ContentType
@@ -18,6 +19,9 @@ from .forms import TeamMealPlanForm
 
 from django.contrib import messages
 from django.utils import timezone
+import json
+from datetime import time
+from decimal import Decimal, InvalidOperation
 
 
 class ButikkenItemListView(LoginRequiredMixin, generic.ListView):
@@ -139,7 +143,9 @@ class ButikkenBookingCreateView(LoginRequiredMixin, generic.CreateView):
         if event and event.deadline_mad < timezone.now().date():
             messages.error(request, 'Deadline for booking overskredet')
             return redirect('Butikken_ButikkenBooking_list')  # replace with the name of your list view url
-        return super().dispatch(request, *args, **kwargs)
+        # Enforce order-based workflow: creating a booking requires creating an order first.
+        messages.info(request, 'Bookings must be created as part of an order (kurv). Opret venligst en ordre først.')
+        return redirect('Butikken_ButikkenOrder_create')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -397,6 +403,221 @@ class TeamMealPlanCreateView(LoginRequiredMixin, generic.CreateView):
 class TeamMealPlanDetailView(LoginRequiredMixin, generic.DetailView):
     model = TeamMealPlan
     form_class = TeamMealPlanForm
+
+
+class ButikkenOrderListView(LoginRequiredMixin, generic.ListView):
+    model = models.ButikkenOrder
+    context_object_name = 'object_list'
+    template_name = 'Butikken/butikkenorder_list.html'
+
+    def get_queryset(self):
+        qs = models.ButikkenOrder.objects.select_related('team', 'team_contact').order_by('-created')
+        user = self.request.user
+        if not user.is_staff:
+            # limit to user's team if available
+            team = user.teammembership_set.select_related('team').values_list('team', flat=True).first()
+            if team:
+                qs = qs.filter(team_id=team)
+            else:
+                qs = qs.none()
+        return qs
+
+
+class ButikkenOrderCreateView(LoginRequiredMixin, generic.CreateView):
+    model = models.ButikkenOrder
+    form_class = forms.ButikkenOrderForm
+    template_name = 'Butikken/butikkenorder_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+    
+    def form_valid(self, form):
+        # Save the order and then redirect to update page so the add-item UI is available
+        order = form.save()
+        return redirect('Butikken_ButikkenOrder_update', pk=order.pk)
+    
+    def get(self, request, *args, **kwargs):
+        # Quick-create: create or reuse a pending empty order for the user's team and redirect to update
+        user = request.user
+        team_membership = TeamMembership.objects.filter(member=user).select_related('team').first()
+        if not team_membership:
+            messages.error(request, 'Du har ikke et team tilknyttet. Tilføj venligst et team først.')
+            return redirect('Butikken_ButikkenOrder_list')
+
+        team = team_membership.team
+        # Reuse a recent pending order without bookings if available
+        existing = models.ButikkenOrder.objects.filter(team=team, status='Pending').order_by('-created').first()
+        if existing and not existing.bookings.exists():
+            return redirect('Butikken_ButikkenOrder_update', pk=existing.pk)
+
+        # Determine pickup_date from active/next event
+        active_event = Event.objects.filter(is_active=True).first()
+        if not active_event:
+            active_event = Event.objects.filter(start_date__gt=timezone.now().date()).order_by('start_date').first()
+
+        pickup = active_event.start_date if active_event else None
+        order = models.ButikkenOrder.objects.create(team=team, team_contact=user, pickup_date=pickup)
+        return redirect('Butikken_ButikkenOrder_update', pk=order.pk)
+
+
+class ButikkenOrderDetailView(LoginRequiredMixin, generic.DetailView):
+    model = models.ButikkenOrder
+    template_name = 'Butikken/butikkenorder_detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['bookings'] = self.object.bookings.select_related('item', 'team_contact')
+        return context
+
+
+class ButikkenOrderUpdateView(LoginRequiredMixin, generic.UpdateView):
+    model = models.ButikkenOrder
+    form_class = forms.ButikkenOrderForm
+    template_name = 'Butikken/butikkenorder_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .models import ButikkenItem
+        context['items'] = ButikkenItem.objects.all()
+        context['bookings'] = self.object.bookings.select_related('item', 'team_contact')
+        # Provide items metadata (unit and normal quantity) as JSON-friendly dict
+        items_qs = ButikkenItem.objects.all().values('id', 'content_unit', 'content_normal')
+        items_data = {str(i['id']): {'unit': i['content_unit'] or '', 'normal': i['content_normal'] or ''} for i in items_qs}
+        context['items_data'] = items_data
+        # Provide available_items for the template (id, name, unit)
+        context['available_items'] = [
+            {'id': it.pk, 'name': it.name, 'unit': it.content_unit or ''}
+            for it in ButikkenItem.objects.all()
+        ]
+        # unit_map for older templates that expect it
+        context['unit_map'] = {str(it.pk): (it.content_unit or '') for it in ButikkenItem.objects.all()}
+        # Initial cart items based on existing bookings (id=item.id)
+        initial_cart = []
+        for b in context['bookings']:
+            initial_cart.append({'id': str(b.item.pk), 'name': b.item.name, 'qty': int(b.quantity), 'unit': b.unit})
+        context['initial_cart_json'] = json.dumps(initial_cart)
+        return context
+
+    def form_valid(self, form):
+        # Save the order fields first
+        self.object = form.save()
+
+        # Process posted cart JSON (list of {id, name, qty, unit})
+        cart_json = self.request.POST.get('cart_items_json', '[]')
+        try:
+            cart_items = json.loads(cart_json)
+        except Exception:
+            cart_items = []
+
+        # Build map of item_id -> desired data
+        desired = {}
+        for ci in cart_items:
+            try:
+                item_id = int(ci.get('id'))
+                qty = int(ci.get('qty') or 1)
+                unit = ci.get('unit') or ''
+                desired[item_id] = {'qty': qty, 'unit': unit}
+            except Exception:
+                continue
+
+        # Existing bookings mapped by item id
+        existing = {b.item_id: b for b in self.object.bookings.all()}
+
+        # Create or update bookings from desired
+        from .models import ButikkenBooking, ButikkenItem
+        for item_id, data in desired.items():
+            item_obj = ButikkenItem.objects.filter(pk=item_id).first()
+            if not item_obj:
+                continue
+            if item_id in existing:
+                b = existing[item_id]
+                b.quantity = data['qty']
+                b.unit = data['unit'] or b.unit
+                # ensure start_date/time exist
+                if not b.start_date:
+                    b.start_date = self.object.pickup_date or timezone.now().date()
+                if not b.start_time:
+                    b.start_time = time(8, 0)
+                b.save()
+                del existing[item_id]
+            else:
+                bk = ButikkenBooking.objects.create(
+                    order=self.object,
+                    item=item_obj,
+                    team=self.object.team,
+                    team_contact=(self.object.team_contact or self.request.user),
+                    start_date=(self.object.pickup_date or timezone.now().date()),
+                    start_time=time(8, 0),
+                    quantity=data['qty'],
+                    unit=(data['unit'] or item_obj.content_unit or ''),
+                )
+
+        # Any remaining in existing were removed from cart -> delete them
+        for rem in existing.values():
+            rem.delete()
+
+        return redirect(self.get_success_url())
+
+
+class ButikkenOrderDeleteView(LoginRequiredMixin, generic.DeleteView):
+    model = models.ButikkenOrder
+    success_url = reverse_lazy("Butikken_ButikkenOrder_list")
+
+
+@login_required
+def butikken_order_add_item(request, pk):
+    from django.http import HttpResponseBadRequest
+    order = get_object_or_404(models.ButikkenOrder, pk=pk)
+    if request.method != 'POST':
+        return HttpResponseBadRequest('Invalid method')
+    # Use the lightweight add-item form for HTMX adds
+    form = forms.ButikkenAddItemForm(request.POST)
+    if form.is_valid():
+        item = form.cleaned_data.get('item')
+        quantity = form.cleaned_data.get('quantity')
+        unit = form.cleaned_data.get('unit') or (item.content_unit if item else '')
+        start_date = form.cleaned_data.get('start_date')
+        start_time = form.cleaned_data.get('start_time')
+        remarks = form.cleaned_data.get('remarks')
+
+        # Fallback: if quantity is empty, try to use item's content_normal
+        if not quantity:
+            try:
+                quantity = Decimal(item.content_normal)
+            except Exception:
+                quantity = Decimal('1')
+
+        # Build booking instance
+        booking = models.ButikkenBooking(
+            order=order,
+            item=item,
+            team=order.team,
+            team_contact=(order.team_contact or request.user),
+            start_date=start_date,
+            start_time=start_time,
+            quantity=quantity,
+            unit=unit or '',
+            remarks=remarks or '',
+        )
+        booking.save()
+        return render(request, 'Butikken/partials/booking.html', {'booking': booking})
+    else:
+        return HttpResponseBadRequest(form.errors.as_json(), content_type='application/json')
+
+
+@login_required
+def butikken_order_remove_item(request, order_pk, pk):
+    booking = get_object_or_404(models.ButikkenBooking, pk=pk, order_id=order_pk)
+    booking.delete()
+    # Return empty string so HTMX can remove the row via outerHTML swap
+    return HttpResponse('')
 
 
 class TeamMealPlanUpdateView(LoginRequiredMixin, generic.UpdateView):

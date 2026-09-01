@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Butikken - Ordre {{ object.id }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1>Ordre {{ object.id }}</h1>
+    <p><strong>Team:</strong> {{ object.team }} | <strong>Pickup:</strong> {{ object.pickup_date }} | <strong>Status:</strong> {{ object.status }}</p>
+
+    <h3>Varer</h3>
+    <table class="table">
+        <thead><tr><th>Vare</th><th>Antal</th><th>Enhed</th><th>Afhentning</th></tr></thead>
+        <tbody>
+            {% for b in bookings %}
+            <tr>
+                <td>{{ b.item }}</td>
+                <td>{{ b.quantity }}</td>
+                <td>{{ b.unit }}</td>
+                <td>{{ b.start_date }} {{ b.start_time }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4">Ingen varer i denne ordre</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

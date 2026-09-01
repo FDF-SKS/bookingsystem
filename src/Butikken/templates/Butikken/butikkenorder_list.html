@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Butikken - Ordrer{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h1>Butikken Ordrer</h1>
+    <p><a class="btn btn-primary" href="{% url 'Butikken_ButikkenOrder_create' %}">Opret ny ordre</a></p>
+    <table class="table">
+        <thead>
+            <tr><th>ID</th><th>Team</th><th>Pickup</th><th>Status</th><th>Handling</th></tr>
+        </thead>
+        <tbody>
+            {% for o in object_list %}
+            <tr>
+                <td>{{ o.id }}</td>
+                <td>{{ o.team }}</td>
+                <td>{{ o.pickup_date }}</td>
+                <td>{{ o.status }}</td>
+                <td><a href="{% url 'Butikken_ButikkenOrder_detail' o.pk %}">Vis</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5">Ingen ordrer</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

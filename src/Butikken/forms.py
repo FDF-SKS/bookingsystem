@@ -224,6 +224,57 @@ class ButikkenBookingForm(forms.ModelForm):
                 self.fields["start_time"].initial = time(8, 0)  # Set default time to 08:00 AM
 
 
+class ButikkenOrderForm(forms.ModelForm):
+    class Meta:
+        model = models.ButikkenOrder
+        fields = [
+            "team",
+            "team_contact",
+            "pickup_date",
+            "remarks",
+            "status",
+        ]
+        widgets = {
+            "team": forms.Select(attrs={"class": "form-select"}),
+            "team_contact": forms.Select(attrs={"class": "form-select"}),
+            "pickup_date": forms.TextInput(attrs={"class": "form-control", "type": "date"}),
+            "remarks": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "status": forms.Select(attrs={"class": "form-select"}),
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super(ButikkenOrderForm, self).__init__(*args, **kwargs)
+        self.fields["team"].queryset = Team.objects.all()
+        self.fields["team_contact"].queryset = Volunteer.objects.all()
+        if user:
+            team_membership = TeamMembership.objects.filter(member=user).first()
+            if team_membership:
+                self.fields["team"].initial = team_membership.team
+                self.fields["team_contact"].initial = user
+        # Default pickup_date from the active event (or next upcoming event)
+        try:
+            active_event = Event.objects.filter(is_active=True).first()
+            if not active_event:
+                active_event = (
+                    Event.objects.filter(start_date__gt=timezone.now().date()).order_by("start_date").first()
+                )
+            if active_event:
+                self.fields["pickup_date"].initial = active_event.start_date
+        except Exception:
+            # Be defensive: if Event lookup fails, leave the field empty
+            pass
+
+
+class ButikkenAddItemForm(forms.Form):
+    item = forms.ModelChoiceField(queryset=ButikkenItem.objects.all(), widget=forms.Select(attrs={"class": "form-select"}))
+    quantity = forms.DecimalField(max_digits=10, decimal_places=2, initial=1, widget=forms.NumberInput(attrs={"class": "form-control", "step": "1"}))
+    # Make unit readonly so it is shown but not editable; JS will prefill this from the item
+    unit = forms.CharField(required=False, widget=forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}))
+    start_date = forms.DateField(widget=TextInput(attrs={"type": "date", "class": "form-control"}))
+    start_time = forms.TimeField(widget=TextInput(attrs={"type": "time", "class": "form-control"}))
+    remarks = forms.CharField(required=False, widget=forms.Textarea(attrs={"class": "form-control", "rows": 2}))
+
+
 
 class ButikkenItemTypeForm(forms.ModelForm):
     class Meta:

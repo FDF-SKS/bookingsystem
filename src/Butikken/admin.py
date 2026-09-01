@@ -19,6 +19,7 @@ from .models import (
     Day, Recipe, Meal, Option, MealBooking, 
     MealPlan, MealOption, TeamMealPlan, Team
 )
+from .models import ButikkenOrder
 from .forms import ButikkenBookingForm, MealPlanForm
 
 # --- Resources ---
@@ -124,6 +125,24 @@ class MealOptionInline(TabularInline):
     extra = 1
     tab = True 
 
+
+# Inline for bookings inside an order
+class ButikkenBookingInline(TabularInline):
+    model = ButikkenBooking
+    extra = 1
+    fields = ('item', 'quantity', 'unit', 'start_date', 'start_time', 'team_contact')
+    tab = True
+
+
+class ButikkenOrderResource(resources.ModelResource):
+    team = fields.Field(attribute='team__name', column_name='Team')
+    team_contact = fields.Field(attribute='team_contact__first_name', column_name='Kontakt')
+
+    class Meta:
+        model = ButikkenOrder
+        fields = ('id', 'team', 'team_contact', 'pickup_date', 'status', 'remarks')
+        export_order = ('id', 'team', 'team_contact', 'pickup_date', 'status', 'remarks')
+
 # --- Admin Classes ---
 
 @admin.register(ButikkenItem)
@@ -145,8 +164,8 @@ class ButikkenItemAdmin(BaseAdmin):
 class ButikkenBookingAdmin(BaseAdmin):
     list_fullwidth = True
     # FIXED: 'for_meal' used directly as it's a field in your model
-    list_display = ["item", "display_status", "team", "for_meal", "formatted_start", "quantity_with_unit"]
-    list_filter = ["status", "for_meal", "team", "item", "start_date"]
+    list_display = ["order", "item", "display_status", "team", "for_meal", "formatted_start", "quantity_with_unit"]
+    list_filter = ["status", "for_meal", "team", "item", "start_date", "order"]
     
     @display(description="Status", label={
         "Approved": "success", "Pending": "warning", "Rejected": "danger", "Udleveret": "info",
@@ -185,5 +204,36 @@ class MealPlanAdmin(BaseAdmin):
 @admin.register(Recipe)
 class RecipeAdmin(BaseAdmin):
     list_display = ["name", "description", "last_updated"]
+
+
+@admin.register(ButikkenOrder)
+class ButikkenOrderAdmin(BaseAdmin):
+    resource_class = ButikkenOrderResource
+    list_display = ["id", "team", "team_contact", "pickup_date", "status", "last_updated"]
+    list_filter = ["status", "team", "pickup_date"]
+    inlines = [ButikkenBookingInline]
+
+    @admin.action(description="Eksporter ordre inkl. varer (CSV)")
+    def export_order_with_bookings(self, request, queryset):
+        # Export orders and their child bookings as CSV (simple implementation)
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=butikken_orders_export.csv'
+        writer = csv.writer(response)
+        writer.writerow(['order_id', 'team', 'team_contact', 'pickup_date', 'order_status', 'item', 'quantity', 'unit', 'start_date', 'start_time'])
+        for order in queryset:
+            for b in order.bookings.all():
+                writer.writerow([
+                    order.id,
+                    getattr(order.team, 'name', ''),
+                    getattr(order.team_contact, 'first_name', ''),
+                    order.pickup_date,
+                    order.status,
+                    getattr(b.item, 'name', ''),
+                    b.quantity,
+                    b.unit,
+                    b.start_date,
+                    b.start_time,
+                ])
+        return response
 
 

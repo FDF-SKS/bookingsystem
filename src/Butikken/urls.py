@@ -13,6 +13,7 @@ router.register("Meal", api.MealViewSet)
 router.register("Option", api.OptionViewSet)
 router.register("ButikkenItem", api.ButikkenItemViewSet)
 router.register("ButikkenBooking", api.ButikkenBookingViewSet)
+router.register("ButikkenOrder", api.ButikkenOrderViewSet)
 router.register("MealBooking", api.MealBookingViewSet)
 router.register("TeamMealPlan", api.TeamMealPlanViewSet)
 
@@ -30,6 +31,15 @@ urlpatterns = (
     path("Butikken/ButikkenBooking/detail/<int:pk>/", views.ButikkenBookingDetailView.as_view(), name="Butikken_ButikkenBooking_detail"),
     path("Butikken/ButikkenBooking/update/<int:pk>/", views.ButikkenBookingUpdateView.as_view(), name="Butikken_ButikkenBooking_update"),
     path("Butikken/ButikkenBooking/delete/<int:pk>/", views.ButikkenBookingDeleteView.as_view(), name="Butikken_ButikkenBooking_delete"),
+
+    # Butikken Order (cart) URLs
+    path("Butikken/ButikkenOrder/", views.ButikkenOrderListView.as_view(), name="Butikken_ButikkenOrder_list"),
+    path("Butikken/ButikkenOrder/create/", views.ButikkenOrderCreateView.as_view(), name="Butikken_ButikkenOrder_create"),
+    path("Butikken/ButikkenOrder/detail/<int:pk>/", views.ButikkenOrderDetailView.as_view(), name="Butikken_ButikkenOrder_detail"),
+    path("Butikken/ButikkenOrder/update/<int:pk>/", views.ButikkenOrderUpdateView.as_view(), name="Butikken_ButikkenOrder_update"),
+    path("Butikken/ButikkenOrder/delete/<int:pk>/", views.ButikkenOrderDeleteView.as_view(), name="Butikken_ButikkenOrder_delete"),
+    path("Butikken/ButikkenOrder/<int:pk>/add-item/", views.butikken_order_add_item, name="Butikken_ButikkenOrder_add_item"),
+    path("Butikken/ButikkenOrder/<int:order_pk>/remove-item/<int:pk>/", views.butikken_order_remove_item, name="Butikken_ButikkenOrder_remove_item"),
 
     path("Butikken/ButikkenItemType/", views.ButikkenItemTypeListView.as_view(), name="Butikken_ButikkenItemType_list"),
     path("Butikken/ButikkenItemType/create/", views.ButikkenItemTypeCreateView.as_view(), name="Butikken_ButikkenItemType_create"),

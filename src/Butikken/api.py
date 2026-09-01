@@ -16,6 +16,7 @@ class ButikkenBookingViewSet(viewsets.ModelViewSet):
     """ViewSet for the ButikkenBooking class"""
 
     queryset = models.ButikkenBooking.objects.all()
+    serializer_class = serializers.ButikkenBookingSerializer
     permission_classes = [permissions.IsAuthenticated]
 
 
@@ -70,6 +71,14 @@ class TeamMealPlanViewSet(viewsets.ModelViewSet):
 
     queryset = models.TeamMealPlan.objects.all()
     serializer_class = serializers.TeamMealPlanSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class ButikkenOrderViewSet(viewsets.ModelViewSet):
+    """ViewSet for the ButikkenOrder (cart) class"""
+
+    queryset = models.ButikkenOrder.objects.all()
+    serializer_class = serializers.ButikkenOrderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
 

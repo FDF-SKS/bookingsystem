@@ -15,19 +15,23 @@ class ButikkenItemSerializer(serializers.ModelSerializer):
         ]
 
 class ButikkenBookingSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = models.ButikkenBooking
         fields = [
-            "remarks",
-            "quantity",
-            "created",
-            "status",
-            "last_updated",
-            "start",
-            "team",
+            "id",
+            "order",
             "item",
+            "team",
             "team_contact",
+            "quantity",
+            "unit",
+            "status",
+            "start_date",
+            "start_time",
+            "date_used",
+            "remarks",
+            "created",
+            "last_updated",
         ]
 
 class ButikkenItemTypeSerializer(serializers.ModelSerializer):
@@ -111,6 +115,23 @@ class TeamMealPlanSerializer(serializers.ModelSerializer):
             "meal_plan",
             "team",
             "meal_option",
+        ]
+
+
+class ButikkenOrderSerializer(serializers.ModelSerializer):
+    bookings = ButikkenBookingSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = models.ButikkenOrder
+        fields = [
+            "id",
+            "team",
+            "team_contact",
+            "pickup_date",
+            "status",
+            "remarks",
+            "order_date",
+            "bookings",
         ]
 
 
