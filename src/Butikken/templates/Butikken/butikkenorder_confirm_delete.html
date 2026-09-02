@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% load bootstrap_icons %}
+
+{% block title %}Slet ordre?{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        {% bs_icon 'exclamation-triangle' %} Slet ordre
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="lead">Er du sikker på, at du vil slette denne ordre og alle dens varer?</p>
+
+                    <div class="alert alert-light">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Ordre ID:</dt>
+                            <dd class="col-sm-8">{{ object.id }}</dd>
+
+                            <dt class="col-sm-4">Navn:</dt>
+                            <dd class="col-sm-8">{{ object.name|default:"(uden navn)" }}</dd>
+
+                            <dt class="col-sm-4">Team:</dt>
+                            <dd class="col-sm-8">{{ object.team }}</dd>
+
+                            <dt class="col-sm-4">Antal varer:</dt>
+                            <dd class="col-sm-8">{{ object.bookings.count }}</dd>
+
+                            <dt class="col-sm-4">Afhentning:</dt>
+                            <dd class="col-sm-8">{{ object.pickup_date }}</dd>
+                        </dl>
+                    </div>
+
+                    <p class="text-muted">Denne handling kan ikke fortrydes.</p>
+
+                    <form method="post" class="d-grid gap-2 d-sm-flex">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger">
+                            {% bs_icon 'trash' %} Slet
+                        </button>
+                        <a href="{% url 'Butikken_ButikkenOrder_detail' object.pk %}" class="btn btn-outline-secondary">
+                            {% bs_icon 'x-circle' %} Annuller
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

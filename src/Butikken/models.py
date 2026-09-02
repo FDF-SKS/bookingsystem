@@ -106,12 +106,15 @@ class ButikkenOrder(models.Model):
     )
 
     STATUS_CHOICES = (
-        ("Pending", "Pending"),
-        ("Approved", "Approved"),
-        ("Rejected", "Rejected"),
+        ("Afventer", "Afventer"),
+        ("Godkendt", "Godkendt"),
+        ("Afvist", "Afvist"),
+        ("Pakket", "Pakket"),
         ("Udleveret", "Udleveret"),
     )
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="Pending")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="Afventer")
+    # Optional human readable name for the order (can be set by the user)
+    name = models.CharField(max_length=200, blank=True, default="")
 
     order_date = models.DateTimeField(auto_now_add=True, editable=False)
     pickup_date = models.DateField(blank=True, null=True)

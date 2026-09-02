@@ -1,26 +1,156 @@
 {% extends "base.html" %}
-{% block title %}Butikken - Ordre {{ object.id }}{% endblock %}
+{% load bootstrap_icons %}
+{% load django_bootstrap5 %}
+
+{% block title %}Bestilling {{ object.id }} - {{ object.name|default:"(uden navn)" }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card-custom { border: none; border-radius: 12px; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
+    .status-badge { padding: 0.5rem 1rem; border-radius: 50px; font-weight: 600; font-size: 0.9rem; }
+    .detail-label { color: #6c757d; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+    .detail-value { font-weight: 500; font-size: 1.1rem; color: #212529; }
+    .sidebar-info { font-size: 0.9rem; border-bottom: 1px solid #eee; padding: 10px 0; }
+    .sidebar-info:last-child { border-bottom: none; }
+    .bg-soft-primary { background-color: #e7f1ff; width: 48px; height: 48px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="container py-4">
-    <h1>Ordre {{ object.id }}</h1>
-    <p><strong>Team:</strong> {{ object.team }} | <strong>Pickup:</strong> {{ object.pickup_date }} | <strong>Status:</strong> {{ object.status }}</p>
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'Butikken_ButikkenOrder_list' %}">Butikken Ordrer</a></li>
+            <li class="breadcrumb-item active">Bestilling #{{ object.pk }}</li>
+        </ol>
+    </nav>
 
-    <h3>Varer</h3>
-    <table class="table">
-        <thead><tr><th>Vare</th><th>Antal</th><th>Enhed</th><th>Afhentning</th></tr></thead>
-        <tbody>
-            {% for b in bookings %}
-            <tr>
-                <td>{{ b.item }}</td>
-                <td>{{ b.quantity }}</td>
-                <td>{{ b.unit }}</td>
-                <td>{{ b.start_date }} {{ b.start_time }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="4">Ingen varer i denne ordre</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-4 gap-3">
+        <div>
+            <span class="text-muted text-uppercase small fw-bold">Butikken ordre</span>
+            <h1 class="display-5 mb-0">Bestilling {{ object.id }} - {{ object.name|default:"(uden navn)" }}</h1>
+            <p class="lead text-muted">Bestilt af: {{ object.team }}</p>
+        </div>
+        <div class="d-flex flex-column align-items-end gap-2">
+            {% if object.status == 'Afventer' %}
+                <span class="status-badge bg-warning text-dark">{% bs_icon "clock" %} Afventer</span>
+            {% elif object.status == 'Godkendt' %}
+                <span class="status-badge bg-success text-white">{% bs_icon "check-circle" %} Godkendt</span>
+            {% elif object.status == 'Afvist' %}
+                <span class="status-badge bg-danger text-white">{% bs_icon "x-circle" %} Afvist</span>
+            {% elif object.status == 'Pakket' %}
+                <span class="status-badge bg-info text-dark">{% bs_icon "box" %} Pakket</span>
+            {% elif object.status == 'Udleveret' %}
+                <span class="status-badge bg-secondary text-white">{% bs_icon "box-seam" %} Udleveret</span>
+            {% endif %}
+
+            <div class="mt-2">
+                {% if can_edit %}
+                    <a href="{% url 'Butikken_ButikkenOrder_update' object.pk %}" class="btn btn-outline-primary rounded-pill px-4">{% bs_icon "pencil" %} Rediger</a>
+                    <a href="{% url 'Butikken_ButikkenOrder_delete' object.pk %}" class="btn btn-danger rounded-pill px-4 ms-2">{% bs_icon "trash" %} Slet</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card card-custom mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4 border-bottom pb-2">Information om ordre</h5>
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <div class="detail-label">Afhentning</div>
+                            <div class="detail-value">
+                                {% if object.pickup_date %}
+                                    {% bs_icon "calendar-event" %} {{ object.pickup_date|date:"l \d. j. F" }}
+                                {% else %}
+                                    Ikke angivet
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">Antal varer</div>
+                            <div class="detail-value">{{ object.bookings.count }}</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-light p-3 rounded mb-4">
+                        <div class="detail-label">Bemærkninger</div>
+                        <div class="mt-2">{{ object.remarks|default:"<span class='text-muted italic'>Ingen bemærkninger tilføjet.</span>"|safe }}</div>
+                    </div>
+
+                    <h5 class="mb-3">Varer</h5>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr><th>Vare</th><th>Antal</th><th>Enhed</th><th>Afhentning</th><th>Kontakt</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for b in bookings %}
+                                <tr>
+                                    <td><a href="{{ b.get_absolute_url }}">{{ b.item }}</a></td>
+                                    <td>{{ b.quantity }}</td>
+                                    <td class="text-muted">{{ b.unit }}</td>
+                                    <td>{{ b.start_date }} {{ b.start_time }}</td>
+                                    <td>{{ b.team_contact }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5">Ingen varer i denne ordre</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card card-custom mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3 border-bottom pb-2">Kontaktperson</h5>
+                    <div class="d-flex align-items-center mb-3">
+                        {% if object.team_contact and object.team_contact.image_thumbnail %}
+                            <img src="{{ object.team_contact.image_thumbnail.url }}" alt="{{ object.team_contact.get_full_name }}" class="rounded-circle me-3" style="width:50px;height:50px;object-fit:cover;" loading="lazy">
+                        {% else %}
+                            <div class="bg-soft-primary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width:50px;height:50px;">{% bs_icon "person-circle" extra_classes="fs-3 text-primary" %}</div>
+                        {% endif %}
+                        <div>
+                            {% if object.team_contact %}
+                                <a href="{% url 'organization_Volunteer_detail' object.team_contact.pk %}" class="detail-value text-decoration-none">{{ object.team_contact }}</a>
+                                <div class="text-muted small">Kontakt</div>
+                            {% else %}
+                                <div class="detail-value">Ikke angivet</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="sidebar-info d-flex justify-content-between">
+                        <span class="text-muted">Tilhører Team:</span>
+                        <span class="fw-bold">{{ object.team }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-custom bg-light mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3 small fw-bold text-uppercase text-muted">Historik</h5>
+                    <div class="sidebar-info d-flex justify-content-between small">
+                        <span>Oprettet:</span>
+                        <span>{{ object.created|date:"l \d. j. F, H:i" }}</span>
+                    </div>
+                    <div class="sidebar-info d-flex justify-content-between small">
+                        <span>Opdateret:</span>
+                        <span>{{ object.last_updated|date:"l \d. j. F, H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-2 d-grid">
+                <a href="{% url 'Butikken_ButikkenOrder_list' %}" class="btn btn-link text-muted">{% bs_icon "arrow-left" %} Tilbage til listen</a>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

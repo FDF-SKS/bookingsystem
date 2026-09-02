@@ -68,12 +68,6 @@ class ButikkenItemDeleteView(LoginRequiredMixin, generic.DeleteView):
     success_url = reverse_lazy("Butikken_ButikkenItem_list")
 
 
-from django.views import generic
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.utils.decorators import method_decorator
-from django.contrib.auth.decorators import login_required
-from . import models, forms
-
 class ButikkenBookingListView(LoginRequiredMixin, generic.ListView):
     model = models.ButikkenBooking
     form_class = forms.ButikkenBookingForm
@@ -434,32 +428,69 @@ class ButikkenOrderCreateView(LoginRequiredMixin, generic.CreateView):
         return kwargs
     
     def form_valid(self, form):
-        # Save the order and then redirect to update page so the add-item UI is available
-        order = form.save()
+        # For create view, persist the new order and attach bookings sent in cart_items_json
+        order = form.save(commit=False)
+        if not self.request.user.is_staff:
+            order.status = 'Afventer'
+        order.save()
+
+        # Persist cart items from client JSON
+        cart_json = self.request.POST.get('cart_items_json', '[]')
+        try:
+            cart_items = json.loads(cart_json)
+        except Exception:
+            cart_items = []
+
+        from .models import ButikkenBooking, ButikkenItem
+        for ci in cart_items:
+            try:
+                item_id = int(ci.get('id'))
+            except Exception:
+                continue
+            # Parse quantity as Decimal, tolerant to commas and invalid input
+            qty_raw = ci.get('qty')
+            try:
+                qty = Decimal(str(qty_raw)) if qty_raw is not None else Decimal('1')
+            except (InvalidOperation, TypeError, ValueError):
+                try:
+                    qty = Decimal(str(qty_raw).replace(',', '.'))
+                except Exception:
+                    qty = Decimal('1')
+            unit = ci.get('unit') or ''
+            item_obj = ButikkenItem.objects.filter(pk=item_id).first()
+            if not item_obj:
+                continue
+            start_date = order.pickup_date or timezone.now().date()
+            start_time = time(8, 0)
+            ButikkenBooking.objects.create(
+                order=order,
+                item=item_obj,
+                team=order.team,
+                team_contact=(order.team_contact or self.request.user),
+                start_date=start_date,
+                start_time=start_time,
+                quantity=qty,
+                unit=(unit or item_obj.content_unit or ''),
+            )
+
         return redirect('Butikken_ButikkenOrder_update', pk=order.pk)
-    
-    def get(self, request, *args, **kwargs):
-        # Quick-create: create or reuse a pending empty order for the user's team and redirect to update
-        user = request.user
-        team_membership = TeamMembership.objects.filter(member=user).select_related('team').first()
-        if not team_membership:
-            messages.error(request, 'Du har ikke et team tilknyttet. Tilføj venligst et team først.')
-            return redirect('Butikken_ButikkenOrder_list')
 
-        team = team_membership.team
-        # Reuse a recent pending order without bookings if available
-        existing = models.ButikkenOrder.objects.filter(team=team, status='Pending').order_by('-created').first()
-        if existing and not existing.bookings.exists():
-            return redirect('Butikken_ButikkenOrder_update', pk=existing.pk)
-
-        # Determine pickup_date from active/next event
-        active_event = Event.objects.filter(is_active=True).first()
-        if not active_event:
-            active_event = Event.objects.filter(start_date__gt=timezone.now().date()).order_by('start_date').first()
-
-        pickup = active_event.start_date if active_event else None
-        order = models.ButikkenOrder.objects.create(team=team, team_contact=user, pickup_date=pickup)
-        return redirect('Butikken_ButikkenOrder_update', pk=order.pk)
+    def get_context_data(self, **kwargs):
+        # Provide the same context the update view expects so the single template works
+        context = super().get_context_data(**kwargs)
+        from .models import ButikkenItem
+        context['items'] = ButikkenItem.objects.all()
+        context['bookings'] = []
+        items_qs = ButikkenItem.objects.all().values('id', 'content_unit', 'content_normal')
+        items_data = {str(i['id']): {'unit': i['content_unit'] or '', 'normal': i['content_normal'] or ''} for i in items_qs}
+        context['items_data'] = items_data
+        context['available_items'] = [
+            {'id': it.pk, 'name': it.name, 'unit': it.content_unit or ''}
+            for it in ButikkenItem.objects.all()
+        ]
+        context['unit_map'] = {str(it.pk): (it.content_unit or '') for it in ButikkenItem.objects.all()}
+        context['initial_cart_json'] = json.dumps([])
+        return context
 
 
 class ButikkenOrderDetailView(LoginRequiredMixin, generic.DetailView):
@@ -469,6 +500,18 @@ class ButikkenOrderDetailView(LoginRequiredMixin, generic.DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['bookings'] = self.object.bookings.select_related('item', 'team_contact')
+        # Determine whether current user may edit/delete this order
+        user = self.request.user
+        can_edit = False
+        try:
+            if user.is_staff:
+                can_edit = True
+            else:
+                # check team membership
+                can_edit = user.teammembership_set.filter(team=self.object.team).exists()
+        except Exception:
+            can_edit = False
+        context['can_edit'] = can_edit
         return context
 
 
@@ -484,6 +527,13 @@ class ButikkenOrderUpdateView(LoginRequiredMixin, generic.UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # Ensure the template always has a proper form instance available
+        # so template tags like `bootstrap_field` receive a valid BoundField.
+        try:
+            context['form'] = self.get_form()
+        except Exception:
+            # Fallback: do not override if form construction fails
+            pass
         from .models import ButikkenItem
         context['items'] = ButikkenItem.objects.all()
         context['bookings'] = self.object.bookings.select_related('item', 'team_contact')
@@ -506,8 +556,11 @@ class ButikkenOrderUpdateView(LoginRequiredMixin, generic.UpdateView):
         return context
 
     def form_valid(self, form):
-        # Save the order fields first
-        self.object = form.save()
+        # Save the order fields first (enforce Pending for non-staff)
+        self.object = form.save(commit=False)
+        if not self.request.user.is_staff:
+            self.object.status = 'Afventer'
+        self.object.save()
 
         # Process posted cart JSON (list of {id, name, qty, unit})
         cart_json = self.request.POST.get('cart_items_json', '[]')
@@ -516,16 +569,23 @@ class ButikkenOrderUpdateView(LoginRequiredMixin, generic.UpdateView):
         except Exception:
             cart_items = []
 
-        # Build map of item_id -> desired data
+        # Build map of item_id -> desired data (qty as Decimal)
         desired = {}
         for ci in cart_items:
             try:
                 item_id = int(ci.get('id'))
-                qty = int(ci.get('qty') or 1)
-                unit = ci.get('unit') or ''
-                desired[item_id] = {'qty': qty, 'unit': unit}
             except Exception:
                 continue
+            qty_raw = ci.get('qty')
+            try:
+                qty = Decimal(str(qty_raw)) if qty_raw is not None else Decimal('1')
+            except (InvalidOperation, TypeError, ValueError):
+                try:
+                    qty = Decimal(str(qty_raw).replace(',', '.'))
+                except Exception:
+                    qty = Decimal('1')
+            unit = ci.get('unit') or ''
+            desired[item_id] = {'qty': qty, 'unit': unit}
 
         # Existing bookings mapped by item id
         existing = {b.item_id: b for b in self.object.bookings.all()}

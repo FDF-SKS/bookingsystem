@@ -155,6 +155,12 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / "media"
 
+# During local development serve the project-level `static/` directory so
+# `runserver` can find files like `static/css/custom.css` without running
+# `collectstatic` or relying on the Docker setup.
+if ENVIRONMENT == 'dev':
+    STATICFILES_DIRS = [BASE_DIR / 'static']
+
 ROOT_URLCONF = 'core.urls' 
 
 
@@ -339,7 +345,7 @@ UNFOLD = {
         "show_all_applications": False,
         "navigation": [
             {
-                "title": _("Organization"),
+                "title": _("Organisering"),
                 "separator": True,
                 "collapsible": True,
                 "default_open": True,
@@ -373,9 +379,9 @@ UNFOLD = {
                         "link": reverse_lazy("admin:Butikken_butikkenitem_changelist"),
                     },
                     {
-                        "title": _("Vare Bookinger"),
+                        "title": _("Butikken bestillinger"),
                         "icon": "shopping_cart",
-                        "link": reverse_lazy("admin:Butikken_butikkenbooking_changelist"),
+                        "link": reverse_lazy("admin:Butikken_butikkenorder_changelist"),
                     },
                     {
                         "title": _("Måltider"),
@@ -391,6 +397,11 @@ UNFOLD = {
                         "title": _("Opskrifter"),
                         "icon": "menu_book",
                         "link": reverse_lazy("admin:Butikken_recipe_changelist"),
+                    },
+                    {
+                        "title": _("Vare bestillings udtræk"),
+                        "icon": "receipt",
+                        "link": reverse_lazy("admin:Butikken_butikkenbooking_changelist"),
                     },
                 ],
             },

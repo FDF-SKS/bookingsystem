@@ -46,7 +46,7 @@
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none">Hjem</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'Butikken_ButikkenBooking_list' %}" class="text-decoration-none">Butikken</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'Butikken_ButikkenOrder_list' %}" class="text-decoration-none">Butikken</a></li>
             <li class="breadcrumb-item active" aria-current="page">Ny bestilling</li>
         </ol>
     </nav>
@@ -55,8 +55,10 @@
 
     <form id="cart-booking-form" method="post" action="" class="needs-validation">
         {% csrf_token %}
-        <!-- Hidden input storing serialized JSON of all cart items (populated from existing bookings) -->
-        <input type="hidden" name="cart_items_json" id="cart_items_json" value='{{ initial_cart_json|escapejs }}'>
+        <!-- Initial cart JSON embedded as application/json to avoid HTML-attribute escaping issues -->
+        <script id="initial-cart" type="application/json">{{ initial_cart_json|safe }}</script>
+        <!-- Hidden input used for form submission; populated from the in-memory cartItems state -->
+        <input type="hidden" name="cart_items_json" id="cart_items_json" value='[]'>
 
         <div class="row g-4">
             <!-- Left Main Column (Desktop & Mobile) -->
@@ -118,17 +120,16 @@
                     <div class="card-body p-4">
                         <h5 class="fw-bold mb-3">Afhentning & Brug</h5>
                         <div class="row g-3">
-                            <div class="col-md-6">
-                                {% bootstrap_field form.start_date label="Afhentning Dato" placeholder="dd.mm.yyyy" %}
+                            <div class="col-12 mb-3">
+                                {% bootstrap_field form.name label="Navn på bestilling" placeholder="Valgfrit navn på ordren" %}
                             </div>
                             <div class="col-md-6">
-                                {% bootstrap_field form.start_time label="Afhentning Tidspunkt" placeholder="--:--" %}
+                                {% bootstrap_field form.pickup_date label="Afhentning Dato" placeholder="dd.mm.yyyy" %}
                             </div>
                             <div class="col-md-6">
-                                {% bootstrap_field form.date_used label="Anvendelsesdato" placeholder="dd.mm.yyyy" %}
-                            </div>
-                            <div class="col-md-6">
-                                {% bootstrap_field form.for_meal label="Måltid" %}
+                                {% if 'status' in form.fields %}
+                                    {% bootstrap_field form.status label="Status" %}
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -164,7 +165,7 @@
                     <button type="submit" class="btn btn-navy btn-lg py-2 shadow-sm d-flex align-items-center justify-content-center gap-2">
                         {% bs_icon "cart-check" %} Gem bestilling
                     </button>
-                    <a href="{% url 'Butikken_ButikkenBooking_list' %}" class="btn btn-outline-secondary py-2 text-center">Annuller</a>
+                    <a href="{% url 'Butikken_ButikkenOrder_list' %}" class="btn btn-outline-secondary py-2 text-center">Annuller</a>
                 </div>
             </div>
         </div>
@@ -173,13 +174,31 @@
 
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 {{ unit_map|json_script:"unit-data" }}
+{{ items_data|json_script:"items-data" }}
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const unitDataElement = document.getElementById('unit-data');
         const unitMap = unitDataElement ? JSON.parse(unitDataElement.textContent) : {};
+        const itemsDataElement = document.getElementById('items-data');
+        const itemsData = itemsDataElement ? JSON.parse(itemsDataElement.textContent) : {};
+        const initialCartEl = document.getElementById('initial-cart');
         const hiddenJsonInput = document.getElementById('cart_items_json');
-        let cartItems = JSON.parse(hiddenJsonInput.value || '[]');
+        let cartItems = [];
+        if (initialCartEl) {
+            try {
+                cartItems = JSON.parse(initialCartEl.textContent || '[]');
+            } catch (e) {
+                console.warn('Failed to parse initial-cart JSON, falling back to empty cart', e);
+                cartItems = [];
+            }
+        } else {
+            try {
+                cartItems = JSON.parse(hiddenJsonInput.value || '[]');
+            } catch (e) {
+                cartItems = [];
+            }
+        }
 
         // Initialize TomSelect on search input
         const itemSelect = new TomSelect("#item-selector", {
@@ -205,15 +224,30 @@
             const selectedText = opt ? opt.textContent.trim() : '';
             const unit = unitMap[selectedId] || opt?.dataset?.unit || 'stk';
 
+            // Determine default quantity from itemsData (content_normal)
+            let defaultQty = 1;
+            try {
+                const normalRaw = itemsData && itemsData[selectedId] && itemsData[selectedId].normal ? itemsData[selectedId].normal : null;
+                if (normalRaw !== null && normalRaw !== undefined && normalRaw !== '') {
+                    const normalized = String(normalRaw).replace(',', '.').trim();
+                    const parsed = parseFloat(normalized);
+                    if (!isNaN(parsed) && isFinite(parsed) && parsed > 0) {
+                        defaultQty = parsed;
+                    }
+                }
+            } catch (e) {
+                defaultQty = 1;
+            }
+
             // Avoid duplicates; increase qty if present
             const existingIndex = cartItems.findIndex(item => item.id === selectedId);
             if (existingIndex > -1) {
-                cartItems[existingIndex].qty += 1;
+                cartItems[existingIndex].qty = (parseFloat(cartItems[existingIndex].qty) || 0) + defaultQty;
             } else {
                 cartItems.push({
                     id: selectedId,
                     name: selectedText,
-                    qty: 1,
+                    qty: defaultQty,
                     unit: unit
                 });
             }
@@ -222,11 +256,12 @@
             renderCart();
         });
 
-        // Update item quantity
+        // Update item quantity (allow decimals)
         window.updateQty = function(id, newQty) {
             const item = cartItems.find(i => i.id === id.toString());
             if (item) {
-                item.qty = Math.max(1, parseInt(newQty) || 1);
+                const parsed = parseFloat(String(newQty).replace(',', '.'));
+                item.qty = parsed && isFinite(parsed) && parsed > 0 ? parsed : 1;
                 renderCart();
             }
         };
@@ -248,7 +283,7 @@
                 tr.innerHTML = `
                     <td class="fw-bold text-dark">${item.name}</td>
                     <td>
-                        <input type="number" class="form-control form-control-sm qty-input" value="${item.qty}" min="1" onchange="updateQty('${item.id}', this.value)">
+                        <input type="number" step="0.01" class="form-control form-control-sm qty-input" value="${item.qty}" min="0.01" onchange="updateQty('${item.id}', this.value)">
                     </td>
                     <td class="text-muted">${item.unit}</td>
                     <td class="text-end">
@@ -272,7 +307,7 @@
                     <div class="d-flex align-items-center justify-content-between text-muted small">
                         <span>Mængde:</span>
                         <div class="d-flex align-items-center gap-2">
-                            <input type="number" class="form-control form-control-sm qty-input" value="${item.qty}" min="1" onchange="updateQty('${item.id}', this.value)">
+                            <input type="number" step="0.01" class="form-control form-control-sm qty-input" value="${item.qty}" min="0.01" onchange="updateQty('${item.id}', this.value)">
                             <span>Enhed: <strong>${item.unit}</strong></span>
                         </div>
                     </div>

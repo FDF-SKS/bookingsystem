@@ -230,16 +230,16 @@ class ButikkenOrderForm(forms.ModelForm):
         fields = [
             "team",
             "team_contact",
+            "name",
             "pickup_date",
             "remarks",
-            "status",
         ]
         widgets = {
             "team": forms.Select(attrs={"class": "form-select"}),
             "team_contact": forms.Select(attrs={"class": "form-select"}),
             "pickup_date": forms.TextInput(attrs={"class": "form-control", "type": "date"}),
             "remarks": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
-            "status": forms.Select(attrs={"class": "form-select"}),
+            "name": forms.TextInput(attrs={"class": "form-control"}),
         }
 
     def __init__(self, *args, user=None, **kwargs):
@@ -251,6 +251,19 @@ class ButikkenOrderForm(forms.ModelForm):
             if team_membership:
                 self.fields["team"].initial = team_membership.team
                 self.fields["team_contact"].initial = user
+        # Only allow staff/admin users to edit status. For regular users we omit the status field.
+        try:
+            is_staff = bool(user and user.is_staff)
+        except Exception:
+            is_staff = False
+        if is_staff:
+            # Add status field dynamically for staff users
+            self.fields['status'] = forms.ChoiceField(
+                choices=models.ButikkenOrder.STATUS_CHOICES,
+                initial=(self.instance.status if getattr(self.instance, 'pk', None) else 'Afventer'),
+                widget=forms.Select(attrs={"class": "form-select"}),
+                required=True,
+            )
         # Default pickup_date from the active event (or next upcoming event)
         try:
             active_event = Event.objects.filter(is_active=True).first()
