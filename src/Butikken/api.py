@@ -77,8 +77,14 @@ class TeamMealPlanViewSet(viewsets.ModelViewSet):
 class ButikkenOrderViewSet(viewsets.ModelViewSet):
     """ViewSet for the ButikkenOrder (cart) class"""
 
-    queryset = models.ButikkenOrder.objects.all()
     serializer_class = serializers.ButikkenOrderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        qs = models.ButikkenOrder.objects.all()
+        user = self.request.user
+        if user.is_staff:
+            return qs
+        team_ids = user.teammembership_set.values_list('team', flat=True)
+        return qs.filter(team_id__in=team_ids)
 
