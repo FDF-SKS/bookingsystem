@@ -78,7 +78,13 @@
 
                     <div class="bg-light p-3 rounded mb-4">
                         <div class="detail-label">Bemærkninger</div>
-                        <div class="mt-2">{{ object.remarks|default:"<span class='text-muted italic'>Ingen bemærkninger tilføjet.</span>"|safe }}</div>
+                        <div class="mt-2">
+                            {% if object.remarks %}
+                                {{ object.remarks|linebreaksbr }}
+                            {% else %}
+                                <span class='text-muted fst-italic'>Ingen bemærkninger tilføjet.</span>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <h5 class="mb-3">Varer</h5>
