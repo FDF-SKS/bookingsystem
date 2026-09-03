@@ -76,7 +76,7 @@ class TeamMealPlanViewSet(viewsets.ModelViewSet):
 
 class ButikkenOrderViewSet(viewsets.ModelViewSet):
     """ViewSet for the ButikkenOrder (cart) class"""
-
+    queryset = models.ButikkenOrder.objects.all()
     serializer_class = serializers.ButikkenOrderSerializer
     permission_classes = [permissions.IsAuthenticated]
 

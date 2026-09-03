@@ -75,15 +75,16 @@ class SjakBookingForm(forms.ModelForm):
         # 2. Handle User-specific logic
         if user:
             self.fields["team_contact"].initial = user
-            try:
-                team_membership = TeamMembership.objects.get(member=user)
+            # Use filter().first() to avoid MultipleObjectsReturned when a
+            # volunteer belongs to multiple teams. If multiple memberships
+            # exist, prefer the first one.
+            team_membership = TeamMembership.objects.filter(member=user).first()
+            if team_membership:
                 self.fields["team"].initial = team_membership.team
                 # Filter contacts to only show people from the same team
                 self.fields["team_contact"].queryset = Volunteer.objects.filter(
                     teammembership__team=team_membership.team
                 ).order_by("first_name")
-            except TeamMembership.DoesNotExist:
-                pass
 
         # 3. Intelligent Initial Values (Don't override if instance exists)
         instance = kwargs.get('instance')
@@ -105,6 +106,15 @@ class SjakBookingForm(forms.ModelForm):
                 self.fields["end_date"].initial = active_event.end_date
                 self.fields["start_time"].initial = time(12, 0)
                 self.fields["end_time"].initial = time(12, 0)
+
+        # Make internal status optional for create forms so that the
+        # template (which doesn't render this field) doesn't cause
+        # validation to fail. Default will be set in `save()` for new
+        # instances.
+        if 'status_internal' in self.fields:
+            self.fields['status_internal'].required = False
+            if not instance:
+                self.fields['status_internal'].initial = 'Afventer'
 
     def save(self, commit=True):
         instance = super().save(commit=False)

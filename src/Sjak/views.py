@@ -307,6 +307,43 @@ class SjakBookingCreateView(LoginRequiredMixin, generic.CreateView):
     def get_success_url(self):
         return reverse('Sjak_SjakBooking_detail', args=[self.object.pk])
 
+    def form_invalid(self, form):
+        # Log form errors and submitted POST data to aid debugging when the
+        # view re-renders with a 200 status (form invalid).
+        try:
+            post_data = dict(self.request.POST)
+        except Exception:
+            post_data = str(self.request.POST)
+        logger.warning(
+            "SjakBookingCreateView.form_invalid: user=%s errors=%s post=%s",
+            getattr(self.request.user, 'id', 'anonymous'),
+            form.errors.as_json() if hasattr(form.errors, 'as_json') else str(form.errors),
+            post_data,
+        )
+        # Also write a compact diagnostic JSON line to /tmp so browser-triggered
+        # failures can be inspected even if logging isn't configured to show warnings.
+        try:
+            import json, datetime
+            diag = {
+                'ts': datetime.datetime.utcnow().isoformat() + 'Z',
+                'path': self.request.path,
+                'user': getattr(self.request.user, 'username', getattr(self.request.user, 'id', 'anonymous')),
+                'headers': {
+                    'HX-Request': self.request.headers.get('HX-Request'),
+                    'X-Requested-With': self.request.headers.get('X-Requested-With'),
+                    'Content-Type': self.request.META.get('CONTENT_TYPE'),
+                },
+                'post': post_data,
+                'files': list(self.request.FILES.keys()),
+                'errors': form.errors.get_json_data() if hasattr(form.errors, 'get_json_data') else (form.errors.as_json() if hasattr(form.errors, 'as_json') else str(form.errors)),
+            }
+            with open('/tmp/sjak_form_invalid.log', 'a') as fh:
+                fh.write(json.dumps(diag, default=str) + "\n")
+        except Exception:
+            logger.exception('Failed to write /tmp/sjak_form_invalid.log')
+
+        return super().form_invalid(form)
+
 
 
 
