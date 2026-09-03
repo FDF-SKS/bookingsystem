@@ -152,8 +152,9 @@
             var map = L.map('detail-map').setView([lat, lng], 16);
 
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                detectRetina: true
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+                detectRetina: true,
+                referrerPolicy: 'origin'
             }).addTo(map);
 
             L.marker([lat, lng]).addTo(map)
