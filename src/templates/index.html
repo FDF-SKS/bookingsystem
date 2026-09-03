@@ -26,7 +26,7 @@
         
         {% if config.APP_ENABLE_BUTIKKEN %}
         <div class="col-12 col-sm-6 col-md-4" style="flex: 0 0 calc(20% - 0.6rem);">
-            <a href="{% url 'Butikken_ButikkenBooking_create' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
+            <a href="{% url 'Butikken_ButikkenOrder_create' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
                 <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
                     <div class="icon-box bg-info text-white rounded-4 mb-2 mx-auto">
                         <bs_icon class="bi bi-shop fs-1"></bs_icon>
@@ -68,15 +68,19 @@
 
         {% if config.APP_ENABLE_LOEB %}
         <div class="col-12 col-sm-6 col-md-4" style="flex: 0 0 calc(20% - 0.6rem);">
+            <!--
             <a href="{% url 'Loeb_Loeb_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
+            -->
                 <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
                     <div class="icon-box bg-dark text-white rounded-4 mb-2 mx-auto">
                         <bs_icon class="bi bi-flag-fill fs-1"></bs_icon>
                     </div>
                     <h4 class="fw-bold text-dark">Løb</h4>
-                    <p class="text-muted small mb-0">Hold, punkter og løb</p>
+                    <p class="text-muted small mb-0">Kommer snart</p>
                 </div>
-            </a>
+            <!-- 
+                </a>
+            -->
         </div>
         {% endif %}
 
