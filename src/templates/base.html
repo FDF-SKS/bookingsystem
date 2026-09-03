@@ -102,8 +102,20 @@
                                 Løb
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'Loeb_Loeb_list' %}">Mine løb</a></li>
-                                <li><a class="dropdown-item" href="{% url 'Loeb_Loeb_create' %}">Nyt løb</a></li>
+                                    <li>
+                                        {% if request.user.is_staff %}
+                                            <a class="dropdown-item" href="{% url 'Loeb_Loeb_list' %}">Mine løb</a>
+                                        {% else %}
+                                            <span class="dropdown-item disabled" aria-disabled="true" tabindex="-1">Mine løb</span>
+                                        {% endif %}
+                                    </li>
+                                    <li>
+                                        {% if request.user.is_staff %}
+                                            <a class="dropdown-item" href="{% url 'Loeb_Loeb_create' %}">Nyt løb</a>
+                                        {% else %}
+                                            <span class="dropdown-item disabled" aria-disabled="true" tabindex="-1">Nyt løb</span>
+                                        {% endif %}
+                                    </li>
                             </ul>
                         </li>
                         {% endif %}
