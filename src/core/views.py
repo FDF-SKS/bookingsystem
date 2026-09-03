@@ -4,7 +4,8 @@ from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST, require_http_methods
 from django.utils import timezone
-from datetime import datetime
+from datetime import datetime, time
+from django.db.models import Q
 
 def get_status_color(status):
     """Map booking status to Bootstrap color."""
@@ -13,6 +14,11 @@ def get_status_color(status):
         'Approved': 'success',
         'Rejected': 'danger',
         'Udleveret': 'info',
+        # Danish equivalents
+        'Afventer': 'warning',
+        'Godkendt': 'success',
+        'Afvist': 'danger',
+        'Pakket': 'info',
     }
     return status_colors.get(status, 'secondary')
 
@@ -129,24 +135,26 @@ def index(request):
             'url': f"/sos/SOS/SOSBooking/detail/{booking.pk}/",
         })
     
-    # Butikken bookings (no end date - single pickup time)
-    from Butikken.models import ButikkenBooking
-    butikken_bookings = ButikkenBooking.objects.filter(
-        team_id__in=user_teams
-    ).select_related('team', 'team_contact', 'item').exclude(
-        start_date__lt=now.date()
-    )
-    for booking in butikken_bookings:
+    # Butikken: show Orders (parent objects) on the dashboard instead of per-item bookings
+    from Butikken.models import ButikkenOrder
+    butikken_orders = ButikkenOrder.objects.filter(
+        team_id__in=user_teams,
+    ).filter(
+        Q(pickup_date__isnull=True) | Q(pickup_date__gte=now.date())
+    ).select_related('team', 'team_contact')
+    for order in butikken_orders:
+        pickup_date = order.pickup_date or now.date()
+        start_dt = datetime.combine(pickup_date, time(8, 0))
         bookings.append({
-            'obj': booking,
+            'obj': order,
             'type': 'Butikken',
             'icon': 'shop',
             'color': 'secondary',
-            'status_color': get_status_color(booking.status),
-            'start': datetime.combine(booking.start_date, booking.start_time),
-            'end': None,  # No end time for Butikken
-            'title': booking.item.name if booking.item else 'Bestilling',
-            'url': f"/butikken/Butikken/ButikkenBooking/detail/{booking.pk}/",
+            'status_color': get_status_color(order.status),
+            'start': start_dt,
+            'end': None,
+            'title': f"Bestilling {order.id} - {order.name or ''}",
+            'url': f"/butikken/Butikken/ButikkenOrder/detail/{order.pk}/",
         })
     
     # VolunteerAppointments

@@ -38,6 +38,15 @@ class ButikkenBooking(models.Model):
     team = models.ForeignKey("organization.Team", on_delete=models.CASCADE)
     item = models.ForeignKey("Butikken.ButikkenItem", on_delete=models.CASCADE)
     team_contact = models.ForeignKey("organization.Volunteer", on_delete=models.CASCADE)
+    # Optional parent order (cart). Kept nullable initially; application logic will
+    # enforce that new bookings are created as part of an order.
+    order = models.ForeignKey(
+        "Butikken.ButikkenOrder",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="bookings",
+    )
 
 
     # Fields
@@ -81,6 +90,50 @@ class ButikkenBooking(models.Model):
 
     def get_update_url(self):
         return reverse("Butikken_ButikkenBooking_update", args=(self.pk,))
+
+
+class ButikkenOrder(models.Model):
+    """Parent 'order' / cart that groups multiple ButikkenBooking rows.
+
+    Initially orders are created first and then bookings are added with their
+    `order` FK set. The DB field on `ButikkenBooking` is nullable to avoid a
+    forced migration on existing data; application logic should require an
+    order for new bookings.
+    """
+    team = models.ForeignKey("organization.Team", on_delete=models.CASCADE)
+    team_contact = models.ForeignKey(
+        "organization.Volunteer", on_delete=models.CASCADE, blank=True, null=True
+    )
+
+    STATUS_CHOICES = (
+        ("Afventer", "Afventer"),
+        ("Godkendt", "Godkendt"),
+        ("Afvist", "Afvist"),
+        ("Pakket", "Pakket"),
+        ("Udleveret", "Udleveret"),
+    )
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="Afventer")
+    # Optional human readable name for the order (can be set by the user)
+    name = models.CharField(max_length=200, blank=True, default="")
+
+    order_date = models.DateTimeField(auto_now_add=True, editable=False)
+    pickup_date = models.DateField(blank=True, null=True)
+    remarks = models.TextField(blank=True)
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+    last_updated = models.DateTimeField(auto_now=True, editable=False)
+
+    class Meta:
+        verbose_name = "Butiksordre"
+        verbose_name_plural = "Butiksordrer"
+
+    def __str__(self):
+        return f"ButikkenOrder {self.pk} ({self.team})"
+
+    def get_absolute_url(self):
+        return reverse("Butikken_ButikkenOrder_detail", args=(self.pk,))
+
+    def get_update_url(self):
+        return reverse("Butikken_ButikkenOrder_update", args=(self.pk,))
 
 
 

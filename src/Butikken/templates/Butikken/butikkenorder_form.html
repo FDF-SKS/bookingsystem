@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% load static %}
+{% load django_bootstrap5 %}
+{% load bootstrap_icons %}
+
+{% block title %}Butikken - Bestilling til Butikken{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<style>
+    .card-custom {
+        border: 1px solid #eaedf1;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        background-color: #ffffff;
+    }
+    .btn-navy {
+        background-color: #0f2537;
+        color: #ffffff;
+        border: none;
+    }
+    .btn-navy:hover {
+        background-color: #1a364d;
+        color: #ffffff;
+    }
+    .table-cart th {
+        font-weight: 600;
+        color: #475569;
+        font-size: 0.875rem;
+        background-color: #f8fafc;
+    }
+    .qty-input {
+        max-width: 90px;
+    }
+    /* Tom Select Custom Styling */
+    .ts-wrapper .ts-control {
+        border-radius: 6px !important;
+        padding: 0.5rem 0.75rem !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none">Hjem</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'Butikken_ButikkenOrder_list' %}" class="text-decoration-none">Butikken</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Ny bestilling</li>
+        </ol>
+    </nav>
+
+    <h1 class="fw-bold mb-4" style="color: #0f2537;">Bestilling til Butikken</h1>
+
+    <form id="cart-booking-form" method="post" action="" class="needs-validation">
+        {% csrf_token %}
+        <!-- Initial cart JSON embedded as application/json to avoid HTML-attribute escaping issues -->
+        <script id="initial-cart" type="application/json">{{ initial_cart_json|safe }}</script>
+        <!-- Hidden input used for form submission; populated from the in-memory cartItems state -->
+        <input type="hidden" name="cart_items_json" id="cart_items_json" value='[]'>
+
+        <div class="row g-4">
+            <!-- Left Main Column (Desktop & Mobile) -->
+            <div class="col-lg-8">
+                
+                <!-- Card 1: Bestillings liste -->
+                <div class="card card-custom mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-1">Bestillings liste</h5>
+                        <p class="text-muted small mb-4">Mængde skal passe til 2 personer</p>
+
+                        <!-- Desktop View: Cart Table -->
+                        <div class="table-responsive d-none d-md-block mb-4">
+                            <table class="table table-cart align-middle">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" style="width: 45%;">Varenavn</th>
+                                        <th scope="col" style="width: 25%;">Mængde</th>
+                                        <th scope="col" style="width: 20%;">Enhed</th>
+                                        <th scope="col" class="text-end" style="width: 10%;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cart-table-body">
+                                    <!-- Dynamic Rows Rendered Here -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Mobile View: Stacked Cards -->
+                        <div id="cart-mobile-list" class="d-md-none mb-4">
+                            <!-- Dynamic Cards Rendered Here -->
+                        </div>
+
+                        <!-- Add Item Input Group -->
+                        <div class="row g-2 mb-3 align-items-center">
+                            <div class="col">
+                                <select id="item-selector" placeholder="Søg efter vare...">
+                                    <option value="">Søg efter vare...</option>
+                                    {% for item in available_items %}
+                                        <option value="{{ item.id }}" data-unit="{{ item.unit }}">{{ item.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-auto">
+                                <button type="button" id="btn-add-item" class="btn btn-navy px-4">Tilføj</button>
+                            </div>
+                        </div>
+
+                        <!-- Footer Cart Summary -->
+                        <div class="text-muted small d-flex align-items-center gap-2 pt-2 border-top">
+                            {% bs_icon "inbox" %} 
+                            <span id="cart-total-count">Total: 0 unikke varer tilføjet bestillingen</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Afhentning & Brug -->
+                <div class="card card-custom mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3">Afhentning & Brug</h5>
+                        <div class="row g-3">
+                            <div class="col-12 mb-3">
+                                {% bootstrap_field form.name label="Navn på bestilling" placeholder="Valgfrit navn på ordren" %}
+                            </div>
+                            <div class="col-md-6">
+                                {% bootstrap_field form.pickup_date label="Afhentning Dato" placeholder="dd.mm.yyyy" %}
+                            </div>
+                            <div class="col-md-6">
+                                {% if 'status' in form.fields %}
+                                    {% bootstrap_field form.status label="Status" %}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Ansvarlig -->
+                <div class="card card-custom mb-4 mb-lg-0">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3">Ansvarlig</h5>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                {% bootstrap_field form.team label="Team" placeholder="Vælg team..." %}
+                            </div>
+                            <div class="col-md-6">
+                                {% bootstrap_field form.team_contact label="Kontaktperson" placeholder="Vælg kontaktperson..." %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Side Panel (Desktop: Sidebar / Mobile: Stacks Below) -->
+            <div class="col-lg-4">
+                <div class="card card-custom mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3">Bemærkninger</h5>
+                        {% bootstrap_field form.remarks show_label=False placeholder="Skriv eventuelle bemærkninger til bestillingen her..." %}
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-navy btn-lg py-2 shadow-sm d-flex align-items-center justify-content-center gap-2">
+                        {% bs_icon "cart-check" %} Gem bestilling
+                    </button>
+                    <a href="{% url 'Butikken_ButikkenOrder_list' %}" class="btn btn-outline-secondary py-2 text-center">Annuller</a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+{{ unit_map|json_script:"unit-data" }}
+{{ items_data|json_script:"items-data" }}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const unitDataElement = document.getElementById('unit-data');
+        const unitMap = unitDataElement ? JSON.parse(unitDataElement.textContent) : {};
+        const itemsDataElement = document.getElementById('items-data');
+        const itemsData = itemsDataElement ? JSON.parse(itemsDataElement.textContent) : {};
+        const initialCartEl = document.getElementById('initial-cart');
+        const hiddenJsonInput = document.getElementById('cart_items_json');
+        let cartItems = [];
+        if (initialCartEl) {
+            try {
+                cartItems = JSON.parse(initialCartEl.textContent || '[]');
+            } catch (e) {
+                console.warn('Failed to parse initial-cart JSON, falling back to empty cart', e);
+                cartItems = [];
+            }
+        } else {
+            try {
+                cartItems = JSON.parse(hiddenJsonInput.value || '[]');
+            } catch (e) {
+                cartItems = [];
+            }
+        }
+
+        // Initialize TomSelect on search input
+        const itemSelect = new TomSelect("#item-selector", {
+            create: false,
+            placeholder: "Søg efter vare...",
+            allowEmptyOption: true,
+            sortField: { field: "text", direction: "asc" }
+        });
+
+        const btnAddItem = document.getElementById('btn-add-item');
+        const cartTableBody = document.getElementById('cart-table-body');
+        const cartMobileList = document.getElementById('cart-mobile-list');
+        const cartTotalCount = document.getElementById('cart-total-count');
+
+        // Add item to state
+        btnAddItem.addEventListener('click', function() {
+            const selectedId = itemSelect.getValue();
+            if (!selectedId) return;
+
+            // Get the option text from the native select element for reliable display
+            const nativeSelect = document.getElementById('item-selector');
+            const opt = nativeSelect.querySelector(`option[value="${selectedId}"]`);
+            const selectedText = opt ? opt.textContent.trim() : '';
+            const unit = unitMap[selectedId] || opt?.dataset?.unit || 'stk';
+
+            // Determine default quantity from itemsData (content_normal)
+            let defaultQty = 1;
+            try {
+                const normalRaw = itemsData && itemsData[selectedId] && itemsData[selectedId].normal ? itemsData[selectedId].normal : null;
+                if (normalRaw !== null && normalRaw !== undefined && normalRaw !== '') {
+                    const normalized = String(normalRaw).replace(',', '.').trim();
+                    const parsed = parseFloat(normalized);
+                    if (!isNaN(parsed) && isFinite(parsed) && parsed > 0) {
+                        defaultQty = parsed;
+                    }
+                }
+            } catch (e) {
+                defaultQty = 1;
+            }
+
+            // Avoid duplicates; increase qty if present
+            const existingIndex = cartItems.findIndex(item => item.id === selectedId);
+            if (existingIndex > -1) {
+                cartItems[existingIndex].qty = (parseFloat(cartItems[existingIndex].qty) || 0) + defaultQty;
+            } else {
+                cartItems.push({
+                    id: selectedId,
+                    name: selectedText,
+                    qty: defaultQty,
+                    unit: unit
+                });
+            }
+
+            itemSelect.clear();
+            renderCart();
+        });
+
+        // Update item quantity (allow decimals)
+        window.updateQty = function(id, newQty) {
+            const item = cartItems.find(i => i.id === id.toString());
+            if (item) {
+                const parsed = parseFloat(String(newQty).replace(',', '.'));
+                item.qty = parsed && isFinite(parsed) && parsed > 0 ? parsed : 1;
+                renderCart();
+            }
+        };
+
+        // Remove item from cart
+        window.removeCartItem = function(id) {
+            cartItems = cartItems.filter(i => i.id !== id.toString());
+            renderCart();
+        };
+
+        // Render function for desktop table & mobile cards
+        function renderCart() {
+            cartTableBody.innerHTML = '';
+            cartMobileList.innerHTML = '';
+
+            cartItems.forEach(item => {
+                // Desktop Table Row
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="fw-bold text-dark">${item.name}</td>
+                    <td>
+                        <input type="number" step="0.01" class="form-control form-control-sm qty-input" value="${item.qty}" min="0.01" onchange="updateQty('${item.id}', this.value)">
+                    </td>
+                    <td class="text-muted">${item.unit}</td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-link text-danger p-0" onclick="removeCartItem('${item.id}')">
+                            {% bs_icon "trash" %}
+                        </button>
+                    </td>
+                `;
+                cartTableBody.appendChild(tr);
+
+                // Mobile Card Item
+                const card = document.createElement('div');
+                card.className = "card card-custom p-3 mb-3";
+                card.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold text-dark">${item.name}</span>
+                        <button type="button" class="btn btn-link text-danger p-0" onclick="removeCartItem('${item.id}')">
+                            {% bs_icon "trash" %}
+                        </button>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between text-muted small">
+                        <span>Mængde:</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="number" step="0.01" class="form-control form-control-sm qty-input" value="${item.qty}" min="0.01" onchange="updateQty('${item.id}', this.value)">
+                            <span>Enhed: <strong>${item.unit}</strong></span>
+                        </div>
+                    </div>
+                `;
+                cartMobileList.appendChild(card);
+            });
+
+            // Update Total Count Badge & JSON Form Input
+            cartTotalCount.textContent = `Total: ${cartItems.length} unikke varer tilføjet bestillingen`;
+            hiddenJsonInput.value = JSON.stringify(cartItems);
+        }
+
+        // Initial render from any existing bookings
+        renderCart();
+    });
+</script>
+{% endblock %}

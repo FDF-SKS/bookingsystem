@@ -17,8 +17,9 @@ from unfold.contrib.import_export.forms import ExportForm, ImportForm, Selectabl
 from .models import (
     ButikkenItem, ButikkenBooking, ButikkenItemType, 
     Day, Recipe, Meal, Option, MealBooking, 
-    MealPlan, MealOption, TeamMealPlan, Team
+    MealPlan, MealOption, TeamMealPlan, Team, Volunteer
 )
+from .models import ButikkenOrder
 from .forms import ButikkenBookingForm, MealPlanForm
 
 # --- Resources ---
@@ -124,6 +125,40 @@ class MealOptionInline(TabularInline):
     extra = 1
     tab = True 
 
+
+# Inline for bookings inside an order
+class ButikkenBookingInline(TabularInline):
+    model = ButikkenBooking
+    extra = 1
+    fields = ('item', 'quantity', 'unit', 'start_date')
+    tab = True
+
+
+class ButikkenOrderResource(resources.ModelResource):
+    team = fields.Field(attribute='team__name', column_name='Team')
+    team_contact = fields.Field(attribute='team_contact__first_name', column_name='Kontakt')
+
+    class Meta:
+        model = ButikkenOrder
+        fields = ('id', 'team', 'team_contact', 'pickup_date', 'status', 'remarks')
+        export_order = ('id', 'team', 'team_contact', 'pickup_date', 'status', 'remarks')
+
+
+class ButikkenBookingExportResource(resources.ModelResource):
+    order_id = fields.Field(column_name='order_id', attribute='order', widget=ForeignKeyWidget(ButikkenOrder, 'id'))
+    order_name = fields.Field(column_name='order_name', attribute='order', widget=ForeignKeyWidget(ButikkenOrder, 'name'))
+    order_team = fields.Field(column_name='order_team', attribute='order', widget=ForeignKeyWidget(Team, 'name'))
+    item_name = fields.Field(column_name='item_name', attribute='item', widget=ForeignKeyWidget(ButikkenItem, 'name'))
+    team_name = fields.Field(column_name='team_name', attribute='team', widget=ForeignKeyWidget(Team, 'name'))
+    team_contact_name = fields.Field(column_name='team_contact_name', attribute='team_contact', widget=ForeignKeyWidget(Volunteer, 'first_name'))
+
+    class Meta:
+        model = ButikkenBooking
+        fields = (
+            'order_id', 'order_name', 'order_team', 'id', 'item_name', 'quantity', 'unit', 'start_date', 'start_time', 'team_name', 'team_contact_name', 'remarks'
+        )
+        export_order = fields
+
 # --- Admin Classes ---
 
 @admin.register(ButikkenItem)
@@ -145,8 +180,8 @@ class ButikkenItemAdmin(BaseAdmin):
 class ButikkenBookingAdmin(BaseAdmin):
     list_fullwidth = True
     # FIXED: 'for_meal' used directly as it's a field in your model
-    list_display = ["item", "display_status", "team", "for_meal", "formatted_start", "quantity_with_unit"]
-    list_filter = ["status", "for_meal", "team", "item", "start_date"]
+    list_display = ["order", "item", "display_status", "team", "for_meal", "formatted_start", "quantity_with_unit"]
+    list_filter = ["status", "for_meal", "team", "item", "start_date", "order"]
     
     @display(description="Status", label={
         "Approved": "success", "Pending": "warning", "Rejected": "danger", "Udleveret": "info",
@@ -185,5 +220,35 @@ class MealPlanAdmin(BaseAdmin):
 @admin.register(Recipe)
 class RecipeAdmin(BaseAdmin):
     list_display = ["name", "description", "last_updated"]
+
+
+@admin.register(ButikkenOrder)
+class ButikkenOrderAdmin(BaseAdmin):
+    resource_class = ButikkenOrderResource
+    list_display = ["id", "team", "team_contact", "pickup_date", "status", "last_updated"]
+    list_filter = ["status", "team", "pickup_date"]
+    inlines = [ButikkenBookingInline]
+    actions = ["export_order_with_bookings", "approve_selected", "reject_selected"]
+
+    @admin.action(description="Godkend valgte ordre")
+    def approve_selected(self, request, queryset):
+        updated = queryset.update(status="Godkendt")
+        self.message_user(request, f"{updated} ordrer er nu godkendt.", messages.SUCCESS)
+
+    @admin.action(description="Afvis valgte ordre")
+    def reject_selected(self, request, queryset):
+        updated = queryset.update(status="Afvist")
+        self.message_user(request, f"{updated} ordrer er blevet afvist.", messages.WARNING)
+
+    @admin.action(description="Eksporter ordre som CSV")
+    def export_order_with_bookings(self, request, queryset):
+        # Use import_export resource to export all bookings related to selected orders
+        resource = ButikkenBookingExportResource()
+        bookings_qs = ButikkenBooking.objects.filter(order__in=queryset).select_related('order', 'item', 'team', 'team_contact')
+        dataset = resource.export(bookings_qs)
+        csv_data = dataset.export('csv')
+        response = HttpResponse(csv_data, content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=butikken_bookings_export.csv'
+        return response
 
 

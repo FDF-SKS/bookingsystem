@@ -1,33 +1,27 @@
 {% load bootstrap_icons %}
-  <tr>
-    <th scope="row">{{ booking.id}}</th>
-    <td><a href="{{booking.get_absolute_url}}">{{booking.item}}</a>  </td>
-    <td>{{booking.quantity}} </td>
-    <td>{{booking.item}}</td>
-    <td>{{booking.start}}</td>
-    <td>{{booking.team_contact}}</td>
+  <tr id="booking-{{ booking.id }}">
+    <th scope="row">{{ booking.id }}</th>
+    <td><a href="{{ booking.get_absolute_url }}">{{ booking.item }}</a></td>
+    <td style="width:120px"><input class="form-control form-control-sm" value="{{ booking.quantity }}" readonly /></td>
+    <td class="text-muted" style="width:80px">{{ booking.unit }}</td>
+    <td>{{ booking.start_date }} {{ booking.start_time }}</td>
+    <td>{{ booking.team_contact }}</td>
     <td>
         {% if booking.status == 'Pending' %}
-            <span class="badge bg-warning text-dark">
-                <small>Afventer</small>
-            </span>
+            <span class="badge bg-warning text-dark"><small>Afventer</small></span>
         {% elif booking.status == 'Approved' %}
-            <span class="badge bg-success">
-                <small>Godkendt</small>
-            </span>
+            <span class="badge bg-success"><small>Godkendt</small></span>
         {% elif booking.status == 'Rejected' %}
-            <span class="badge bg-danger">
-                <small>Afvist</small>
-            </span>
+            <span class="badge bg-danger"><small>Afvist</small></span>
         {% endif %}
     </td>
     <td>
-        <a href="{% url 'Butikken_ButikkenBooking_update' booking.pk %}" class="btn btn-outline-warning btn-sm">
-          {% bs_icon 'pencil' %}  
-        </a>
-        <a href="{% url 'Butikken_ButikkenBooking_delete' booking.pk %}" class="btn btn-outline-danger btn-sm">
-          {% bs_icon 'trash' %}  
-        </a>
+        <a href="{% url 'Butikken_ButikkenBooking_update' booking.pk %}" class="btn btn-outline-warning btn-sm">{% bs_icon 'pencil' %}</a>
+        <button class="btn btn-danger btn-sm" 
+                hx-delete="{% url 'Butikken_ButikkenOrder_remove_item' booking.order.id booking.pk %}"
+                hx-target="#booking-{{ booking.id }}" hx-swap="outerHTML swap:1s">
+            {% bs_icon 'trash' %}
+        </button>
     </td>
   </tr>
 
