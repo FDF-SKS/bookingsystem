@@ -4,6 +4,24 @@
 {% load bootstrap_icons %}
 
 {% block content %}
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<style>
+    /* Small adjustments for Tom Select styling inside bootstrap_field wrappers */
+    .input-group > .ts-wrapper { flex: 1 1 auto; width: 1%; }
+    .input-group > .ts-wrapper .ts-control {
+        border-top-right-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+        padding: 0.5rem 0.75rem !important;
+        min-height: calc(1.5em + 1rem + 2px);
+        z-index: 1;
+    }
+    .ts-wrapper.form-control { padding: 0 !important; border: none !important; }
+    .ts-control { border: 1px solid #dee2e6 !important; }
+    .ts-wrapper.focus .ts-control { box-shadow: 0 0 0 0.25rem rgba(13,110,253,0.25) !important; }
+    .ts-dropdown { z-index: 1050 !important; }
+</style>
+{% endblock %}
 <div class="container py-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
@@ -70,5 +88,18 @@
         </div>
     </div>
 </div>
+
+            <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const receiverSelect = document.querySelector('select[name="receiver"]');
+                if (receiverSelect) {
+                    new TomSelect(receiverSelect, {
+                        create: false,
+                        placeholder: 'Søg efter person...'
+                    });
+                }
+            });
+            </script>
 {% endblock %}
 

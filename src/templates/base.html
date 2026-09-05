@@ -259,6 +259,79 @@
         })
     </script>
 
+    <script>
+        // Dynamically show Danish weekday + day for date inputs on booking forms
+        (function(){
+            function capitalize(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
+            function formatDanish(dateString){
+                if(!dateString) return '';
+                // Parse YYYY-MM-DD safely as local date
+                const parts = dateString.split('-').map(Number);
+                if(parts.length<3) return '';
+                const d = new Date(parts[0], parts[1]-1, parts[2]);
+                const weekday = d.toLocaleDateString('da-DK', { weekday: 'long' });
+                const month = d.toLocaleDateString('da-DK', { month: 'long' });
+                const day = d.getDate();
+                return `${capitalize(weekday)} d. ${day} ${month}`;
+            }
+
+            function attachLabelTo(input){
+                if(!input || input.dataset.dayLabelAttached) return;
+                // Only attach for inputs that look like booking date fields
+                const name = (input.getAttribute('name')||'').toLowerCase();
+                if(!(name.includes('date') || input.type==='date')) return;
+
+                const label = document.createElement('div');
+                label.className = 'date-day-label small text-muted';
+                label.style.marginTop = '4px';
+                label.setAttribute('aria-hidden','true');
+
+                // Insert after input (works for bootstrap_field markup)
+                input.insertAdjacentElement('afterend', label);
+                input.dataset.dayLabelAttached = '1';
+
+                function update(){
+                    const v = input.value;
+                    if(!v){ label.textContent = ''; label.style.display='none'; return; }
+                    const txt = formatDanish(v);
+                    if(txt){ label.textContent = txt; label.style.display='block'; }
+                    else { label.textContent = ''; label.style.display='none'; }
+                }
+
+                input.addEventListener('change', update);
+                input.addEventListener('input', update);
+                // Initial
+                update();
+            }
+
+            function scan(){
+                // Find date-like inputs in forms only
+                document.querySelectorAll('form input').forEach(el=>{
+                    try{ attachLabelTo(el); }catch(e){}
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function(){
+                scan();
+                // Observe for dynamic forms or HTMX swaps
+                const mo = new MutationObserver((mutations)=>{
+                    for(const m of mutations){
+                        m.addedNodes.forEach(node=>{
+                            if(node.nodeType!==1) return;
+                            node.querySelectorAll && node.querySelectorAll('input').forEach(i=>attachLabelTo(i));
+                        });
+                    }
+                });
+                mo.observe(document.body, { childList:true, subtree:true });
+            });
+        })();
+    </script>
+
+    <style>
+        /* Styling for the date weekday label shown next to date inputs */
+        .date-day-label { color: #6c757d; font-size: 0.9rem; }
+    </style>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>
