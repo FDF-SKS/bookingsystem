@@ -389,6 +389,54 @@ class AktivitetsTeamBookingDeleteView(LoginRequiredMixin, generic.DeleteView):
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
+
+
+class AktivitetsTeamBookingTeamListView(LoginRequiredMixin, generic.ListView):
+    """List view showing bookings for the user's team only ("Mine bookinger").
+    This is an additional view; the existing list view remains unchanged.
+    """
+    model = models.AktivitetsTeamBooking
+    context_object_name = 'object_list'
+    template_name = 'AktivitetsTeam/AktivitetsTeamBooking_mine_list.html'
+    paginate_by = 16
+
+    def get_queryset(self):
+        user = self.request.user
+        # Filter to bookings that belong to any team the user is a member of
+        team_ids = user.teammembership_set.values_list('team', flat=True)
+        queryset = models.AktivitetsTeamBooking.objects.filter(team__in=team_ids)
+        queryset = queryset.select_related('team', 'team_contact', 'item').only(
+            'id', 'team_id', 'team_contact_id', 'start_date', 'start_time',
+            'end_date', 'end_time', 'item_id', 'status', 'remarks'
+        ).order_by('start_date', 'start_time')
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+
+        # Team membership and staff flag
+        user_team_membership = user.teammembership_set.select_related('team').first()
+        is_staff = user.is_staff
+
+        # The queryset is already filtered to the user's teams, but keep the
+        # same context structure as other list views
+        filtered_object_list = context.get('object_list', [])
+
+        # Fetch user events (deadline field for aktivitetsteam)
+        user_events = list(user.events.filter(is_active=True).values('name', 'deadline_aktivitetsteam'))
+
+        # Volunteer team memberships for display
+        volunteer_team_memberships = list(user.teammembership_set.select_related('team').values('team__name'))
+
+        context.update({
+            'filtered_object_list': filtered_object_list,
+            'is_staff': is_staff,
+            'user_team_membership': user_team_membership,
+            'user_events': user_events,
+            'volunteer_team_memberships': volunteer_team_memberships,
+        })
+        return context
     
 
 

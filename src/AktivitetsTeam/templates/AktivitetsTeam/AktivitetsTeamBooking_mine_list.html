@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% load static %}
+{% load comments %}
+{% load bootstrap_icons %}
+
+{% block content %}
+<div class="container py-4 pb-5 pb-lg-4"> <nav aria-label="breadcrumb" class="d-none d-md-block">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
+            <li class="breadcrumb-item active">Aktivitetsteam Bookinger</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="h2 mb-1 text-primary">Aktivitetsteam Bookinger</h1>
+            <p class="text-muted mb-0">
+                Team: <strong>{% if volunteer_team_memberships %}{{ volunteer_team_memberships.0.team__name }}{% endif %}</strong>
+            </p>
+        </div>
+        
+        <div class="d-none d-md-block">
+            <a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_create' %}" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-4 py-2">
+                <bs_icon class="bi bi-plus-lg"></bs_icon>
+                <span>Ny Booking</span>
+            </a>
+        </div>
+
+        <div class="text-md-end w-100 w-md-auto">
+            <div class="badge bg-light text-dark border p-2 fw-normal w-100 w-md-auto">
+                <bs_icon class="bi bi-clock-history me-1"></bs_icon>
+                Deadline: {% if user_events %}{{ user_events.0.deadline_aktivitetsteam }}{% else %}Ingen{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="list-group shadow-sm border-0 rounded-3 overflow-hidden">
+        {% if user_team_membership %}
+            {% for object in filtered_object_list %}
+            <div class="list-group-item p-3 border-start-0 border-end-0 border-top-0 border-bottom">
+                <div class="d-flex w-100 justify-content-between align-items-center flex-wrap gap-3">
+                    
+                    <div class="d-flex align-items-center flex-grow-1">
+                        <div class="text-center me-3 border-end pe-3 d-none d-sm-block" style="min-width: 65px;">
+                            <div class="fw-bold text-primary" style="line-height: 1; font-size: 1.25rem;">{{ object.start_date|date:"d" }}</div>
+                            <small class="text-uppercase text-muted" style="font-size: 0.75rem;">{{ object.start_date|date:"M" }}</small>
+                        </div>
+                        <div>
+                            <div class="fw-bold text-dark mb-0">
+                                <a href="{{ object.get_absolute_url }}" class="text-decoration-none text-primary">
+                                    {{ object.item }}
+                                </a>
+                                <span class="ms-1 badge rounded-pill bg-light text-dark border small">{{ object.quantity|default_if_none:"" }} {% if object.quantity %}stk{% endif %}</span>
+                            </div>
+                            <div class="small text-muted d-flex align-items-center flex-wrap gap-2 mt-1">
+                                <span><bs_icon class="bi bi-person"></bs_icon> {{ object.team_contact }}</span>
+                                <span class="d-sm-none"><bs_icon class="bi bi-calendar3"></bs_icon> {{ object.start_date|date:"d/m" }}</span>
+                                <span><bs_icon class="bi bi-clock"></bs_icon> {{ object.start_time|time:"H:i" }} - {{ object.end_time|time:"H:i" }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-2 gap-md-3">
+                        <div class="status-box">
+                            {% if object.status == 'Approved' %}
+                                <span class="badge bg-success rounded-pill px-3 py-2 d-flex align-items-center gap-1">
+                                    <bs_icon class="bi bi-check-lg"></bs_icon>
+                                    <span class="d-none d-md-inline small text-uppercase">Godkendt</span>
+                                </span>
+                            {% elif object.status == 'Rejected' %}
+                                <span class="badge bg-danger rounded-pill px-3 py-2 d-flex align-items-center gap-1">
+                                    <bs_icon class="bi bi-x-lg"></bs_icon>
+                                    <span class="d-none d-md-inline small text-uppercase">Afvist</span>
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark rounded-pill px-3 py-2 d-flex align-items-center gap-1 border">
+                                    <bs_icon class="bi bi-hourglass-split"></bs_icon>
+                                    <span class="d-none d-md-inline small text-uppercase">Afventer</span>
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        {% if is_staff and object.status == 'Pending' %}
+                        <div class="d-flex gap-2 border-start ps-2 ps-md-3">
+                            <form method="post" action="{% url 'AktivitetsTeam_AktivitetsTeamBooking_reject' object.pk %}?next={{ request.path }}" class="m-0">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-circle shadow-sm" title="Afvis">
+                                    <bs_icon class="bi bi-x-lg"></bs_icon>
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'AktivitetsTeam_AktivitetsTeamBooking_approve' object.pk %}?next={{ request.path }}" class="m-0">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-success btn-circle shadow-sm" title="Godkend">
+                                    <bs_icon class="bi bi-check-lg"></bs_icon>
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex gap-1 align-items-center border-start ps-2 ps-md-3">
+                            {% if not is_staff %}
+                                <a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_update' object.pk %}" class="btn btn-light btn-circle text-muted" title="Rediger">
+                                    <bs_icon class="bi bi-pencil"></bs_icon>
+                                </a>
+                            {% endif %}
+                            
+                            {% get_comment_count for object as comment_count %}
+                            <a href="{{ object.get_absolute_url }}" class="btn btn-light btn-circle text-muted position-relative" title="Kommentarer">
+                                <bs_icon class="bi bi-chat-dots"></bs_icon>
+                                {% if comment_count %}
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white" style="font-size: 0.65rem; padding: 0.35em 0.55em; z-index: 2;">
+                                        {{ comment_count }}
+                                    </span>
+                                {% endif %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="list-group-item text-center py-5 bg-light">
+                <p class="text-muted mb-0">Du har ingen bookinger endnu.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="d-md-none fixed-bottom bg-white border-top p-3 shadow-lg">
+        <a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_create' %}" class="btn btn-primary btn-lg w-100 d-flex align-items-center justify-content-center gap-2 py-3 rounded-pill shadow">
+            <bs_icon class="bi bi-plus-lg"></bs_icon>
+            <span class="fw-bold">Ny Booking</span>
+        </a>
+    </div>
+
+    {% if is_paginated %}
+    <nav aria-label="Page navigation" class="mt-4 mb-5">
+        <ul class="pagination pagination-sm justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Forrige</a></li>
+            {% endif %}
+            <li class="page-item active"><span class="page-link bg-primary border-primary text-white px-3">{{ page_obj.number }}</span></li>
+            {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Næste</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<style>
+    .list-group-item:hover { background-color: #fcfcfc; }
+    .list-group-item:last-child { border-bottom: none !important; }
+
+    .btn-circle {
+        width: 38px; height: 38px; padding: 0;
+        display: inline-flex; align-items: center; justify-content: center;
+        border-radius: 50% !important; transition: all 0.2s ease;
+    }
+    .btn-circle bs_icon { line-height: 1; display: flex; }
+    .btn-circle:hover { transform: translateY(-1px); }
+
+    .status-box { min-width: 110px; }
+
+    /* Fix to ensure the sticky footer doesn't overlap the last list item or pagination */
+    @media (max-width: 768px) {
+        body { padding-bottom: 80px; }
+        .btn-circle { width: 34px; height: 34px; }
+        .status-box { min-width: auto; }
+    }
+    
+    .fixed-bottom {
+        z-index: 1030; /* Ensure it stays above content but below modals */
+    }
+</style>
+{% endblock %}
