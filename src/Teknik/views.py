@@ -38,22 +38,58 @@ class TeknikBookingListView(LoginRequiredMixin, generic.ListView):
     form_class = forms.TeknikBookingForm
     context_object_name = 'object_list'
     template_name = 'Teknik/teknikbooking_list.html'
+    paginate_by = 16
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
 
     def get_queryset(self):
+        """Return bookings but defer the `location` field to avoid map_location
+        conversion errors when stored values are malformed in the DB.
+        """
         return models.TeknikBooking.objects.select_related(
             'team', 'team_contact', 'item'
-        ).order_by('item', 'start_date')
+        ).defer('location').order_by('item', 'start_date')
 
     def get_context_data(self, **kwargs):
+        """Provide context variables matching the Sjak list view so the
+        template can be reused 1:1.
+        """
         context = super().get_context_data(**kwargs)
         user = self.request.user
+
+        # Fetch the user's team membership
         user_team_membership = user.teammembership_set.select_related('team').first()
-        context['user_team_membership'] = user_team_membership
+        is_staff = user.is_staff
+
+        # Filter the object list based on the user's team membership and staff status
+        object_list = context.get('object_list', [])
+        if is_staff:
+            filtered_object_list = object_list
+        else:
+            filtered_object_list = [
+                obj for obj in object_list
+                if user_team_membership and obj.team == user_team_membership.team
+            ]
+
+        # Fetch user events (deadline_teknik)
+        user_events = list(user.events.filter(is_active=True).values('name', 'deadline_teknik'))
+
+        # Fetch volunteer team memberships
+        volunteer_team_memberships = list(user.teammembership_set.select_related('team').values('team__name'))
+
+        context.update({
+            'filtered_object_list': filtered_object_list,
+            'is_staff': is_staff,
+            'user_team_membership': user_team_membership,
+            'user_events': user_events,
+            'volunteer_team_memberships': volunteer_team_memberships,
+            'current_sort': self.request.GET.get('sort', 'item'),
+        })
+
         return context
+
 
 
 class TeknikBookingCreateView(LoginRequiredMixin, generic.CreateView):
