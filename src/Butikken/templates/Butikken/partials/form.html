@@ -2,7 +2,7 @@
 <form  hx-post="{% url 'Butikken_ButikkenBooking_create_new' %}" hx-target="#booking-list" hx-swap="beforeend" hx-trigger="click from:#submit-all"
     hx-on="htmx:afterRequest: this.remove()">
 
-    <div class="row"  style="height: 50px;">
+    <div class="row form-row-50">
         <div class="col-2 col-md-2">
             <label  for="item">Vare</label>
             <div class="input-group">

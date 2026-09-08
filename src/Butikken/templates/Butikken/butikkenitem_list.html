@@ -33,16 +33,16 @@
                         {% for object in object_list %}
                         <tr class="clickable-row" data-href="{% url 'Butikken_ButikkenItem_detail' object.pk %}">
                             <td class="ps-4">
-                                <span class="fw-bold text-dark">{{ object.name }}</span>
+                                <span class="fw-bold text-body">{{ object.name }}</span>
                             </td>
                             <td class="text-end fw-medium text-primary">
                                 {{ object.content_normal }}
                             </td>
                             <td>
-                                <span class="badge bg-light text-dark border">{{ object.content_unit }}</span>
+                                <span class="badge bg-light text-body border">{{ object.content_unit }}</span>
                             </td>
                             <td>
-                                <small class="text-muted text-wrap d-block" style="max-width: 400px;">
+                                <small class="text-muted text-wrap d-block max-w-400">
                                     {{ object.description|truncatechars:100|default:"-" }}
                                 </small>
                             </td>

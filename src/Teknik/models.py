@@ -2,7 +2,7 @@ from django.db import models
 from django.contrib.auth.models import Group
 from django.urls import reverse
 import datetime
-from map_location.fields import LocationField
+from utils.fields import SafeLocationField
 
 class TeknikBooking(models.Model):
 
@@ -30,7 +30,7 @@ class TeknikBooking(models.Model):
     remarks_internal = models.TextField(blank=True)  # Blank allows for an empty value
     assistance_needed = models.BooleanField(default=False, blank=True)
     delivery_needed = models.BooleanField(default=False, blank=True)
-    location = LocationField(
+    location = SafeLocationField(
         "Lokation",
         blank=True,
         null=True,

@@ -173,7 +173,7 @@
                 <div class="mb-4 mt-5">
                     <div class="d-flex align-items-center gap-3 mb-3">
                         <div class="flex-grow-1">
-                            <h5 class="fw-bold text-dark mb-0">
+                            <h5 class="fw-bold text-primary mb-0">
                                 {% if date|date:"Y-m-d" == now|date:"Y-m-d" %}
                                     I dag, {{ date|date:"l j. F" }}
                                 {% elif date|date:"Y-m-d" == tomorrow|date:"Y-m-d" %}
@@ -297,9 +297,6 @@
         color: inherit;
     }
 
-    .booking-item:hover {
-        background-color: #f5f5f5;
-    }
 
     .booking-create-btn {
         display: flex;
@@ -318,7 +315,6 @@
     .dashboard-card {
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         border-radius: 1.25rem !important;
-        background-color: #fff;
     }
 
     .dashboard-card:hover {

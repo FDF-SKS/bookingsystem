@@ -4,17 +4,7 @@
 
 {% block title %}Bestilling {{ object.id }} - {{ object.name|default:"(uden navn)" }}{% endblock %}
 
-{% block extra_css %}
-<style>
-    .card-custom { border: none; border-radius: 12px; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
-    .status-badge { padding: 0.5rem 1rem; border-radius: 50px; font-weight: 600; font-size: 0.9rem; }
-    .detail-label { color: #6c757d; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
-    .detail-value { font-weight: 500; font-size: 1.1rem; color: #212529; }
-    .sidebar-info { font-size: 0.9rem; border-bottom: 1px solid #eee; padding: 10px 0; }
-    .sidebar-info:last-child { border-bottom: none; }
-    .bg-soft-primary { background-color: #e7f1ff; width: 48px; height: 48px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-</style>
-{% endblock %}
+{% block extra_css %}{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -119,9 +109,9 @@
                     <h5 class="card-title mb-3 border-bottom pb-2">Kontaktperson</h5>
                     <div class="d-flex align-items-center mb-3">
                         {% if object.team_contact and object.team_contact.image_thumbnail %}
-                            <img src="{{ object.team_contact.image_thumbnail.url }}" alt="{{ object.team_contact.get_full_name }}" class="rounded-circle me-3" style="width:50px;height:50px;object-fit:cover;" loading="lazy">
+                            <img src="{{ object.team_contact.image_thumbnail.url }}" alt="{{ object.team_contact.get_full_name }}" class="avatar-50 rounded-circle me-3" loading="lazy">
                         {% else %}
-                            <div class="bg-soft-primary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width:50px;height:50px;">{% bs_icon "person-circle" extra_classes="fs-3 text-primary" %}</div>
+                            <div class="avatar-50 bg-soft-primary rounded-circle me-3 d-flex align-items-center justify-content-center">{% bs_icon "person-circle" extra_classes="fs-3 text-primary" %}</div>
                         {% endif %}
                         <div>
                             {% if object.team_contact %}

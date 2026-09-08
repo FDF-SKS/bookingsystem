@@ -2,8 +2,8 @@
   <tr id="booking-{{ booking.id }}">
     <th scope="row">{{ booking.id }}</th>
     <td><a href="{{ booking.get_absolute_url }}">{{ booking.item }}</a></td>
-    <td style="width:120px"><input class="form-control form-control-sm" value="{{ booking.quantity }}" readonly /></td>
-    <td class="text-muted" style="width:80px">{{ booking.unit }}</td>
+    <td class="w-120"><input class="form-control form-control-sm" value="{{ booking.quantity }}" readonly /></td>
+    <td class="text-muted w-80">{{ booking.unit }}</td>
     <td>{{ booking.start_date }} {{ booking.start_time }}</td>
     <td>{{ booking.team_contact }}</td>
     <td>

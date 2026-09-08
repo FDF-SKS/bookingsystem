@@ -26,9 +26,83 @@
 
     --bs-grey: #7D878C;
     --bs-grey-rgb: 125, 135, 140;
+    /* Butikken-specific color (legacy navy) kept as a variable for migration */
+    --bs-navy: #0f2537;
+    --bs-navy-hover: #1a364d;
+    /* Fixed brand orange, independent of the primary/secondary swap in dark mode */
+    --bs-brand-orange: #FF733C;
+
+    /* Surface & utility variables */
+    --bs-body-bg: #ffffff;
+    --bs-body-color: #212529;
+    --bs-card-bg: #ffffff;
+    --bs-card-border: #dee2e6;
+    --bs-muted: #6c757d;
+    --bs-soft-primary: #e7f1ff;
+    --bs-surface-1: #f8f9fa;
+    --bs-surface-2: #e9ecef;
+    --bs-surface-3: #f1f3f5;
+    --bs-surface-4: #fcfcfc;
 
     /* Typography */
     --bs-body-font-family: 'Work Sans', sans-serif;
+    /* Logo colors (fixed across themes) */
+    --logo-bg-color: #FF733C; /* brand orange */
+    --logo-icon-color: #003255; /* brand dark icon */
+    /* Navbar background (follows card/bg surface by default). Use primary blue in light mode */
+    --bs-navbar-bg: var(--bs-primary); /* primary blue by default (light mode) */
+    /* Dropdown background (opaque) and border used for navbar menus */
+    --bs-dropdown-bg: #ffffff;
+    --bs-dropdown-border: #dee2e6;
+}
+
+/* Dark mode variable overrides using Bootstrap's data-bs-theme attribute */
+:root[data-bs-theme="dark"] {
+    /* Slightly darker and cooler warm-grey background */
+    --bs-body-bg: #23272b; /* less warm, slightly darker */
+    --bs-body-color: #e9ecef;
+
+    /* Swap primary/secondary in dark mode: orange becomes primary (headings, navbar, icons), navy becomes secondary */
+    --bs-primary: #FF733C;
+    --bs-primary-rgb: 255, 115, 60;
+    --bs-secondary: #003255;
+    --bs-secondary-rgb: 0, 50, 85;
+    --bs-tertiary: #7aa6e6;
+
+    /* Darker card surface by default; dashboard cards will use full secondary */
+    --bs-card-bg: rgba(255,255,255,0.02);
+    --bs-card-border: rgba(255,255,255,0.04);
+
+    /* Navbar and links tuned to the orange primary */
+    --bs-navbar-bg: rgba(255,255,255,0.02);
+    --bs-link-color: var(--bs-primary);
+
+    /* Keep logo colors fixed in dark mode as well */
+    --logo-bg-color: #FF733C;
+    --logo-icon-color: #003255;
+
+    /* Dashboard card specific colors in dark mode */
+    --dashboard-card-bg: rgba(255,255,255,0.035);
+    --dashboard-card-body-color: var(--bs-body-color);
+
+    /* Dark-mode surface shades (slightly lighter/darker variants for headers/inputs) */
+    --bs-surface-1: rgba(255,255,255,0.02);
+    --bs-surface-2: rgba(255,255,255,0.03);
+    --bs-surface-3: rgba(255,255,255,0.018);
+    --bs-surface-4: rgba(255,255,255,0.01);
+    --bs-surface-5: rgba(255,255,255,0.04); /* slightly lighter - used for header bars and inputs */
+
+    /* Navbar in dark mode should be a slightly stronger surface than the page */
+    --bs-navbar-bg: rgba(35,39,43,0.98);
+    /* Dark-mode dropdown/bg and border (solid dark surface for readability) */
+    --bs-dropdown-bg: rgba(35,39,43,0.98);
+    --bs-dropdown-border: rgba(255,255,255,0.04);
+}
+
+/* Ensure body background and color respond to variables */
+body {
+    background-color: var(--bs-body-bg, #fff);
+    color: var(--bs-body-color, #212529);
 }
 
 body {
@@ -163,6 +237,54 @@ a:hover {
     justify-content: center;
 }
 
+/* Ensure navbar has an explicit background and sits above content */
+.navbar {
+    background-color: var(--bs-navbar-bg) !important;
+    z-index: 1030; /* above typical page content */
+    transition: background-color 0.15s ease-in-out;
+}
+
+/* Navbar link colors: ensure contrast when navbar uses brand primary */
+.navbar .nav-link,
+.navbar .navbar-brand,
+.navbar .navbar-text {
+    color: #ffffff !important;
+}
+
+.navbar .nav-link:hover,
+.navbar .navbar-brand:hover {
+    color: rgba(255,255,255,0.95) !important;
+}
+
+/* Dropdown menu items should follow the page body text color so they
+   are dark in light mode and light in dark mode (avoid unreadable white-on-white) */
+.navbar .dropdown-menu {
+    background-color: var(--bs-dropdown-bg) !important;
+    border: 1px solid var(--bs-dropdown-border) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+    min-width: 12rem;
+}
+.navbar .dropdown-item {
+    color: var(--bs-body-color) !important;
+}
+.navbar .dropdown-item:hover {
+    background-color: rgba(0,0,0,0.04) !important;
+    color: var(--bs-body-color) !important;
+}
+
+/* Breadcrumb links use the primary color so they are blue in light mode
+   and orange in dark mode (primary swaps in dark variables) */
+.breadcrumb .breadcrumb-item a,
+.breadcrumb .breadcrumb-item > a,
+.breadcrumb .breadcrumb-item.active {
+    color: var(--bs-primary) !important;
+}
+
+.breadcrumb .breadcrumb-item a:hover {
+    color: var(--bs-primary) !important;
+    text-decoration: underline;
+}
+
 .sks-logo-nav {
     width: 100%;
     height: 100%;
@@ -174,18 +296,13 @@ a:hover {
 
 /* Color Control */
 .sks-logo-nav .logo-bg {
-    /* Using your brand secondary color */
-    fill: var(--bs-secondary, #f37249); 
-}
-/* Color Control */
-.sks-logo-nav .logo-bg {
-    /* Using your brand secondary color */
-    fill: var(--bs-secondary, #f37249); 
+    /* logo background color fixed across themes */
+    fill: var(--logo-bg-color, #FF733C);
 }
 
 .sks-logo-nav .logo-icon path {
-    /* Set icon color (e.g., your dark gray or white) */
-    fill: var(--bs-primary, #003366); 
+    /* logo icon color fixed across themes */
+    fill: var(--logo-icon-color, #003255);
     transition: fill 0.5s ease;
 }
 
@@ -195,5 +312,287 @@ a:hover {
 }
 
 .navbar-brand:hover .sks-logo-nav .logo-icon path {
-    fill: var(--bs-primary, #003366); 
+    fill: var(--logo-icon-color, #003255);
+}
+
+/* === Centralized component styles (moved from templates) === */
+
+/* Card surface used across templates */
+.card-custom {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    background-color: var(--bs-card-bg);
+    color: var(--bs-body-color);
+}
+
+/* Dashboard cards (index tiles) - in dark mode use full secondary orange */
+.dashboard-card {
+    background-color: var(--bs-card-bg);
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .dashboard-card {
+    /* Slightly lighter than page background so cards are distinct but not bright */
+    background-color: var(--dashboard-card-bg) !important;
+    color: var(--dashboard-card-body-color) !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.18) !important;
+}
+
+/* Card header and body text colors for clearer emphasis */
+
+[data-bs-theme="dark"] .dashboard-card h4.fw-bold {
+    color: var(--bs-brand-orange) !important; /* fixed brand orange as header color */
+}
+
+[data-bs-theme="dark"] .dashboard-card .text-muted,
+[data-bs-theme="dark"] .dashboard-card p,
+[data-bs-theme="dark"] .dashboard-card small {
+    color: var(--dashboard-card-body-color) !important; /* light body text */
+}
+
+/* Map container common styling */
+.map-container {
+    border-radius: 1rem;
+    overflow: hidden;
+    border: 1px solid var(--bs-card-border);
+    margin-bottom: 1.5rem;
+}
+
+/* Date header in timeline (use brand orange) */
+.date-header { color: var(--bs-brand-orange) !important; }
+
+/* Butikken: Tom Select integration and small utilities */
+.input-group > .ts-wrapper { flex: 1 1 auto; width: 1%; }
+.input-group > .ts-wrapper .ts-control { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; padding: 0.5rem 0.75rem !important; min-height: calc(1.5em + 1rem + 2px); }
+.ts-wrapper.form-control { padding: 0 !important; border: none !important; }
+.ts-control { border: 1px solid var(--bs-card-border) !important; transition: border-color 0.15s, box-shadow 0.15s; }
+.ts-wrapper.focus .ts-control { border-color: var(--bs-primary) !important; box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25) !important; }
+.ts-dropdown { z-index: 1050 !important; }
+.ts-wrapper .ts-control { border-radius: 6px !important; padding: 0.5rem 0.75rem !important; }
+
+/* Butikken buttons */
+.btn-navy { background-color: var(--bs-navy); color: #ffffff; border: none; }
+.btn-navy:hover { background-color: var(--bs-navy-hover); color: #ffffff; }
+
+/* Cart table helpers */
+.table-cart th { font-weight: 600; color: #475569; font-size: 0.875rem; background-color: var(--bs-surface-1); }
+.qty-input { max-width: 90px; }
+
+/* Small utility sizes */
+.max-w-400 { max-width: 400px; }
+.w-120 { width: 120px; }
+.w-80 { width: 80px; }
+.form-row-50 { height: 50px; }
+.avatar-50 { width: 50px; height: 50px; object-fit: cover; }
+
+/* Pickup date small helpers used in order lists */
+.pickup-date { min-width: 65px; }
+.pickup-day { line-height: 1; font-size: 1.25rem; }
+.pickup-month { font-size: 0.75rem; text-transform: uppercase; }
+
+/* Table/form tweaks used by Butikken bulk edit */
+.table .mb-3 { margin-bottom: 0 !important; }
+.table select, .table input { margin: 0; }
+
+/* Butikken: small table & helper utilities moved from templates */
+.table thead th { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+
+/* In dark mode make table header and input controls slightly lighter than the page background */
+[data-bs-theme="dark"] .table thead th {
+    background-color: var(--bs-surface-5) !important;
+    color: var(--bs-body-color) !important;
+    border-bottom-color: rgba(255,255,255,0.03) !important;
+}
+
+/* TomSelect / search input styling in dark mode */
+[data-bs-theme="dark"] .ts-control,
+[data-bs-theme="dark"] .ts-wrapper.form-control,
+[data-bs-theme="dark"] .ts-input {
+    background-color: var(--bs-surface-5) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-card-border) !important;
+    box-shadow: none !important;
+}
+
+/* More specific TomSelect dark-mode selectors to override the bundled theme classes */
+[data-bs-theme="dark"] .tom-select .ts-control,
+[data-bs-theme="dark"] .tom-select .ts-control .ts-single,
+[data-bs-theme="dark"] .tom-select .ts-control .ts-input,
+[data-bs-theme="dark"] .tom-select .ts-control .ts-placeholder,
+[data-bs-theme="dark"] .ts-control .ts-input,
+[data-bs-theme="dark"] .tom-select .ts-control .ts-choice {
+    background-color: var(--bs-surface-5) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-card-border) !important;
+}
+
+[data-bs-theme="dark"] .tom-select .ts-control .ts-placeholder {
+    color: rgba(233,236,239,0.75) !important;
+}
+
+[data-bs-theme="dark"] .tom-select .ts-dropdown {
+    background-color: var(--bs-card-bg) !important;
+    color: var(--bs-body-color) !important;
+    border: 1px solid var(--bs-card-border) !important;
+}
+
+[data-bs-theme="dark"] .tom-select .ts-dropdown .ts-option {
+    color: var(--bs-body-color) !important;
+}
+
+/* Map Bootstrap's .bg-light to a dark surface in dark mode so remark/history boxes don't stay white */
+[data-bs-theme="dark"] .bg-light {
+    background-color: var(--bs-surface-5) !important;
+    color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme="dark"] .card.bg-light,
+[data-bs-theme="dark"] .card.card-custom.bg-light {
+    background-color: var(--bs-surface-5) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-card-border) !important;
+}
+
+/* Generic form controls inside cards should match the lighter surface in dark mode */
+[data-bs-theme="dark"] .card .form-control,
+[data-bs-theme="dark"] .card .form-select {
+    background-color: var(--bs-surface-5) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-card-border) !important;
+}
+
+/* Make the custom navy buttons use orange (the dark-mode primary) instead of navy in light mode */
+[data-bs-theme="dark"] .btn-navy {
+    background-color: var(--bs-primary) !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+[data-bs-theme="dark"] .btn-navy:hover {
+    background-color: #e65c2e !important; /* slightly darker orange */
+}
+.fw-500 { font-weight: 500; }
+.bi { vertical-align: -0.125em; }
+
+/* Item image wrapper used in depot and media views */
+.item-image-container {
+    border-bottom: 1px solid var(--bs-card-border);
+    background-color: var(--bs-surface-1);
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* Detail fields */
+.detail-label { color: var(--bs-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+.detail-value { font-weight: 500; font-size: 1.1rem; color: var(--bs-body-color); }
+.sidebar-info { font-size: 0.9rem; border-bottom: 1px solid var(--bs-card-border); padding: 10px 0; }
+
+/* Soft accent background */
+.bg-soft-primary { background-color: var(--bs-soft-primary); }
+
+/* List hover */
+.list-group-item:hover { background-color: var(--bs-surface-4) !important; }
+
+/* Booking item hover (index) - light default and dark override */
+.booking-item:hover { background-color: #f5f5f5; }
+
+/* Dark mode specific hover adjustments to match dashboard card surface */
+[data-bs-theme="dark"] .list-group-item:hover { background-color: var(--dashboard-card-bg) !important; }
+[data-bs-theme="dark"] .booking-item:hover { background-color: var(--dashboard-card-bg) !important; }
+
+/* Small circular buttons */
+.btn-circle { width: 38px; height: 38px; padding: 0; display: inline-flex; align-items: center; justify-content: center; border-radius: 50% !important; transition: all 0.2s ease; }
+.btn-circle:hover { transform: translateY(-1px); }
+
+/* Status badge */
+.status-badge { padding: 0.5rem 1rem; border-radius: 50px; font-weight: 600; font-size: 0.9rem; }
+
+/* Clickable table rows */
+.clickable-row { cursor: pointer; transition: background-color 0.15s ease-in-out; }
+.clickable-row:hover { background-color: rgba(var(--bs-primary-rgb), 0.04) !important; }
+
+/* Large form controls */
+.form-control-lg { padding: 0.75rem 1.5rem; font-size: 1rem; border-radius: 10px; }
+
+.bg-secondary-subtle { background-color: var(--bs-surface-2) !important; }
+
+/* Sticky table head helpers */
+#itemsTable thead { position: sticky; top: 0; z-index: 10; background-color: var(--bs-card-bg); box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1); }
+
+/* Utility for status area in lists */
+.status-box { min-width: 110px; }
+
+@media (max-width: 768px) {
+    .btn-circle { width: 34px; height: 34px; }
+    body { padding-bottom: 80px; }
+}
+
+/* Timeline / booking grid components used by Aktivitetsteam */
+.timeline-wrapper { display:flex; overflow-x:auto; border:1px solid var(--bs-card-border); border-radius:12px; background:var(--bs-card-bg); box-shadow:0 0.125rem 0.25rem rgba(0,0,0,0.075); margin-bottom:2rem; }
+.timeline-sidebar { width:180px; flex-shrink:0; background:var(--bs-surface-1); border-right:2px solid var(--bs-card-border); position:sticky; left:0; z-index:10; }
+.row-item-name { height:calc(var(--num-levels,1)*50px); min-height:50px; padding:0 15px; font-weight:600; border-bottom:1px solid var(--bs-card-border); display:flex; align-items:center; background:var(--bs-surface-1); font-size:0.85rem; }
+.timeline-content { position:relative; background:var(--bs-card-bg); min-width:fit-content; }
+.timeline-header { display:flex; border-bottom:2px solid var(--bs-card-border); height:60px; background:var(--bs-surface-1); }
+.hour-col { flex-shrink:0; width:var(--hour-width,40px); border-right:1px solid var(--bs-card-border); text-align:center; font-size:11px; padding-top:10px; color:var(--bs-muted); }
+.hour-col.new-day { border-left:2px solid var(--bs-body-color); background-color:var(--bs-surface-3); color:var(--bs-body-color); }
+.timeline-row { position:relative; height:calc(var(--num-levels,1)*50px); min-height:50px; border-bottom:1px solid var(--bs-card-border); background-image:linear-gradient(to right,var(--bs-surface-3) 1px,transparent 1px); background-size:var(--hour-width,40px) 100%; cursor:crosshair; }
+.booking-box { position:absolute; top:calc(var(--level,0)*50px + 8px); height:34px; border-radius:6px; z-index:5; padding:5px 10px; color:white; font-size:11px; font-weight:600; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; border:1px solid rgba(0,0,0,0.1); }
+.status-approved { background-color:var(--bs-success); }
+.status-pending { background-color:var(--bs-warning); color:var(--bs-body-color); }
+.status-new { background-color:var(--bs-primary) !important; color:white; border:2px solid white; z-index:100 !important; box-shadow:0 0 15px rgba(13,110,253,0.4); opacity:0.9; }
+#timeline-controls { position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:2000; display:none; background:var(--bs-card-bg); padding:12px 24px; border-radius:50px; box-shadow:0 10px 30px rgba(0,0,0,0.25); border:1px solid var(--bs-card-border); align-items:center; gap:15px; }
+.day-label-text { font-size:10px; font-weight:bold; display:block; text-transform:uppercase; }
+
+/* App-specific dark-mode tweaks for Foto and Teknik catalogs */
+[data-bs-theme="dark"] .foto-catalog .item-hover-effect,
+[data-bs-theme="dark"] .teknik-catalog .item-hover-effect {
+    background-color: var(--bs-surface-5) !important;
+    border-color: var(--bs-card-border) !important;
+    color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme="dark"] .foto-catalog .btn-secondary,
+[data-bs-theme="dark"] .teknik-catalog .btn-secondary {
+    background-color: var(--bs-secondary) !important;
+    border-color: var(--bs-secondary) !important;
+    color: #fff !important;
+}
+
+[data-bs-theme="dark"] .foto-catalog .btn-outline-secondary,
+[data-bs-theme="dark"] .teknik-catalog .btn-outline-secondary {
+    border-color: var(--bs-secondary) !important;
+    color: var(--bs-secondary) !important;
+}
+
+[data-bs-theme="dark"] .foto-catalog .badge.bg-white,
+[data-bs-theme="dark"] .teknik-catalog .badge.bg-white {
+    background-color: var(--bs-surface-1) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-card-border) !important;
+}
+
+/* In Foto/Teknik catalogs, map primary (blue) to secondary (orange) in dark mode */
+[data-bs-theme="dark"] .foto-catalog .text-primary,
+[data-bs-theme="dark"] .teknik-catalog .text-primary {
+    color: var(--bs-secondary) !important;
+}
+
+[data-bs-theme="dark"] .foto-catalog h1,
+[data-bs-theme="dark"] .teknik-catalog h1,
+[data-bs-theme="dark"] .foto-catalog h5,
+[data-bs-theme="dark"] .teknik-catalog h5 {
+    color: var(--bs-body-color) !important;
+}
+
+/* Ensure Teknik catalog's secondary buttons are orange in dark mode (strong specificity) */
+[data-bs-theme="dark"] .teknik-catalog .card .btn.btn-secondary,
+[data-bs-theme="dark"] .teknik-catalog .btn.btn-secondary,
+[data-bs-theme="dark"] .teknik-catalog .item-hover-effect .btn-secondary {
+    background-color: var(--bs-secondary) !important;
+    border-color: var(--bs-secondary) !important;
+    color: #ffffff !important;
+    /* also set bootstrap button variables to avoid variable-based overrides */
+    --bs-btn-bg: var(--bs-secondary) !important;
+    --bs-btn-border-color: var(--bs-secondary) !important;
 }
