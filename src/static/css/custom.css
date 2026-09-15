@@ -5,6 +5,8 @@
     /* Brand Colors */
     --bs-primary: #003255;
     --bs-primary-rgb: 0, 50, 85;
+    --bs-primary-hover: #002540;
+    --bs-primary-active: #001d33;
     
     --bs-secondary: #FF733C;
     --bs-secondary-rgb: 255, 115, 60;
@@ -65,6 +67,8 @@
     /* Swap primary/secondary in dark mode: orange becomes primary (headings, navbar, icons), navy becomes secondary */
     --bs-primary: #FF733C;
     --bs-primary-rgb: 255, 115, 60;
+    --bs-primary-hover: #e65c2e;
+    --bs-primary-active: #bd3500;
     --bs-secondary: #003255;
     --bs-secondary-rgb: 0, 50, 85;
     --bs-tertiary: #7aa6e6;
@@ -117,10 +121,10 @@ body {
 .btn-primary {
     --bs-btn-bg: var(--bs-primary);
     --bs-btn-border-color: var(--bs-primary);
-    --bs-btn-hover-bg: #002540; /* Darkened Primary */
-    --bs-btn-hover-border-color: #002540;
-    --bs-btn-active-bg: #001d33;
-    --bs-btn-active-border-color: #001d33;
+    --bs-btn-hover-bg: var(--bs-primary-hover);
+    --bs-btn-hover-border-color: var(--bs-primary-hover);
+    --bs-btn-active-bg: var(--bs-primary-active);
+    --bs-btn-active-border-color: var(--bs-primary-active);
 }
 
 .btn-secondary {
@@ -183,6 +187,25 @@ body {
     --bs-btn-border-color: var(--bs-primary);
     --bs-btn-hover-bg: var(--bs-primary);
     --bs-btn-hover-border-color: var(--bs-primary);
+}
+
+/* The administrator action must contrast with the colored navbar. */
+.navbar .btn-outline-primary {
+    --bs-btn-color: #ffffff;
+    --bs-btn-bg: transparent;
+    --bs-btn-border-color: #ffffff;
+    --bs-btn-hover-color: var(--bs-primary);
+    --bs-btn-hover-bg: #ffffff;
+    --bs-btn-hover-border-color: #ffffff;
+}
+
+:root[data-bs-theme="dark"] .navbar .btn-outline-primary {
+    --bs-btn-color: var(--bs-primary);
+    --bs-btn-bg: transparent;
+    --bs-btn-border-color: var(--bs-primary);
+    --bs-btn-hover-color: #ffffff;
+    --bs-btn-hover-bg: var(--bs-primary-hover);
+    --bs-btn-hover-border-color: var(--bs-primary-hover);
 }
 
 /* --- UI COMPONENTS --- */

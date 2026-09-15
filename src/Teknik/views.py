@@ -38,7 +38,6 @@ class TeknikBookingListView(LoginRequiredMixin, generic.ListView):
     form_class = forms.TeknikBookingForm
     context_object_name = 'object_list'
     template_name = 'Teknik/teknikbooking_list.html'
-    paginate_by = 16
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
@@ -53,9 +52,6 @@ class TeknikBookingListView(LoginRequiredMixin, generic.ListView):
         ).defer('location').order_by('item', 'start_date')
 
     def get_context_data(self, **kwargs):
-        """Provide context variables matching the Sjak list view so the
-        template can be reused 1:1.
-        """
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
@@ -64,16 +60,15 @@ class TeknikBookingListView(LoginRequiredMixin, generic.ListView):
         is_staff = user.is_staff
 
         # Filter the object list based on the user's team membership and staff status
-        object_list = context.get('object_list', [])
         if is_staff:
-            filtered_object_list = object_list
+            filtered_object_list = context['object_list']
         else:
             filtered_object_list = [
-                obj for obj in object_list
-                if user_team_membership and obj.team == user_team_membership.team
+            obj for obj in context['object_list']
+            if user_team_membership and obj.team == user_team_membership.team
             ]
 
-        # Fetch user events (deadline_teknik)
+        # Fetch user events
         user_events = list(user.events.filter(is_active=True).values('name', 'deadline_teknik'))
 
         # Fetch volunteer team memberships
@@ -85,9 +80,24 @@ class TeknikBookingListView(LoginRequiredMixin, generic.ListView):
             'user_team_membership': user_team_membership,
             'user_events': user_events,
             'volunteer_team_memberships': volunteer_team_memberships,
-            'current_sort': self.request.GET.get('sort', 'item'),
         })
 
+        return context
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # Only fetch team membership once - already filtered in get_queryset
+        if not user.is_staff:
+            user_team_membership = user.teammembership_set.select_related('team').first()
+            context['user_team_membership'] = user_team_membership
+        else:
+            context['user_team_membership'] = None
+        
+        # Add current sort parameter to context
+        context['current_sort'] = self.request.GET.get('sort', 'item')
+        
         return context
 
 
