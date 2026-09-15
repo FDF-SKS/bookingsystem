@@ -1,7 +1,7 @@
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
-from map_location.fields import LocationField
+from utils.fields import SafeLocationField
 
 class FotoItem(models.Model):
 
@@ -45,7 +45,7 @@ class FotoBooking(models.Model):
     end_date = models.DateField(default=timezone.now)
     remarks = models.TextField(max_length=500)
     created = models.DateTimeField(auto_now_add=True, editable=False)
-    location = LocationField(
+    location = SafeLocationField(
         "Placering", 
         blank=True, 
         null=True,

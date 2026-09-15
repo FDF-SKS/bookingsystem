@@ -7,37 +7,7 @@
 
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
-<style>
-    .card-custom {
-        border: 1px solid #eaedf1;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        background-color: #ffffff;
-    }
-    .btn-navy {
-        background-color: #0f2537;
-        color: #ffffff;
-        border: none;
-    }
-    .btn-navy:hover {
-        background-color: #1a364d;
-        color: #ffffff;
-    }
-    .table-cart th {
-        font-weight: 600;
-        color: #475569;
-        font-size: 0.875rem;
-        background-color: #f8fafc;
-    }
-    .qty-input {
-        max-width: 90px;
-    }
-    /* Tom Select Custom Styling */
-    .ts-wrapper .ts-control {
-        border-radius: 6px !important;
-        padding: 0.5rem 0.75rem !important;
-    }
-</style>
+{# Butikken component styles moved to src/static/css/custom.css #}
 {% endblock %}
 
 {% block content %}
@@ -51,7 +21,7 @@
         </ol>
     </nav>
 
-    <h1 class="fw-bold mb-4" style="color: #0f2537;">Bestilling til Butikken</h1>
+    <h1 class="fw-bold mb-4 text-primary">Bestilling til Butikken</h1>
 
     <form id="cart-booking-form" method="post" action="" class="needs-validation">
         {% csrf_token %}
@@ -277,11 +247,11 @@
             cartTableBody.innerHTML = '';
             cartMobileList.innerHTML = '';
 
-            cartItems.forEach(item => {
+                cartItems.forEach(item => {
                 // Desktop Table Row
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="fw-bold text-dark">${item.name}</td>
+                    tr.innerHTML = `
+                    <td class="fw-bold text-body">${item.name}</td>
                     <td>
                         <input type="number" step="0.01" class="form-control form-control-sm qty-input" value="${item.qty}" min="0.01" onchange="updateQty('${item.id}', this.value)">
                     </td>
@@ -299,7 +269,7 @@
                 card.className = "card card-custom p-3 mb-3";
                 card.innerHTML = `
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="fw-bold text-dark">${item.name}</span>
+                        <span class="fw-bold text-body">${item.name}</span>
                         <button type="button" class="btn btn-link text-danger p-0" onclick="removeCartItem('${item.id}')">
                             {% bs_icon "trash" %}
                         </button>

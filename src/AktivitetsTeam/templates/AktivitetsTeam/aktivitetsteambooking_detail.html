@@ -9,44 +9,6 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-<style>
-    /* Force height on the container wrapper */
-    .map-container { 
-        height: 400px !important;
-        min-height: 400px !important;
-        border-radius: 1rem; 
-        overflow: hidden; 
-        border: 1px solid #dee2e6;
-        margin-bottom: 1.5rem;
-    }
-
-    /* Force height on the Leaflet generated div */
-    #detail-map, 
-    .leaflet-container, 
-    .location-map, 
-    .map_location-map { 
-        height: 400px !important; 
-        min-height: 400px !important;
-        width: 100% !important; 
-        display: block !important;
-    }
-    .card-custom { border: none; border-radius: 12px; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
-    .status-badge { padding: 0.5rem 1rem; border-radius: 50px; font-weight: 600; font-size: 0.9rem; }
-    .detail-label { color: #6c757d; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
-    .detail-value { font-weight: 500; font-size: 1.1rem; color: #212529; }
-    .sidebar-info { font-size: 0.9rem; border-bottom: 1px solid #eee; padding: 10px 0; }
-    .sidebar-info:last-child { border-bottom: none; }
-    #map { border-radius: 12px; overflow: hidden; border: 1px solid #dee2e6; }
-    .bg-soft-primary {
-        background-color: #e7f1ff;
-        width: 48px;  /* Fixed width */
-        height: 48px; /* Fixed height */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0; /* Prevents squishing in flex rows */
-    }
-</style>
 {% endblock %}
 
 {% block content %}

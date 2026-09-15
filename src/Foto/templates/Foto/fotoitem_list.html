@@ -2,11 +2,11 @@
 {% load static %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container py-5 foto-catalog">
     
     <div class="row mb-5 align-items-end">
         <div class="col-lg-6">
-            <h1 class="fw-bold text-dark mb-1">Fotokatalog</h1>
+            <h1 class="fw-bold text-body mb-1">Fotokatalog</h1>
             <p class="text-muted mb-0">Book professionelt udstyr eller find den rette fotograf til jeres næste store øjeblik.</p>
         </div>
         
@@ -43,7 +43,7 @@
                     
                     {% if object.category %}
                     <div class="position-absolute top-0 start-0 m-3">
-                        <span class="badge rounded-pill bg-white text-dark shadow-sm py-2 px-3">
+                        <span class="badge rounded-pill bg-white text-body shadow-sm py-2 px-3">
                             {% if object.category.bs_icon %}<bs_icon class="bi {{ object.category.bs_icon }} me-1 text-secondary"></bs_icon>{% endif %}
                             {{ object.category.name }}
                         </span>
@@ -52,7 +52,7 @@
                 </div>
 
                 <div class="card-body p-4 d-flex flex-column">
-                    <h5 class="card-title fw-bold text-dark mb-2">{{ object.name }}</h5>
+                    <h5 class="card-title fw-bold text-body mb-2">{{ object.name }}</h5>
                     <p class="card-text text-muted small mb-4 flex-grow-1">
                         {{ object.description|truncatechars:120 }}
                     </p>

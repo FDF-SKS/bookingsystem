@@ -2,6 +2,7 @@
 Django==5.2.10
 djangorestframework>=3.16.1
 asgiref>=3.11.0
+djlint>=1.36.4
 
 # UI & Admin (Unfold & Import/Export)
 django-unfold>=0.81.0

@@ -155,11 +155,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / "media"
 
-# During local development serve the project-level `static/` directory so
-# `runserver` can find files like `static/css/custom.css` without running
-# `collectstatic` or relying on the Docker setup.
-if ENVIRONMENT == 'dev':
-    STATICFILES_DIRS = [BASE_DIR / 'static']
+# Serve the project-level `static/` directory so both local `runserver`
+# and `collectstatic` (used in staging/production) include files placed
+# in `src/static/` such as `css/custom.css`.
+STATICFILES_DIRS = [BASE_DIR / 'static']
 
 ROOT_URLCONF = 'core.urls' 
 

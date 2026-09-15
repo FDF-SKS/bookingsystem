@@ -3,7 +3,7 @@ import uuid
 from django.db import models
 from django.urls import reverse
 from django.db.models import Max
-from map_location.fields import LocationField
+from utils.fields import SafeLocationField
 
 from organization.models import Event, Team, Volunteer
 
@@ -36,7 +36,7 @@ class PhysicalStation(models.Model):
     name = models.CharField(max_length=120)
     qr_code = models.CharField(max_length=200, unique=True, blank=True)
     description = models.TextField(blank=True)
-    location = LocationField(
+    location = SafeLocationField(
         'Lokation',
         blank=True,
         null=True,
@@ -108,7 +108,7 @@ class Task(models.Model):
     description = models.TextField(blank=True, verbose_name='Beskrivelse')
     task_type = models.CharField(max_length=20, choices=TASK_TYPE_CHOICES, default='physical', verbose_name='Type')
     station = models.ForeignKey('PhysicalStation', on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks', verbose_name='Station')
-    location = LocationField(
+    location = SafeLocationField(
         'Kortplacering',
         blank=True,
         null=True,

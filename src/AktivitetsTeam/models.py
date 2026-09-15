@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.core.validators import MaxValueValidator
 from django.utils.text import slugify
-from map_location.fields import LocationField
+from utils.fields import SafeLocationField
 
 
 class AktivitetsTeamItemType(models.Model):
@@ -51,7 +51,7 @@ class AktivitetsTeamItem(models.Model):
         related_name="items"
     )
     is_active = models.BooleanField(default=True)
-    location = LocationField(
+    location = SafeLocationField(
         "Placering", 
         blank=True, 
         null=True,
@@ -130,7 +130,7 @@ class AktivitetsTeamBooking(models.Model):
     created = models.DateTimeField(auto_now_add=True, editable=False)
     last_updated = models.DateTimeField(auto_now=True, editable=False)
     remarks_internal = models.TextField(blank=True, max_length=500)  # Set an appropriate max length
-    location = LocationField(
+    location = SafeLocationField(
         "Lokation",
         blank=True,
         null=True,
