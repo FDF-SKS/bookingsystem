@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+{% load bootstrap_icons %}
+{% load tiptap %}
+
+{% block content %}
+<style>
+    @media print {
+        .no-print, nav, footer, .btn, .breadcrumb {
+            display: none !important;
+        }
+        body {
+            background: white !important;
+            font-size: 12pt;
+        }
+        .container {
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+        .card {
+            border: 1px solid #ccc !important;
+            box-shadow: none !important;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            margin-bottom: 1.5rem !important;
+        }
+        .task-preview-card {
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+    }
+    .qr-preview-box {
+        background: #fdfdfd;
+        border: 1px dashed #ced4da;
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        text-align: center;
+    }
+</style>
+
+<div class="container py-4">
+    <!-- Header with actions -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4 no-print">
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary text-uppercase">Forhåndsvisning</span>
+                <span class="text-muted">{{ object.team.name }}</span>
+            </div>
+            <h1 class="fw-bold text-dark mb-1">{{ object.name }}</h1>
+            <p class="text-muted mb-0">Forhåndsvis opgaver og se de QR-koder holdene skal scanne</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-outline-secondary" onclick="window.print();">
+                {% bs_icon 'printer' %} Udskriv oversigt & QR
+            </button>
+            <a href="{% url 'Loeb_Hold_login' object.pk %}" target="_blank" class="btn btn-outline-info">
+                {% bs_icon 'box-arrow-up-right' %} Åbn hold-login
+            </a>
+            <a href="{% url 'Loeb_Loeb_detail' object.pk %}" class="btn btn-primary">
+                {% bs_icon 'arrow-left' %} Tilbage til løb
+            </a>
+        </div>
+    </div>
+
+    <!-- Print-only Title -->
+    <div class="d-none d-print-block mb-4">
+        <h1 class="fw-bold mb-1">{{ object.name }} - Opgaver & QR-koder</h1>
+        <p class="text-muted">Arrangør: {{ object.team.name }} · {{ preview_tasks|length }} opgaver</p>
+        <hr/>
+    </div>
+
+    <!-- Hold Login & Starting Station QR Card -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-primary bg-opacity-10 py-3 rounded-top-4 border-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="h5 fw-bold mb-0 text-primary">
+                    {% bs_icon 'qr-code' %} Startpost: Hold Login
+                </h2>
+                <span class="badge bg-primary">Fælles for alle hold</span>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4 align-items-center">
+                <div class="col-md-4 text-center">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ hold_login_url|urlencode }}" 
+                         alt="QR-kode til hold login" 
+                         class="img-fluid border rounded-3 p-2 bg-white shadow-sm"
+                         style="max-width: 190px; width: 100%; height: auto;" />
+                    <div class="mt-2 no-print">
+                        <a href="https://api.qrserver.com/v1/create-qr-code/?size=600x600&data={{ hold_login_url|urlencode }}" 
+                           download="hold-login-qr.png" 
+                           target="_blank" 
+                           class="btn btn-sm btn-outline-secondary">
+                            {% bs_icon 'download' %} Hent stor QR
+                        </a>
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <h3 class="h6 fw-bold text-uppercase text-muted mb-2">Instruktion til startlinjen</h3>
+                    <p class="mb-3">
+                        Holdene scanner denne QR-kode med deres telefon for at åbne løbet og logge ind med deres pinkode.
+                    </p>
+                    <div class="p-3 bg-light rounded-3 mb-3">
+                        <div class="small fw-semibold text-muted mb-1">Direkte URL til hold-login:</div>
+                        <div class="d-flex align-items-center gap-2">
+                            <code class="text-break flex-grow-1" id="hold-login-url">{{ hold_login_url }}</code>
+                            <button type="button" class="btn btn-sm btn-outline-secondary no-print" onclick="navigator.clipboard.writeText('{{ hold_login_url }}'); this.textContent='Kopieret!'; setTimeout(() => this.textContent='Kopiér', 1500);">Kopiér</button>
+                        </div>
+                    </div>
+
+                    {% if holds %}
+                        <div>
+                            <span class="small fw-bold text-uppercase text-muted">Oprettede hold og pinkoder:</span>
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                {% for hold in holds %}
+                                    <span class="badge bg-light text-dark border p-2">
+                                        {{ hold.name }}: <strong class="text-primary">{{ hold.pin_code }}</strong>
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning small mb-0 no-print">
+                            Der er endnu ikke oprettet nogen hold for dette løb. <a href="{% url 'Loeb_Hold_create' %}?loeb={{ object.pk }}" class="alert-link">Opret et hold her</a>.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks List Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 fw-bold mb-0">Opgaver & Post-QR-koder ({{ preview_tasks|length }})</h2>
+        <a href="{% url 'Loeb_Task_create' %}?loeb={{ object.pk }}" class="btn btn-primary btn-sm no-print">
+            {% bs_icon 'plus-lg' %} Ny opgave
+        </a>
+    </div>
+
+    {% if preview_tasks %}
+        <div class="row g-4">
+            {% for item in preview_tasks %}
+                <div class="col-12 task-preview-card">
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                        <div class="card-header bg-light py-3 px-4 border-bottom">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-dark rounded-pill">#{{ item.task.order }}</span>
+                                    <h3 class="h5 fw-bold mb-0 text-dark">{{ item.task.title }}</h3>
+                                </div>
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <span class="badge bg-secondary">{{ item.task.get_task_type_display }}</span>
+                                    <span class="badge bg-info text-dark">{{ item.task.points }} point</span>
+                                    {% if item.task.is_published %}
+                                        <span class="badge bg-success">Offentliggjort</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Kladde</span>
+                                    {% endif %}
+                                    <div class="btn-group btn-group-sm no-print ms-2">
+                                        <a href="{% url 'Loeb_Task_detail' item.task.pk %}" class="btn btn-outline-secondary">Vis</a>
+                                        <a href="{% url 'Loeb_Task_update' item.task.pk %}" class="btn btn-outline-primary">Rediger</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4">
+                                <!-- Task content and details -->
+                                <div class="col-lg-7">
+                                    <div class="mb-3">
+                                        <div class="small text-uppercase text-muted fw-bold mb-2">Opgavebeskrivelse</div>
+                                        <div class="p-3 bg-light rounded-3">
+                                            {% if item.task.description %}
+                                                {{ item.task.description|tiptap_html }}
+                                            {% else %}
+                                                <span class="text-muted fst-italic">Ingen beskrivelse angivet.</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    <div class="row g-2 small text-muted">
+                                        {% if item.task.station %}
+                                            <div class="col-sm-6">
+                                                <strong>Fysisk station:</strong> {{ item.task.station.name }}
+                                            </div>
+                                        {% endif %}
+                                        {% if item.task.input_mode and item.task.input_mode != 'none' %}
+                                            <div class="col-sm-6">
+                                                <strong>Inputtype:</strong> {{ item.task.input_mode }}
+                                            </div>
+                                        {% endif %}
+                                        {% if item.task.location %}
+                                            <div class="col-sm-6">
+                                                <strong>Lokation:</strong> {{ item.task.location }}
+                                            </div>
+                                        {% endif %}
+                                        {% if item.task.gps_radius_meters %}
+                                            <div class="col-sm-6">
+                                                <strong>GPS-radius:</strong> {{ item.task.gps_radius_meters }}m
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- QR code for this task -->
+                                <div class="col-lg-5">
+                                    <div class="qr-preview-box h-100 d-flex flex-column justify-content-between">
+                                        <div>
+                                            <div class="small text-uppercase text-muted fw-bold mb-2">Post QR-kode</div>
+                                            {% if item.qr_url %}
+                                                <div class="mb-2">
+                                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ item.qr_url|urlencode }}" 
+                                                         alt="QR-kode til {{ item.task.title }}" 
+                                                         class="img-fluid border rounded-3 p-2 bg-white shadow-sm"
+                                                         style="max-width: 170px; width: 100%; height: auto;" />
+                                                </div>
+                                                <div class="small text-muted mb-2">
+                                                    Kode: <strong class="text-dark">{{ item.qr_code }}</strong>
+                                                </div>
+                                            {% else %}
+                                                <div class="alert alert-warning py-3 my-3 small text-start">
+                                                    <strong>Ingen QR-kode tilknyttet</strong><br>
+                                                    Tilknyt en <em>Fysisk station</em> eller angiv en QR-kode på opgaven for at generere adgangs-QR til holdene.
+                                                </div>
+                                                <div class="no-print">
+                                                    <a href="{% url 'Loeb_Task_update' item.task.pk %}" class="btn btn-sm btn-outline-warning">
+                                                        {% bs_icon 'pencil' %} Tilknyt station
+                                                    </a>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+
+                                        {% if item.qr_url %}
+                                            <div class="no-print mt-3 pt-3 border-top">
+                                                <div class="d-flex flex-wrap justify-content-center gap-2">
+                                                    <a href="{{ item.qr_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                        {% bs_icon 'box-arrow-up-right' %} Åbn post URL
+                                                    </a>
+                                                    <a href="https://api.qrserver.com/v1/create-qr-code/?size=600x600&data={{ item.qr_url|urlencode }}" 
+                                                       download="qr-{{ item.qr_code }}.png" 
+                                                       target="_blank" 
+                                                       class="btn btn-sm btn-outline-secondary">
+                                                        {% bs_icon 'download' %} Hent QR
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText('{{ item.qr_url }}'); this.textContent='Kopieret!'; setTimeout(() => this.textContent='Kopiér link', 1500);">
+                                                        Kopiér link
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card border-0 shadow-sm rounded-4 text-center py-5">
+            <div class="card-body">
+                <div class="text-muted mb-3">
+                    {% bs_icon 'clipboard-x' size='3rem' %}
+                </div>
+                <h3 class="h5 fw-bold">Ingen opgaver endnu</h3>
+                <p class="text-muted mb-4">Opret opgaver og tilknyt stationer for at forhåndsvise dem og generere QR-koder.</p>
+                <a href="{% url 'Loeb_Task_create' %}?loeb={{ object.pk }}" class="btn btn-primary">
+                    {% bs_icon 'plus-lg' %} Opret den første opgave
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

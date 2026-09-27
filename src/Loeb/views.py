@@ -107,6 +107,53 @@ class LoebDetailView(LoginRequiredMixin, generic.DetailView):
         return context
 
 
+class LoebPreviewView(LoginRequiredMixin, generic.DetailView):
+    model = models.Loeb
+    template_name = 'Loeb/loeb_preview.html'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if self.request.user.is_superuser:
+            return queryset
+        team_ids = TeamMembership.objects.filter(member=self.request.user).values_list('team_id', flat=True)
+        return queryset.filter(team_id__in=team_ids) if team_ids else queryset.none()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        loeb = self.object
+        tasks = list(loeb.tasks.all().select_related('station').order_by('order', 'title'))
+        holds = list(loeb.holds.all().order_by('name'))
+
+        preview_tasks = []
+        for task in tasks:
+            qr_code = None
+            qr_url = None
+            if task.station and task.station.qr_code:
+                qr_code = task.station.qr_code
+            elif task.qr_code:
+                qr_code = task.qr_code
+
+            if qr_code:
+                qr_url = self.request.build_absolute_uri(
+                    reverse('Loeb_Station_qr', kwargs={'qr_code': qr_code})
+                )
+
+            preview_tasks.append({
+                'task': task,
+                'qr_code': qr_code,
+                'qr_url': qr_url,
+            })
+
+        hold_login_url = self.request.build_absolute_uri(
+            reverse('Loeb_Hold_login', args=[loeb.pk])
+        )
+
+        context['preview_tasks'] = preview_tasks
+        context['holds'] = holds
+        context['hold_login_url'] = hold_login_url
+        return context
+
+
 class LoebUpdateView(LoginRequiredMixin, generic.UpdateView):
     model = models.Loeb
     form_class = forms.LoebForm
@@ -189,6 +236,25 @@ class TaskDetailView(LoginRequiredMixin, generic.DetailView):
     model = models.Task
     form_class = forms.TaskForm
     template_name = 'Loeb/task_detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        task = self.object
+        qr_code = None
+        qr_url = None
+        if task.station and task.station.qr_code:
+            qr_code = task.station.qr_code
+        elif task.qr_code:
+            qr_code = task.qr_code
+
+        if qr_code:
+            qr_url = self.request.build_absolute_uri(
+                reverse('Loeb_Station_qr', kwargs={'qr_code': qr_code})
+            )
+
+        context['qr_code'] = qr_code
+        context['qr_url'] = qr_url
+        return context
 
 
 class TaskUpdateView(LoginRequiredMixin, generic.UpdateView):

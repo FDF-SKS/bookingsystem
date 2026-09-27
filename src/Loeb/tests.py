@@ -169,3 +169,60 @@ class LoebModelTests(TestCase):
 
         response = self.client.get(station.get_absolute_url())
         self.assertEqual(response.status_code, 200)
+
+    def test_task_rich_text_description_rendering_on_detail_and_qr(self):
+        self.client.force_login(self.user)
+        task = Task.objects.create(
+            loeb=self.loeb,
+            title='Rich Text Task',
+            description='<p>Dette er en <strong>vigtig</strong> opgave med et <a href="https://example.com">link</a>.</p>',
+            task_type='qr',
+            station=self.station,
+            order=1,
+        )
+
+        detail_response = self.client.get(reverse('Loeb_Task_detail', args=[task.pk]))
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertContains(detail_response, '<strong>vigtig</strong>')
+        self.assertContains(detail_response, '<a href="https://example.com">link</a>')
+
+        session = self.client.session
+        hold = Hold.objects.create(loeb=self.loeb, name='RT Hold', pin_code='RTHOLD1')
+        session['loeb_hold_id'] = hold.pk
+        session['loeb_id'] = self.loeb.pk
+        session.save()
+
+        qr_response = self.client.get(reverse('Loeb_Station_qr', kwargs={'qr_code': self.station.qr_code}))
+        self.assertEqual(qr_response.status_code, 200)
+        self.assertContains(qr_response, '<strong>vigtig</strong>')
+        self.assertContains(qr_response, '<a href="https://example.com">link</a>')
+
+    def test_task_form_uses_tiptap_widget(self):
+        from .forms import TaskForm
+        from django_tiptap_editor.widgets.tiptap_widget import TipTapWidget
+
+        form = TaskForm(user=self.user)
+        self.assertIsInstance(form.fields['description'].widget, TipTapWidget)
+
+    def test_loeb_preview_page_shows_tasks_and_qr_codes(self):
+        self.client.force_login(self.user)
+        task = Task.objects.create(
+            loeb=self.loeb,
+            title='Preview Station Task',
+            description='<p>Løs denne <em>gåde</em> ved posten.</p>',
+            task_type='qr',
+            station=self.station,
+            order=1,
+            is_published=True,
+        )
+        hold = Hold.objects.create(loeb=self.loeb, name='Preview Hold', pin_code='PREV1')
+
+        response = self.client.get(reverse('Loeb_Loeb_preview', args=[self.loeb.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Forhåndsvisning')
+        self.assertContains(response, 'Preview Station Task')
+        self.assertContains(response, '<em>gåde</em>')
+        self.assertContains(response, self.station.qr_code)
+        self.assertContains(response, 'Preview Hold')
+        self.assertContains(response, 'PREV1')
+        self.assertContains(response, 'hold-login')

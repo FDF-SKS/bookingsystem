@@ -71,7 +71,6 @@ services:
       - web
     networks:
       - default
-      - beanvault_net
 
   certbot:
     image: certbot/certbot
@@ -85,6 +84,3 @@ volumes:
 
 networks:
   default:
-  beanvault_net:
-    name: beanvault_net
-    external: true

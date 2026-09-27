@@ -144,6 +144,7 @@ class ButikkenBookingExportResource(resources.ModelResource):
     order_pickup_date = fields.Field(column_name='order_pickup_date')
     order_remarks = fields.Field(column_name='order_remarks')
     booking_id = fields.Field(column_name='booking_id', attribute='id')
+    item_id = fields.Field(column_name='item_id', attribute='item', widget=ForeignKeyWidget(ButikkenItem, 'id'))
     item_name = fields.Field(column_name='item_name', attribute='item', widget=ForeignKeyWidget(ButikkenItem, 'name'))
     team_name = fields.Field(column_name='team_name', attribute='team', widget=ForeignKeyWidget(Team, 'name'))
     team_contact_name = fields.Field(column_name='team_contact_name', attribute='team_contact')
@@ -154,12 +155,12 @@ class ButikkenBookingExportResource(resources.ModelResource):
         model = ButikkenBooking
         fields = (
             'order_id', 'order_name', 'order_team', 'order_status', 'order_pickup_date', 'order_remarks',
-            'booking_id', 'booking_status', 'item_name',  'quantity', 'unit', 'start_date', 'start_time',
+            'booking_id', 'booking_status', 'item_id','item_name',  'quantity', 'unit', 'start_date', 'start_time',
             'date_used', 'for_meal', 'team_name', 'team_contact_name', 'booking_remarks',
         )
         export_order = (
             'order_id', 'order_name', 'order_team', 'order_status', 'order_pickup_date', 'order_remarks',
-            'booking_id', 'booking_status', 'item_name',  'quantity', 'unit', 'start_date', 'start_time',
+            'booking_id', 'booking_status', 'item_id', 'item_name',  'quantity', 'unit', 'start_date', 'start_time',
             'date_used', 'for_meal', 'team_name', 'team_contact_name', 'booking_remarks',
         )
 

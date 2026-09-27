@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load bootstrap_icons %}
+{% load tiptap %}
 
 {% block content %}
 <div class="container py-4">
@@ -9,38 +10,109 @@
             <p class="text-muted mb-0">{{ object.loeb.name }}</p>
         </div>
         <div class="d-flex gap-2">
+            <a href="{% url 'Loeb_Loeb_preview' object.loeb.pk %}" class="btn btn-outline-success">
+                {% bs_icon 'qr-code-scan' %} Forhåndsvis løb & QR
+            </a>
             <a href="{% url 'Loeb_Task_update' object.pk %}" class="btn btn-outline-secondary">Rediger</a>
             <a href="{% url 'Loeb_Loeb_detail' object.loeb.pk %}" class="btn btn-primary">Tilbage til løb</a>
         </div>
     </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="small text-uppercase text-muted mb-1">Beskrivelse</div>
-                    <div>{{ object.description|default:'Ingen beskrivelse' }}</div>
-                </div>
-                <div class="col-md-3">
-                    <div class="small text-uppercase text-muted mb-1">Type</div>
-                    <div>{{ object.get_task_type_display }}</div>
-                </div>
-                <div class="col-md-3">
-                    <div class="small text-uppercase text-muted mb-1">Point</div>
-                    <div>{{ object.points }}</div>
-                </div>
-                {% if object.station %}
-                    <div class="col-md-6">
-                        <div class="small text-uppercase text-muted mb-1">Station</div>
-                        <div>{{ object.station.name }}</div>
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <div class="small text-uppercase text-muted fw-bold mb-2">Beskrivelse</div>
+                            <div class="p-3 bg-light rounded-3">
+                                {% if object.description %}{{ object.description|tiptap_html }}{% else %}<span class="text-muted fst-italic">Ingen beskrivelse</span>{% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small text-uppercase text-muted mb-1">Type</div>
+                            <div><span class="badge bg-secondary">{{ object.get_task_type_display }}</span></div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small text-uppercase text-muted mb-1">Point</div>
+                            <div><span class="badge bg-info text-dark">{{ object.points }} point</span></div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="small text-uppercase text-muted mb-1">Status</div>
+                            <div>
+                                {% if object.is_published %}
+                                    <span class="badge bg-success">Offentliggjort</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Kladde</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if object.station %}
+                            <div class="col-md-6">
+                                <div class="small text-uppercase text-muted mb-1">Station</div>
+                                <div class="fw-semibold">{{ object.station.name }}</div>
+                            </div>
+                        {% endif %}
+                        {% if object.location %}
+                            <div class="col-md-6">
+                                <div class="small text-uppercase text-muted mb-1">Lokation</div>
+                                <div>{{ object.location }}</div>
+                            </div>
+                        {% endif %}
+                        {% if object.input_mode and object.input_mode != 'none' %}
+                            <div class="col-md-6">
+                                <div class="small text-uppercase text-muted mb-1">Inputtype</div>
+                                <div>{{ object.input_mode }}</div>
+                            </div>
+                        {% endif %}
+                        {% if object.gps_radius_meters %}
+                            <div class="col-md-6">
+                                <div class="small text-uppercase text-muted mb-1">GPS-radius</div>
+                                <div>{{ object.gps_radius_meters }} meter</div>
+                            </div>
+                        {% endif %}
                     </div>
-                {% endif %}
-                {% if object.location %}
-                    <div class="col-md-6">
-                        <div class="small text-uppercase text-muted mb-1">Lokation</div>
-                        <div>{{ object.location }}</div>
-                    </div>
-                {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-light py-3 border-bottom">
+                    <h2 class="h6 fw-bold mb-0">Post QR-kode</h2>
+                </div>
+                <div class="card-body text-center p-4">
+                    {% if qr_url %}
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ qr_url|urlencode }}" 
+                             alt="QR kode for {{ object.title }}" 
+                             class="img-fluid border rounded-3 p-2 bg-white shadow-sm mb-3"
+                             style="max-width: 180px; width: 100%; height: auto;" />
+                        <div class="small text-muted mb-2">
+                            Kode: <strong class="text-dark">{{ qr_code }}</strong>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <a href="{{ qr_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                {% bs_icon 'box-arrow-up-right' %} Åbn post link
+                            </a>
+                            <a href="https://api.qrserver.com/v1/create-qr-code/?size=600x600&data={{ qr_url|urlencode }}" 
+                               download="qr-{{ qr_code }}.png" 
+                               target="_blank" 
+                               class="btn btn-sm btn-outline-secondary">
+                                {% bs_icon 'download' %} Hent QR-billede
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText('{{ qr_url }}'); this.textContent='Kopieret!'; setTimeout(() => this.textContent='Kopiér link', 1500);">
+                                Kopiér link
+                            </button>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning small text-start mb-3">
+                            Tilknyt en station eller angiv en QR-kode for at generere adgangs-QR til holdene.
+                        </div>
+                        <a href="{% url 'Loeb_Task_update' object.pk %}" class="btn btn-sm btn-outline-warning w-100">
+                            {% bs_icon 'pencil' %} Tilknyt station
+                        </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

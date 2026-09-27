@@ -31,6 +31,7 @@ django-constance>=4.3.5
 Pillow>=12.3.0
 django-embed-video==1.4.10
 django-map-location==0.9.2
+django-tiptap-editor>=0.10.0
 apprise==1.9.8
 
 # Static Files & Compression

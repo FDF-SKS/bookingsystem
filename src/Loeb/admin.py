@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import reverse
+from django_tiptap_editor.admin.mixin import TipTapModelAdminMixin
 from import_export.admin import ImportExportModelAdmin
 from unfold.admin import ModelAdmin
 
@@ -52,7 +53,7 @@ class PhysicalStationAdmin(ModelAdmin, ImportExportModelAdmin):
 
 
 @admin.register(models.Task)
-class TaskAdmin(ModelAdmin, ImportExportModelAdmin):
+class TaskAdmin(TipTapModelAdminMixin, ModelAdmin, ImportExportModelAdmin):
     list_display = ('title', 'loeb', 'task_type', 'is_published', 'station', 'created')
     list_filter = ('task_type', 'is_published', 'loeb')
     search_fields = ('title', 'description', 'loeb__name')

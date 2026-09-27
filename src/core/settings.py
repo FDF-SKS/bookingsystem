@@ -103,6 +103,7 @@ INSTALLED_APPS = [
     'simple_history',
     'embed_video',
     'map_location',
+    'django_tiptap_editor',
     'organization',
     'django.contrib.staticfiles',
     'import_export',

@@ -9,6 +9,9 @@
             <p class="text-muted mb-0">{{ object.team.name }}</p>
         </div>
         <div class="d-flex gap-2">
+            <a href="{% url 'Loeb_Loeb_preview' object.pk %}" class="btn btn-outline-success">
+                {% bs_icon 'qr-code-scan' %} Forhåndsvisning & QR
+            </a>
             <a href="{% url 'Loeb_Loeb_update' object.pk %}" class="btn btn-outline-secondary">Rediger</a>
             <a href="{% url 'Loeb_Loeb_list' %}" class="btn btn-primary">Tilbage</a>
         </div>
@@ -167,7 +170,12 @@
         <div class="card-body">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2 class="h4 fw-bold mb-0">Opgaver i løbet</h2>
-                <a href="{% url 'Loeb_Task_create' %}?loeb={{ object.pk }}" class="btn btn-primary btn-sm">Ny opgave</a>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'Loeb_Loeb_preview' object.pk %}" class="btn btn-outline-primary btn-sm">
+                        {% bs_icon 'eye' %} Forhåndsvis alle & QR
+                    </a>
+                    <a href="{% url 'Loeb_Task_create' %}?loeb={{ object.pk }}" class="btn btn-primary btn-sm">Ny opgave</a>
+                </div>
             </div>
 
             {% if object.tasks.all %}

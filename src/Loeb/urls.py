@@ -16,6 +16,7 @@ urlpatterns = [
     path('Loeb/', views.LoebListView.as_view(), name='Loeb_Loeb_list'),
     path('Loeb/create/', views.LoebCreateView.as_view(), name='Loeb_Loeb_create'),
     path('Loeb/detail/<int:pk>/', views.LoebDetailView.as_view(), name='Loeb_Loeb_detail'),
+    path('Loeb/<int:pk>/preview/', views.LoebPreviewView.as_view(), name='Loeb_Loeb_preview'),
     path('Loeb/update/<int:pk>/', views.LoebUpdateView.as_view(), name='Loeb_Loeb_update'),
     path('Loeb/delete/<int:pk>/', views.LoebDeleteView.as_view(), name='Loeb_Loeb_delete'),
 

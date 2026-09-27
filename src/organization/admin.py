@@ -32,6 +32,7 @@ from .models import (
     TeamEventMembership,
     TeamMembership,
     Volunteer,
+    VolunteerAppointment,
 )
 
 # 1. Widget specifically for creating Teams on the fly
@@ -333,4 +334,80 @@ class VolunteerAdmin(SimpleHistoryAdmin, ModelAdmin, ImportExportModelAdmin):
             self.message_user(request, f'Added to event: {next_event}', messages.SUCCESS)
         else:
             self.message_user(request, "No upcoming events found.", messages.ERROR)
+
+
+@admin.register(VolunteerAppointment)
+class VolunteerAppointmentAdmin(ModelAdmin):
+    list_display = [
+        "__str__",
+        "requester",
+        "get_requester_teams",
+        "receiver",
+        "get_receiver_teams",
+        "start_date",
+        "start_time",
+        "status",
+        "created",
+    ]
+    
+    list_filter = [
+        "status",
+        "start_date",
+        "requester__teams",
+        "receiver__teams",
+    ]
+    
+    search_fields = [
+        "requester__first_name",
+        "requester__last_name",
+        "receiver__first_name",
+        "receiver__last_name",
+        "description",
+    ]
+    
+    # Pre-select relational objects for fast database queries
+    raw_id_fields = ["requester", "receiver"]
+    
+    # Group fields nicely in the detail form
+    fieldsets = (
+        ("Deltagere", {
+            "fields": ("requester", "receiver")
+        }),
+        ("Tid og Sted", {
+            "fields": (("start_date", "end_date"), ("start_time", "end_time"))
+        }),
+        ("Detaljer", {
+            "fields": ("description", "status")
+        }),
+        ("Systeminfo", {
+            "classes": ("collapse",),
+            "fields": ("created", "last_updated"),
+        }),
+    )
+    
+    readonly_fields = ["created", "last_updated"]
+
+    def get_queryset(self, request):
+        """Optimize queries by prefetching related teams to avoid N+1 queries."""
+        qs = super().get_queryset(request)
+        return qs.select_related("requester", "receiver").prefetch_related(
+            "requester__teams", 
+            "receiver__teams"
+        )
+
+    @admin.display(description="Afsender Team")
+    def get_requester_teams(self, obj):
+        """Returns all teams for the requester as a comma-separated string."""
+        teams = obj.requester.teams.all()
+        if teams:
+            return ", ".join([getattr(t, "name", str(t)) for t in teams])
+        return "-"
+
+    @admin.display(description="Modtager Team")
+    def get_receiver_teams(self, obj):
+        """Returns all teams for the receiver as a comma-separated string."""
+        teams = obj.receiver.teams.all()
+        if teams:
+            return ", ".join([getattr(t, "name", str(t)) for t in teams])
+        return "-"
 

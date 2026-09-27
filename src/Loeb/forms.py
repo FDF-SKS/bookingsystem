@@ -1,4 +1,5 @@
 from django import forms
+from django_tiptap_editor.widgets.tiptap_widget import TipTapWidget
 
 from organization.models import Team, TeamMembership
 
@@ -80,7 +81,7 @@ class TaskForm(forms.ModelForm):
         widgets = {
             'loeb': forms.Select(attrs={'class': 'form-select'}),
             'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
+            'description': TipTapWidget(),
             'task_type': forms.Select(attrs={'class': 'form-select'}),
             'station': forms.Select(attrs={'class': 'form-select'}),
             'gps_radius_meters': forms.NumberInput(attrs={'class': 'form-control'}),
