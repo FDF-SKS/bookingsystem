@@ -128,7 +128,7 @@ def send_ical_via_email(queryset, email_template, from_email):
                     "attachments": [
                         {
                             "filename": f"booking_{booking.id}.ics",
-                            "content": ical_content.decode("utf-8", errors="replace"),
+                            "content": ical_content,
                             "mimetype": "text/calendar",
                         }
                     ],

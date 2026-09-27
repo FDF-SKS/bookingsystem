@@ -393,22 +393,27 @@ class AktivitetsTeamBookingAdmin(AktivitetsTeamBaseAdmin):
         if not queryset.exists():
             self.message_user(request, "Vælg mindst én booking for at sende.", messages.WARNING)
             return
-        
-        email_template = "AktivitetsTeam/ical_email_template.html"
-        email_count = send_ical_via_email(queryset, email_template, settings.DEFAULT_FROM_EMAIL)
 
-        if email_count > 0:
-            self.message_user(
-                request, 
-                f"✅ {email_count} email(s) sat i kø til afsendelse i baggrunden.",
-                messages.SUCCESS
-            )
-        else:
+        queryset = queryset.filter(assigned_aktivitetsteam__isnull=False).distinct()
+        if not queryset.exists():
             self.message_user(
                 request,
                 f"⚠️ Ingen frivillige tilknyttet de valgte bookinger.",
                 messages.WARNING
             )
+            return
+
+        email_template = "AktivitetsTeam/ical_email_template.html"
+        queued_email_count = send_ical_via_email(queryset, email_template, settings.DEFAULT_FROM_EMAIL)
+
+        if queued_email_count > 0:
+            self.message_user(
+                request, 
+                f"✅ {queued_email_count} email(s) sat i kø til afsendelse i baggrunden.",
+                messages.SUCCESS
+            )
+        else:
+            self.message_user(request, "⚠️ Ingen emails blev sat i kø.", messages.WARNING)
 
 
 # ============================================================================

@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+import base64
 
 from django.conf import settings
 
@@ -11,25 +12,26 @@ def _normalize_attachments(attachments):
     for attachment in attachments or []:
         content = attachment.get("content", "")
         if isinstance(content, bytes):
-            content = content.decode("utf-8", errors="replace")
+            content = base64.b64encode(content).decode("ascii")
         normalized.append(
             {
                 "filename": attachment.get("filename", "attachment.txt"),
                 "content": content,
                 "mimetype": attachment.get("mimetype", "application/octet-stream"),
+                "is_base64": isinstance(attachment.get("content", ""), bytes),
             }
         )
     return normalized
 
 
 def queue_bulk_emails(messages: Iterable[dict]) -> int:
-    logs = []
+    created_logs = []
     for message in messages:
         recipient = message.get("recipient")
         if not recipient:
             continue
-        logs.append(
-            EmailLog(
+        created_logs.append(
+            EmailLog.objects.create(
                 recipient=recipient,
                 subject=message.get("subject", ""),
                 body=message.get("body", ""),
@@ -39,9 +41,8 @@ def queue_bulk_emails(messages: Iterable[dict]) -> int:
             )
         )
 
-    if not logs:
+    if not created_logs:
         return 0
 
-    created_logs = EmailLog.objects.bulk_create(logs)
     send_email_logs.delay([email_log.id for email_log in created_logs])
     return len(created_logs)

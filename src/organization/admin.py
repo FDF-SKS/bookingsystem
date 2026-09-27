@@ -326,6 +326,10 @@ class EmailLogAdmin(ModelAdmin):
     @action(description="Genafsend fejlede mails")
     def resend_failed_emails(self, request, queryset):
         failed_logs = queryset.filter(status=EmailLog.STATUS_FAILED)
+        failed_log_ids = list(failed_logs.values_list("id", flat=True))
+        if not failed_log_ids:
+            self.message_user(request, "Ingen fejlede mails valgt til genafsendelse.", messages.WARNING)
+            return
         updated = failed_logs.update(status=EmailLog.STATUS_PENDING, error_message="", sent_at=None, attempts=0)
-        send_email_logs.delay(list(failed_logs.values_list("id", flat=True)))
+        send_email_logs.delay(failed_log_ids)
         self.message_user(request, f"{updated} fejlede mails sat i kø til genafsendelse.", messages.SUCCESS)
