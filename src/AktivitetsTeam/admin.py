@@ -395,18 +395,12 @@ class AktivitetsTeamBookingAdmin(AktivitetsTeamBaseAdmin):
             return
         
         email_template = "AktivitetsTeam/ical_email_template.html"
-        email_count = 0
-        
-        for booking in queryset:
-            assigned = booking.assigned_aktivitetsteam.all()
-            if assigned.exists():
-                send_ical_via_email(queryset, email_template, settings.DEFAULT_FROM_EMAIL)
-                email_count += len(assigned)
-        
+        email_count = send_ical_via_email(queryset, email_template, settings.DEFAULT_FROM_EMAIL)
+
         if email_count > 0:
             self.message_user(
                 request, 
-                f"✅ {email_count} email(s) sendt til frivillige.",
+                f"✅ {email_count} email(s) sat i kø til afsendelse i baggrunden.",
                 messages.SUCCESS
             )
         else:
@@ -447,4 +441,3 @@ class AktivitetsTeamBookingAdminForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-

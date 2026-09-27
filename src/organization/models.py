@@ -274,7 +274,34 @@ class VolunteerAppointment(models.Model):
         return reverse("organization_VolunteerAppointment_update", args=(self.pk,))
     
 
+class EmailLog(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_SENT = "sent"
+    STATUS_FAILED = "failed"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_SENT, "Sent"),
+        (STATUS_FAILED, "Failed"),
+    ]
 
+    recipient = models.EmailField(db_index=True)
+    subject = models.CharField(max_length=255)
+    body = models.TextField(blank=True)
+    html_body = models.TextField(blank=True)
+    from_email = models.EmailField(blank=True)
+    attachments = models.JSONField(default=list, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    error_message = models.TextField(blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    created = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created"]
+
+    def __str__(self):
+        return f"{self.recipient} - {self.subject} ({self.status})"
 
 
 
