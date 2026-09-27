@@ -1,8 +1,8 @@
 from icalendar import Calendar, Event, vCalAddress, vText, Alarm
 from datetime import datetime, timedelta
-from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from organization.email_service import queue_bulk_emails
 
 def convert_to_ical(booking):
     ical_event = Event()
@@ -105,6 +105,7 @@ def export_selected_to_ical(queryset):
     return calendar.to_ical()
 
 def send_ical_via_email(queryset, email_template, from_email):
+    messages = []
     for booking in queryset:
         calendar = Calendar()
         ical_event = convert_to_ical(booking)
@@ -117,12 +118,20 @@ def send_ical_via_email(queryset, email_template, from_email):
             message = render_to_string(email_template, context)
             plain_message = strip_tags(message)
 
-            email = EmailMessage(
-                subject=subject,
-                body=plain_message,
-                from_email=from_email,
-                to=[volunteer.email],
+            messages.append(
+                {
+                    "recipient": volunteer.email,
+                    "subject": subject,
+                    "body": plain_message,
+                    "html_body": message,
+                    "from_email": from_email,
+                    "attachments": [
+                        {
+                            "filename": f"booking_{booking.id}.ics",
+                            "content": ical_content,
+                            "mimetype": "text/calendar",
+                        }
+                    ],
+                }
             )
-            email.attach(f"booking_{booking.id}.ics", ical_content, "text/calendar")
-            email.send()
-
+    return queue_bulk_emails(messages)

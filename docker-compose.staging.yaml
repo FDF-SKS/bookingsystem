@@ -47,6 +47,32 @@ services:
     # Collect static files first so nginx can serve them, then run migrations and start the dev server
     command: sh -c "python manage.py collectstatic --noinput && python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
 
+  celery_worker:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: always
+    env_file:
+      - .env.staging
+    entrypoint: []
+    command: celery -A core worker -l info
+
+  celery_beat:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: always
+    env_file:
+      - .env.staging
+    entrypoint: []
+    command: celery -A core beat -l info
+
 volumes:
   postgres_data_staging:
   static_volume:

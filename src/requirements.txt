@@ -38,6 +38,7 @@ whitenoise>=6.12.0
 django-compressor>=4.6
 django-simple-history>=3.11.0
 django-redis>=6.0.0
+celery>=5.4.0
 
 # Geographic Data
 geopy>=2.5.0

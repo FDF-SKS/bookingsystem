@@ -16,6 +16,7 @@ from unfold.contrib.constance.settings import UNFOLD_CONSTANCE_ADDITIONAL_FIELDS
 from django.urls import reverse_lazy
 from pathlib import Path
 from dotenv import load_dotenv
+from celery.schedules import crontab
 import os
 
 import os
@@ -67,15 +68,16 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 if ENVIRONMENT in ['staging', 'production']:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'smtp.gmail.com'
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')     
-    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD') 
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.seniorkursussletten.dk')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+    EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', 30))
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'slettenbooking@gmail.com')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@seniorkursussletten.dk')
 
 # Debug setting
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
@@ -276,6 +278,20 @@ TIME_ZONE = 'Europe/Copenhagen'
 USE_L10N = True
 USE_I18N = True
 USE_TZ = True
+
+# Celery
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', os.environ.get('REDIS_URL', 'redis://redis:6379/1'))
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', CELERY_BROKER_URL)
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_BEAT_SCHEDULE = {
+    'send-daily-role-updates': {
+        'task': 'organization.tasks.send_daily_role_updates',
+        'schedule': crontab(hour=7, minute=0),
+    }
+}
 
 
 
@@ -520,5 +536,3 @@ UNFOLD = {
         ],
     },
 }
-
-

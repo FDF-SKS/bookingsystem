@@ -53,6 +53,32 @@ services:
       - /root/booking-system/static:/app/staticfiles
       - /root/booking-system/media:/app/media
 
+  celery_worker:
+    image: mglavind/booking-app:latest
+    restart: always
+    env_file:
+      - .env
+    entrypoint: []
+    command: celery -A core worker -l info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  celery_beat:
+    image: mglavind/booking-app:latest
+    restart: always
+    env_file:
+      - .env
+    entrypoint: []
+    command: celery -A core beat -l info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
   nginx:
     image: nginx:latest
     container_name: nginx_proxy
