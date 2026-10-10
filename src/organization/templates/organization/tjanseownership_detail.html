@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load bootstrap_icons %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="d-none d-md-block">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'organization_TjanseOwnership_list' %}">Tjanser</a></li>
+            <li class="breadcrumb-item active">{{ ownership.tjanse.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">{{ ownership.tjanse.title }}</h1>
+        <span class="badge rounded-pill
+            {% if ownership.status == 'done' %}bg-success
+            {% elif ownership.status == 'not_done' %}bg-danger
+            {% elif ownership.status == 'in_progress' %}bg-info text-dark
+            {% else %}bg-warning text-dark{% endif %} px-3 py-2">
+            {{ ownership.get_status_display }}
+        </span>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body">
+            <h5 class="mb-3">Beskrivelse</h5>
+            {% if ownership.tjanse.description.html %}
+                <div class="tjanse-description">{{ ownership.tjanse.description }}</div>
+            {% else %}
+                <p class="text-muted mb-0">Ingen beskrivelse endnu.</p>
+            {% endif %}
+            <hr>
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Event</dt>
+                <dd class="col-sm-9">{{ ownership.event.name }}</dd>
+                <dt class="col-sm-3">Team</dt>
+                <dd class="col-sm-9">{{ ownership.team.name }}</dd>
+                {% if ownership.due_date %}
+                <dt class="col-sm-3">Frist</dt>
+                <dd class="col-sm-9">{{ ownership.due_date|date:"d/m/Y" }}</dd>
+                {% endif %}
+            </dl>
+            {% if ownership.status != 'done' %}
+            <form method="post" action="{% url 'tjanse_ownership_status_update' pk=ownership.pk new_status='done' %}" class="mt-2">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline-success">Markér udført</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if pending_swaps %}
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body">
+            <h5 class="mb-3">{% bs_icon "arrow-left-right" %} Igangværende byt</h5>
+            <ul class="list-unstyled mb-0">
+                {% for swap in pending_swaps %}
+                <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span>{{ swap.requesting_team.name }} → {{ swap.receiving_team.name }}</span>
+                    <span class="badge rounded-pill bg-warning text-dark px-2 py-1">Afventer</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% elif can_request_swap %}
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-body">
+            <h5 class="mb-3">Anmod om byt</h5>
+            <form method="post" action="{% url 'tjanse_request_swap' pk=ownership.pk %}" class="d-flex align-items-center gap-2">
+                {% csrf_token %}
+                <select name="receiving_team" class="form-select form-select-sm w-auto" required>
+                    <option value="">Vælg team at anmode</option>
+                    {% for team in teams %}
+                    <option value="{{ team.pk }}">{{ team.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-sm btn-outline-primary">Send anmodning</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card shadow-sm border-0 rounded-3">
+        <div class="card-body">
+            <h5 class="mb-3">Historik</h5>
+            <ul class="list-unstyled mb-0">
+                {% for record in history %}
+                <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span>
+                        {% if record.history_type == '+' %}Oprettet{% elif record.history_type == '-' %}Slettet{% else %}Ændret{% endif %}
+                        · {{ record.team.name }} · {{ record.get_status_display }}
+                    </span>
+                    <small class="text-muted">{{ record.history_date|date:"d/m/Y H:i" }}</small>
+                </li>
+                {% empty %}
+                <li class="text-muted">Ingen historik endnu.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

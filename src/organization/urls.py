@@ -17,6 +17,9 @@ router.register("Team", api.TeamViewSet)
 router.register("TeamMembership", api.TeamMembershipViewSet)
 router.register("Volunteer", api.VolunteerViewSet)
 router.register("Key", api.KeyViewSet)
+router.register("Tjanse", api.TjanseViewSet)
+router.register("TjanseOwnership", api.TjanseOwnershipViewSet)
+router.register("TjanseSwapRequest", api.TjanseSwapRequestViewSet)
 
 
 urlpatterns = [
@@ -90,5 +93,14 @@ urlpatterns = [
      path('appointment/<int:pk>/delete/', views.VolunteerAppointmentDeleteView.as_view(), name='organization_VolunteerAppointment_delete'),
      path('appointment/<int:pk>/status/<str:new_status>/', views.appointment_status_update, name='appointment_status_update'),
      path('appointment/<int:pk>/comment/', views.appointment_comment_add, name='appointment_comment_add'),
+
+     path('tjanse/', views.TjanseOwnershipListView.as_view(), name='organization_TjanseOwnership_list'),
+     path('tjanse/overblik/', views.TjanseOverviewView.as_view(), name='organization_Tjanse_overview'),
+     path('tjanse/<int:pk>/', views.TjanseOwnershipDetailView.as_view(), name='organization_TjanseOwnership_detail'),
+     path('tjanse/<int:pk>/status/<str:new_status>/', views.tjanse_ownership_status_update, name='tjanse_ownership_status_update'),
+     path('tjanse/<int:pk>/anmod-byt/', views.tjanse_request_swap, name='tjanse_request_swap'),
+     path('tjanse/swap/', views.TjanseSwapRequestListView.as_view(), name='organization_TjanseSwapRequest_list'),
+     path('tjanse/swap/create/', views.TjanseSwapRequestCreateView.as_view(), name='organization_TjanseSwapRequest_create'),
+     path('tjanse/swap/<int:pk>/status/<str:new_status>/', views.tjanse_swap_request_update, name='tjanse_swap_request_update'),
 ]
 

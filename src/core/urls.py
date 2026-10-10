@@ -7,6 +7,7 @@ from django.shortcuts import render
 #from debug_toolbar.toolbar import debug_toolbar_urls
 from django.conf.urls import handler404, handler500, handler403
 from django.conf.urls.static import static
+from .tiptap_uploads import TipTapImageUploadView
 
 handler404 = 'django.views.defaults.page_not_found'
 handler500 = 'django.views.defaults.server_error'
@@ -14,6 +15,7 @@ handler403 = 'django.views.defaults.permission_denied'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('tiptap/images/upload/', TipTapImageUploadView.as_view(), name='tiptap_image_upload'),
     path('', views.index, name='index'),  # Protect the view with login_required
     path('organization/', include('organization.urls')),
     path('butikken/', include('Butikken.urls')),

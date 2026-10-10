@@ -6,6 +6,7 @@ from simple_history.models import HistoricalRecords
 from PIL import Image
 from io import BytesIO
 from django.core.files.base import ContentFile
+from django_tiptap_editor.fields import TipTapJSONField
 import os
 
 
@@ -272,6 +273,119 @@ class VolunteerAppointment(models.Model):
 
     def get_update_url(self):
         return reverse("organization_VolunteerAppointment_update", args=(self.pk,))
+
+
+class Tjanse(models.Model):
+    """Reusable duty/chore template (e.g. 'Opvask'), assigned to teams per event via TjanseOwnership."""
+
+    title = models.CharField(max_length=100)
+    description = TipTapJSONField(blank=True, default=dict)
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+    last_updated = models.DateTimeField(auto_now=True, editable=False)
+
+    class Meta:
+        verbose_name = "Tjanse"
+
+    def __str__(self):
+        return self.title
+
+
+class TjanseOwnership(models.Model):
+    """Assignment of a Tjanse to a Team for a given Event, tracked with a history of team reassignments."""
+
+    STATUS_CHOICES = [
+        ('assigned', 'Tildelt'),
+        ('in_progress', 'I Gang'),
+        ('done', 'Udført'),
+        ('not_done', 'Ikke Udført'),
+    ]
+
+    tjanse = models.ForeignKey("organization.Tjanse", on_delete=models.CASCADE, related_name="ownerships")
+    event = models.ForeignKey("organization.Event", on_delete=models.CASCADE, related_name="tjanse_ownerships")
+    team = models.ForeignKey("organization.Team", on_delete=models.CASCADE, related_name="tjanse_ownerships")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='assigned')
+    due_date = models.DateField(null=True, blank=True)
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+    last_updated = models.DateTimeField(auto_now=True, editable=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "Tjanse-tildeling"
+        verbose_name_plural = "Tjanse-tildelinger"
+
+    def __str__(self):
+        return f"{self.tjanse} - {self.team} ({self.get_status_display()})"
+
+    def get_absolute_url(self):
+        return reverse("organization_TjanseOwnership_detail", args=(self.pk,))
+
+    def get_update_url(self):
+        return reverse("organization_TjanseOwnership_update", args=(self.pk,))
+
+
+class TjanseSwapRequest(models.Model):
+    """Request from one team to hand a TjanseOwnership over to another team."""
+
+    STATUS_CHOICES = [
+        ('pending', 'Afventer (Pending)'),
+        ('accepted', 'Accepteret'),
+        ('rejected', 'Afvist'),
+        ('cancelled', 'Annulleret'),
+    ]
+
+    task_ownership = models.ForeignKey(
+        "organization.TjanseOwnership",
+        on_delete=models.CASCADE,
+        related_name="swap_requests"
+    )
+    requesting_team = models.ForeignKey(
+        "organization.Team",
+        on_delete=models.CASCADE,
+        related_name="requested_tjanse_swaps"
+    )
+    receiving_team = models.ForeignKey(
+        "organization.Team",
+        on_delete=models.CASCADE,
+        related_name="received_tjanse_swaps"
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    resolved_by = models.ForeignKey(
+        "organization.Volunteer",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Sat hvis en administrator har godkendt/afvist byttet på vegne af modtagerteamet."
+    )
+    created = models.DateTimeField(auto_now_add=True)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Tjanse-bytte"
+        verbose_name_plural = "Tjanse-bytter"
+
+    def __str__(self):
+        return f"{self.requesting_team} -> {self.receiving_team} ({self.task_ownership})"
+
+    def get_absolute_url(self):
+        return reverse("organization_TjanseSwapRequest_detail", args=(self.pk,))
+
+    def get_update_url(self):
+        return reverse("organization_TjanseSwapRequest_update", args=(self.pk,))
+
+    def accept(self, resolved_by=None):
+        """Transfer ownership to the receiving team and mark the swap accepted."""
+        self.task_ownership.team = self.receiving_team
+        self.task_ownership.save()
+        self.status = 'accepted'
+        self.resolved_by = resolved_by
+        self.save()
+
+    def reject(self, resolved_by=None):
+        self.status = 'rejected'
+        self.resolved_by = resolved_by
+        self.save()
     
 
 

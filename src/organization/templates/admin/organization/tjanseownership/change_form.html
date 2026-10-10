@@ -1,0 +1,37 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block after_field_sets %}
+    {{ block.super }}
+    {% if ownership_history %}
+    <section class="mt-6 overflow-hidden rounded-default border border-base-200 bg-white dark:border-base-700 dark:bg-base-900">
+        <div class="border-b border-base-200 px-4 py-3 dark:border-base-700">
+            <h2 class="text-base font-semibold text-base-900 dark:text-base-100">Ændringshistorik</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-base-200 bg-base-50 text-left dark:border-base-700 dark:bg-base-800">
+                        <th class="px-4 py-2 font-medium">Dato</th>
+                        <th class="px-4 py-2 font-medium">Ændring</th>
+                        <th class="px-4 py-2 font-medium">Team</th>
+                        <th class="px-4 py-2 font-medium">Status</th>
+                        <th class="px-4 py-2 font-medium">Bruger</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-base-200 dark:divide-base-700">
+                    {% for record in ownership_history %}
+                    <tr>
+                        <td class="whitespace-nowrap px-4 py-2">{{ record.history_date|date:"d/m/Y H:i" }}</td>
+                        <td class="px-4 py-2">{% if record.history_type == "+" %}Oprettet{% elif record.history_type == "-" %}Slettet{% else %}Ændret{% endif %}</td>
+                        <td class="px-4 py-2">{{ record.team|default:"-" }}</td>
+                        <td class="px-4 py-2">{{ record.get_status_display }}</td>
+                        <td class="px-4 py-2">{{ record.history_user|default:"-" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+{% endblock %}

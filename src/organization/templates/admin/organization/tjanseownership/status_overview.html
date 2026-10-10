@@ -1,0 +1,75 @@
+{% extends "admin/base_site.html" %}
+{% load i18n unfold %}
+
+{% block title %}Tjanse-statusoversigt{% endblock %}
+
+{% block content %}
+{% component "unfold/components/container.html" %}
+    <div class="flex flex-col gap-6">
+        <div>
+            {% component "unfold/components/title.html" %}Tjanse-status{% endcomponent %}
+            <p class="mt-1 text-sm text-base-500 dark:text-base-400">
+                Se ansvarlige teams og status for hver tjanse på eventet.
+            </p>
+        </div>
+
+        <form method="get" class="flex flex-col gap-1 p-4 sm:flex-row sm:items-end">
+            <div class="flex min-w-0 flex-1 flex-col gap-1">
+                <label for="id_event" class="text-sm font-medium text-base-700 dark:text-base-200">Event</label>
+                <select id="id_event" name="event" onchange="this.form.submit()"
+                        class="w-full rounded-default border border-base-200 bg-white px-3 py-2 text-sm text-base-700 shadow-sm outline-none transition focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 dark:border-base-700 dark:bg-base-900 dark:text-base-200">
+                    {% for event in events %}
+                    <option value="{{ event.pk }}" {% if selected_event and event.pk == selected_event.pk %}selected{% endif %}>{{ event.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+
+        <div class="max-h-[75vh] overflow-auto">
+            <table class="w-full min-w-[1120px] border-collapse text-sm">
+                <thead>
+                    <tr class="border-b border-base-200 bg-base-50 dark:border-base-700 dark:bg-base-800">
+                        <th class="sticky left-0 top-0 z-20 w-48 bg-base-50 px-4 py-3 text-left font-semibold text-base-700 dark:bg-base-800 dark:text-base-200">Tjanse</th>
+                        {% for day in days %}
+                        <th class="sticky top-0 z-10 min-w-36 bg-base-50 px-3 py-3 text-center font-semibold text-base-700 dark:bg-base-800 dark:text-base-200">
+                            <span class="block">{{ day|date:"l" }}</span>
+                            <span class="mt-1 block text-xs font-normal text-base-500 dark:text-base-400">{{ day|date:"j/n" }}</span>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-base-200 dark:divide-base-700">
+                    {% for row in rows %}
+                    <tr class="transition hover:bg-base-50 dark:hover:bg-base-800/60">
+                        <td class="sticky left-0 z-10 bg-white px-4 py-3 align-top font-semibold text-base-700 dark:bg-base-900 dark:text-base-200">
+                            {{ row.tjanse.title }}
+                        </td>
+                        {% for cell in row.cells %}
+                        <td class="min-w-36 px-2 py-2 align-top bg-white dark:bg-base-900">
+                            <div class="flex flex-col gap-1">
+                                {% for ownership in cell.ownerships %}
+                                <a href="{% url 'admin:organization_tjanseownership_change' ownership.pk %}"
+                                   class="flex items-center justify-between gap-2 rounded-default border border-base-200 px-2 py-1.5 text-xs hover:border-primary-500 hover:bg-base-50 dark:border-base-700 dark:hover:bg-base-800">
+                                    <span class="font-medium text-base-700 dark:text-base-200">{{ ownership.team.short_name|default:ownership.team.name }}</span>
+                                    <span class="whitespace-nowrap rounded px-1.5 py-0.5 {% if ownership.status == 'done' %}bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200{% elif ownership.status == 'in_progress' %}bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200{% elif ownership.status == 'not_done' %}bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200{% else %}bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-200{% endif %}">
+                                        {{ ownership.get_status_display }}
+                                    </span>
+                                </a>
+                                {% empty %}
+                                <span class="px-2 py-1.5 text-center text-xs text-base-400">&mdash;</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-4 py-12 text-center text-base-500 dark:text-base-400">Der er ingen tjanser at vise.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endcomponent %}
+{% endblock %}

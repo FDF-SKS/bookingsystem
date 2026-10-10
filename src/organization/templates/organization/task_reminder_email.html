@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head></head>
+<body>
+    <h2>Påmindelse: Tjanse ikke udført</h2>
+    <p>Jeres team, {{ team.name }}, har stadig ikke udført følgende tjanse i dag:</p>
+
+    <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0;"><strong>{{ tjanse.title }}</strong></p>
+        {% if tjanse.description %}<p>{{ tjanse.description }}</p>{% endif %}
+        <p><strong>Frist:</strong> {{ due_date }}</p>
+    </div>
+
+    <p>Husk at markere den som udført, når I er færdige:</p>
+    <p><a href="https://booking.seniorkursussletten.dk/organization/tjanse/">Se jeres tjanser</a></p>
+
+    <p>De bedste hilsner,<br>Seniorkursus Sletten Booking</p>
+</body>
+</html>

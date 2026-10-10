@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load bootstrap_icons %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="d-none d-md-block">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'organization_TjanseOwnership_list' %}">Tjanser</a></li>
+            <li class="breadcrumb-item active">Tjanse-bytter</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">Tjanse-bytter</h1>
+        <a href="{% url 'organization_TjanseSwapRequest_create' %}" class="btn btn-primary">
+            {% bs_icon "plus-lg" %} <span class="d-none d-sm-inline">Anmod om bytte</span>
+        </a>
+    </div>
+
+    <div class="list-group shadow-sm border-0 rounded-3">
+        {% for swap in swap_requests %}
+        <div class="list-group-item p-3 border-start-0 border-end-0 border-top-0 border-bottom">
+            <div class="d-flex w-100 justify-content-between align-items-center">
+                <div>
+                    <div class="fw-bold">{{ swap.task_ownership.tjanse.title }}</div>
+                    <small class="text-muted">{{ swap.requesting_team.name }} &rarr; {{ swap.receiving_team.name }}</small>
+                </div>
+                <div class="text-end d-flex align-items-center gap-2">
+                    <span class="badge rounded-pill
+                        {% if swap.status == 'accepted' %}bg-success
+                        {% elif swap.status == 'rejected' %}bg-danger
+                        {% elif swap.status == 'cancelled' %}bg-secondary
+                        {% else %}bg-warning text-dark{% endif %} px-2 py-1">
+                        {{ swap.get_status_display }}
+                    </span>
+                    {% if swap.status == 'pending' %}
+                    <form method="post" action="{% url 'tjanse_swap_request_update' pk=swap.pk new_status='accepted' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">Accepter</button>
+                    </form>
+                    <form method="post" action="{% url 'tjanse_swap_request_update' pk=swap.pk new_status='rejected' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Afvis</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="list-group-item text-center py-5 bg-light">
+            <p class="text-muted mb-0">Ingen tjanse-bytter endnu.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

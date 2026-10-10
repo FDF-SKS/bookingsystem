@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.admin.models import LogEntry, ADDITION
@@ -414,4 +416,173 @@ def appointment_comment_add(request, pk):
     
     messages.success(request, "Kommentar tilføjet!")
     return redirect('organization_VolunteerAppointment_detail', pk=pk)
+
+
+class TjanseOwnershipDetailView(LoginRequiredMixin, generic.DetailView):
+    """Single tjanse assignment: description, swap request and reassignment history."""
+    model = models.TjanseOwnership
+    context_object_name = 'ownership'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_team_ids = set(TeamMembership.objects.filter(member=self.request.user).values_list('team_id', flat=True))
+        pending_swaps = models.TjanseSwapRequest.objects.filter(
+            task_ownership=self.object, status='pending'
+        ).select_related('requesting_team', 'receiving_team')
+
+        context['pending_swaps'] = pending_swaps
+        context['can_request_swap'] = self.object.team_id in user_team_ids and not pending_swaps.exists()
+        context['teams'] = Team.objects.exclude(pk=self.object.team_id).order_by('name')
+        context['history'] = self.object.history.all().select_related('team', 'event').order_by('-history_date')
+        return context
+
+
+@login_required
+@require_POST
+def tjanse_request_swap(request, pk):
+    """Lets a member of the owning team request handing their tjanse to another team."""
+    ownership = get_object_or_404(models.TjanseOwnership, pk=pk)
+    user_team_ids = TeamMembership.objects.filter(member=request.user).values_list('team_id', flat=True)
+    if ownership.team_id not in user_team_ids:
+        raise Http404()
+
+    receiving_team = models.Team.objects.filter(pk=request.POST.get('receiving_team')).exclude(pk=ownership.team_id).first()
+    if receiving_team:
+        models.TjanseSwapRequest.objects.create(
+            task_ownership=ownership,
+            requesting_team_id=ownership.team_id,
+            receiving_team=receiving_team,
+            status='pending',
+        )
+        messages.success(request, "Byt-anmodning sendt.")
+    else:
+        messages.error(request, "Vælg et gyldigt team at anmode.")
+    return redirect('organization_TjanseOwnership_detail', pk=ownership.pk)
+
+
+class TjanseOwnershipListView(LoginRequiredMixin, generic.ListView):
+    """Lists tjanser owned by any team the requesting user belongs to."""
+    model = models.TjanseOwnership
+    context_object_name = 'ownerships'
+
+    def get_queryset(self):
+        user_team_ids = TeamMembership.objects.filter(member=self.request.user).values_list('team_id', flat=True)
+        return models.TjanseOwnership.objects.filter(
+            team_id__in=user_team_ids
+        ).select_related('tjanse', 'event', 'team').order_by('due_date', 'status')
+
+
+class TjanseOverviewView(LoginRequiredMixin, generic.TemplateView):
+    template_name = 'organization/tjanse_overview.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        events = models.Event.objects.filter(is_active=True).order_by('start_date', 'name')
+        event_id = self.request.GET.get('event')
+        selected_event = events.filter(pk=event_id).first() if event_id else events.first()
+
+        days = []
+        rows = []
+        if selected_event:
+            days = [
+                selected_event.start_date + timedelta(days=offset)
+                for offset in range((selected_event.end_date - selected_event.start_date).days + 1)
+            ]
+            ownerships = models.TjanseOwnership.objects.filter(
+                event=selected_event,
+                due_date__gte=selected_event.start_date,
+                due_date__lte=selected_event.end_date,
+            ).select_related('team', 'tjanse').order_by('team__name')
+            ownership_map = {}
+            for ownership in ownerships:
+                ownership_map.setdefault((ownership.tjanse_id, ownership.due_date), []).append(ownership)
+
+            rows = [
+                {
+                    'tjanse': tjanse,
+                    'cells': [
+                        {
+                            'day': day,
+                            'ownerships': ownership_map.get((tjanse.pk, day), []),
+                        }
+                        for day in days
+                    ],
+                }
+                for tjanse in models.Tjanse.objects.order_by('title')
+            ]
+
+        context.update({
+            'events': events,
+            'selected_event': selected_event,
+            'days': days,
+            'rows': rows,
+        })
+        return context
+
+
+@login_required
+@require_POST
+def tjanse_ownership_status_update(request, pk, new_status):
+    """Lets a member of the owning team update the status of their tjanse."""
+    ownership = get_object_or_404(models.TjanseOwnership, pk=pk)
+    user_team_ids = TeamMembership.objects.filter(member=request.user).values_list('team_id', flat=True)
+    if ownership.team_id not in user_team_ids:
+        raise Http404()
+    if new_status in dict(models.TjanseOwnership.STATUS_CHOICES):
+        ownership.status = new_status
+        if new_status == 'done':
+            ownership.completed_at = now()
+        ownership.save()
+        messages.success(request, "Status opdateret.")
+    return redirect('organization_TjanseOwnership_list')
+
+
+class TjanseSwapRequestCreateView(LoginRequiredMixin, generic.CreateView):
+    """Lets a team member request handing a tjanse over to another team."""
+    model = models.TjanseSwapRequest
+    fields = ['task_ownership', 'receiving_team']
+    success_url = reverse_lazy('organization_TjanseSwapRequest_list')
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        user_team_ids = TeamMembership.objects.filter(member=self.request.user).values_list('team_id', flat=True)
+        form.fields['task_ownership'].queryset = models.TjanseOwnership.objects.filter(team_id__in=user_team_ids)
+        form.fields['receiving_team'].queryset = Team.objects.exclude(id__in=user_team_ids)
+        return form
+
+    def form_valid(self, form):
+        form.instance.requesting_team = form.instance.task_ownership.team
+        form.instance.status = 'pending'
+        return super().form_valid(form)
+
+
+class TjanseSwapRequestListView(LoginRequiredMixin, generic.ListView):
+    """Lists swap requests where the user's team is either party."""
+    model = models.TjanseSwapRequest
+    context_object_name = 'swap_requests'
+
+    def get_queryset(self):
+        user_team_ids = TeamMembership.objects.filter(member=self.request.user).values_list('team_id', flat=True)
+        return models.TjanseSwapRequest.objects.filter(
+            Q(requesting_team_id__in=user_team_ids) | Q(receiving_team_id__in=user_team_ids)
+        ).select_related('task_ownership__tjanse', 'requesting_team', 'receiving_team').order_by('-created')
+
+
+@login_required
+@require_POST
+def tjanse_swap_request_update(request, pk, new_status):
+    """Lets a member of the receiving team accept or reject a swap request."""
+    swap = get_object_or_404(models.TjanseSwapRequest, pk=pk, status='pending')
+    user_team_ids = TeamMembership.objects.filter(member=request.user).values_list('team_id', flat=True)
+    if swap.receiving_team_id not in user_team_ids:
+        raise Http404()
+    if new_status == 'accepted':
+        from .signals import send_tjanse_assigned_email
+        swap.accept(resolved_by=request.user)
+        send_tjanse_assigned_email(swap.task_ownership)
+        messages.success(request, "Tjanse-byttet blev accepteret.")
+    elif new_status == 'rejected':
+        swap.reject(resolved_by=request.user)
+        messages.success(request, "Tjanse-byttet blev afvist.")
+    return redirect('organization_TjanseSwapRequest_list')
 

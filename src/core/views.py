@@ -200,6 +200,31 @@ def index(request):
             'url': f"/depot/bookings/{booking.pk}/",
         })
     
+    # Tjanser (team duties) - only unfinished ones with a due date
+    from organization.models import TjanseOwnership
+    tjanse_ownerships = TjanseOwnership.objects.filter(
+        team_id__in=user_teams,
+        due_date__isnull=False,
+    ).exclude(status='done').exclude(due_date__lt=now.date()).select_related('tjanse', 'event', 'team')
+    tjanse_status_colors = {
+        'assigned': 'warning',
+        'in_progress': 'info',
+        'done': 'success',
+        'not_done': 'danger',
+    }
+    for ownership in tjanse_ownerships:
+        bookings.append({
+            'obj': ownership,
+            'type': 'Tjanse',
+            'icon': 'clipboard-check',
+            'color': 'secondary',
+            'status_color': tjanse_status_colors.get(ownership.status, 'secondary'),
+            'start': datetime.combine(ownership.due_date, time(18, 0)),
+            'end': None,
+            'title': f"{ownership.tjanse.title} ({ownership.team.name})",
+            'url': "/organization/tjanse/",
+        })
+    
     # Sort by start time
     bookings.sort(key=lambda x: x['start'])
     

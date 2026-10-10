@@ -619,3 +619,37 @@ a:hover {
     --bs-btn-bg: var(--bs-secondary) !important;
     --bs-btn-border-color: var(--bs-secondary) !important;
 }
+
+.tjanse-overview-scroll {
+    max-height: 70vh;
+    overflow: auto;
+}
+
+.tjanse-overview-table {
+    --tjanse-col-width: 160px;
+    table-layout: fixed;
+    width: max-content;
+    max-width: none;
+}
+
+.tjanse-overview-table th,
+.tjanse-overview-table td {
+    width: var(--tjanse-col-width);
+    min-width: var(--tjanse-col-width);
+    max-width: var(--tjanse-col-width);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tjanse-overview-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: var(--bs-surface-1);
+}
+
+.tjanse-overview-table .tjanse-overview-first-column {
+    left: 0;
+    z-index: 2;
+    background-color: var(--bs-body-bg);
+}

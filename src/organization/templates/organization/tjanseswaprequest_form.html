@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="d-none d-md-block">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'organization_TjanseSwapRequest_list' %}">Tjanse-bytter</a></li>
+            <li class="breadcrumb-item active">Anmod om bytte</li>
+        </ol>
+    </nav>
+
+    <h1 class="h2 mb-4">Anmod om tjanse-bytte</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        {% bootstrap_form form %}
+        <button type="submit" class="btn btn-primary mt-3">Send anmodning</button>
+    </form>
+</div>
+{% endblock %}

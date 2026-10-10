@@ -34,7 +34,7 @@
                     </div>
 
                     <div>
-                        <div class="fw-bold text-dark">
+                        <div class="fw-bold">
                             {% if appt.requester == user %}
                                 {{ appt.receiver }}
                                 {% with appt.receiver.teams.first as team %}

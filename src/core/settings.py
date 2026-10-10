@@ -308,6 +308,20 @@ LOGIN_URL = 'login_user'
 LOGIN_REDIRECT_URL = '/'  # Change the URL to '/' for root URL redirection
 
 
+TIPTAP_DEFAULT_CONFIG = {
+    "height": "420px",
+    "toolbar": [
+        ["undo", "redo"],
+        ["bold", "italic", "underline", "strike", "code"],
+        ["h1", "h2", "h3", "paragraph"],
+        ["bulletList", "orderedList", "blockquote"],
+        ["link"],
+        ["image"],
+    ],
+    "imageUploadUrl": "/tiptap/images/upload/",
+    "imageFileTypes": "png,jpg,jpeg,webp",
+}
+
 UNFOLD = {
     "SITE_TITLE": "Admin",
     "SITE_HEADER": "SKS Admin",
@@ -317,6 +331,7 @@ UNFOLD = {
     "SHOW_VIEW_ON_SITE": True,
     "SHOW_BACK_BUTTON": True,
     "BORDER_RADIUS": "6px",
+    "STYLES": [lambda request: static("css/tiptap-theme.css")],
     "COLORS": {
         "primary": {
             50: "#FFF0EB",
@@ -364,6 +379,42 @@ UNFOLD = {
                         "title": _("Events"),
                         "icon": "event",
                         "link": reverse_lazy("admin:organization_event_changelist"),
+                    },
+                    {
+                        "title": _("Tjanseoversigt"),
+                        "icon": "calendar_view_week",
+                        "link": reverse_lazy("admin:organization_tjanseownership_overview"),
+                        "active": lambda request: request.resolver_match is not None
+                        and request.resolver_match.url_name == "organization_tjanseownership_overview",
+                    },
+                    {
+                        "title": _("Tjanse-status"),
+                        "icon": "fact_check",
+                        "link": reverse_lazy("admin:organization_tjanseownership_status_overview"),
+                        "active": lambda request: request.resolver_match is not None
+                        and request.resolver_match.url_name == "organization_tjanseownership_status_overview",
+                    },
+                    {
+                        "title": _("Tjanser"),
+                        "icon": "task_alt",
+                        "link": reverse_lazy("admin:organization_tjanse_changelist"),
+                    },
+                    {
+                        "title": _("Tjanse-tildelinger"),
+                        "icon": "assignment",
+                        "link": reverse_lazy("admin:organization_tjanseownership_changelist"),
+                        "active": lambda request: request.resolver_match is not None
+                        and request.resolver_match.url_name in {
+                            "organization_tjanseownership_changelist",
+                            "organization_tjanseownership_add",
+                            "organization_tjanseownership_change",
+                            "organization_tjanseownership_simple_history",
+                        },
+                    },
+                    {
+                        "title": _("Tjanse-bytter"),
+                        "icon": "swap_horiz",
+                        "link": reverse_lazy("admin:organization_tjanseswaprequest_changelist"),
                     },
                 ],
             },

@@ -52,4 +52,28 @@ class KeyViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
 
+class TjanseViewSet(viewsets.ModelViewSet):
+    """ViewSet for the Tjanse class"""
+
+    queryset = models.Tjanse.objects.all()
+    serializer_class = serializers.TjanseSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class TjanseOwnershipViewSet(viewsets.ModelViewSet):
+    """ViewSet for the TjanseOwnership class"""
+
+    queryset = models.TjanseOwnership.objects.all()
+    serializer_class = serializers.TjanseOwnershipSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class TjanseSwapRequestViewSet(viewsets.ModelViewSet):
+    """ViewSet for the TjanseSwapRequest class"""
+
+    queryset = models.TjanseSwapRequest.objects.all()
+    serializer_class = serializers.TjanseSwapRequestSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
 

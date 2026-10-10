@@ -54,6 +54,7 @@ class PhysicalStationAdmin(ModelAdmin, ImportExportModelAdmin):
 
 @admin.register(models.Task)
 class TaskAdmin(TipTapModelAdminMixin, ModelAdmin, ImportExportModelAdmin):
+    tiptap_fields = ["description"]
     list_display = ('title', 'loeb', 'task_type', 'is_published', 'station', 'created')
     list_filter = ('task_type', 'is_published', 'loeb')
     search_fields = ('title', 'description', 'loeb__name')

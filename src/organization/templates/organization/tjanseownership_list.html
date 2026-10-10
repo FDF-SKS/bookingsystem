@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load bootstrap_icons %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="d-none d-md-block">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
+            <li class="breadcrumb-item active">Tjanser</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <h1 class="h2 mb-0">Vores tjanser</h1>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'organization_Tjanse_overview' %}" class="btn btn-outline-primary">
+                {% bs_icon "table" %} <span>Alle tjanser</span>
+            </a>
+            <a href="{% url 'organization_TjanseSwapRequest_list' %}" class="btn btn-outline-secondary">
+                {% bs_icon "arrow-left-right" %} <span>Tjanse-bytter</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="list-group shadow-sm border-0 rounded-3">
+        {% for ownership in ownerships %}
+        <div class="list-group-item p-3 border-start-0 border-end-0 border-top-0 border-bottom">
+            <div class="d-flex w-100 justify-content-between align-items-center">
+                <a href="{% url 'organization_TjanseOwnership_detail' pk=ownership.pk %}" class="text-decoration-none flex-grow-1">
+                    <div class="fw-bold">{{ ownership.tjanse.title }}</div>
+                    <small class="text-muted">{{ ownership.event.name }} · {{ ownership.team.name }}</small>
+                    {% if ownership.due_date %}
+                        <br><small class="text-muted">{% bs_icon "calendar" %} Frist: {{ ownership.due_date|date:"d/m" }}</small>
+                    {% endif %}
+                </a>
+                <div class="text-end d-flex align-items-center gap-2">
+                    <span class="badge rounded-pill
+                        {% if ownership.status == 'done' %}bg-success
+                        {% elif ownership.status == 'not_done' %}bg-danger
+                        {% elif ownership.status == 'in_progress' %}bg-info text-dark
+                        {% else %}bg-warning text-dark{% endif %} px-2 py-1">
+                        {{ ownership.get_status_display }}
+                    </span>
+                    {% if ownership.status != 'done' %}
+                    <form method="post" action="{% url 'tjanse_ownership_status_update' pk=ownership.pk new_status='done' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-success">Markér udført</button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="list-group-item text-center py-5 bg-light">
+            <p class="text-muted mb-0">Dit team har ingen tjanser endnu.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,182 @@
+{% extends "admin/base_site.html" %}
+{% load i18n unfold %}
+
+{% block title %}Tjanseoversigt{% endblock %}
+
+{% block content %}
+{% component "unfold/components/container.html" %}
+    <div class="flex flex-col gap-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                {% component "unfold/components/title.html" %}Tjanser{% endcomponent %}
+                <p class="mt-1 text-sm text-base-500 dark:text-base-400">
+                    Planlæg tjanser pr. dag og tildel dem til et eller flere teams.
+                </p>
+            </div>
+        </div>
+
+            <form method="get" class="flex flex-col gap-1 p-4 sm:flex-row sm:items-end">
+                <div class="flex min-w-0 flex-1 flex-col gap-1">
+                    <label for="id_event" class="text-sm font-medium text-base-700 dark:text-base-200">Event</label>
+                    <select id="id_event" name="event" onchange="this.form.submit()"
+                            class="w-full rounded-default border border-base-200 bg-white px-3 py-2 text-sm text-base-700 shadow-sm outline-none transition focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 dark:border-base-700 dark:bg-base-900 dark:text-base-200">
+                        {% for event in events %}
+                        <option value="{{ event.pk }}" {% if selected_event and event.pk == selected_event.pk %}selected{% endif %}>{{ event.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </form>
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="event" value="{{ selected_event.pk }}">
+                <input type="hidden" name="week_start" value="{{ week_start }}">
+                <div class="max-h-[70vh] overflow-auto">
+                <table class="w-full min-w-[1120px] border-collapse text-sm">
+                    <thead>
+                        <tr class="border-b border-base-200 bg-base-50 dark:border-base-700 dark:bg-base-800">
+                            <th class="sticky left-0 top-0 z-20 w-40 bg-base-50 px-4 py-3 text-left font-semibold text-base-700 dark:bg-base-800 dark:text-base-200">Hvad</th>
+                            {% for day in days %}
+                            <th class="sticky top-0 z-10 min-w-32 bg-base-50 px-3 py-3 text-center font-semibold text-base-700 dark:bg-base-800 dark:text-base-200">
+                                <span class="block">{{ day|date:"l" }}</span>
+                                <span class="mt-1 block text-xs font-normal text-base-500 dark:text-base-400">{{ day|date:"j/n" }}</span>
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-base-200 dark:divide-base-700">
+                        {% for row in rows %}
+                        <tr class="transition hover:bg-base-50 dark:hover:bg-base-800/60">
+                            <td class="sticky left-0 z-10 bg-white px-4 py-3 align-top font-semibold text-base-700 dark:bg-base-900 dark:text-base-200">
+                                <a href="{% url 'admin:organization_tjanse_change' row.tjanse.pk %}" class="text-primary-600 hover:text-primary-700 hover:underline dark:text-primary-400 dark:hover:text-primary-300">
+                                    {{ row.tjanse.title }}
+                                </a>
+                            </td>
+                            {% for cell in row.cells %}
+                            <td class="min-w-32 px-2 py-2 align-top bg-white dark:bg-base-900">
+                                <div class="mb-2 min-h-5 text-xs text-base-600 dark:text-base-300">
+                                    {% if cell.assignment_label %}{{ cell.assignment_label }}{% else %}<span class="text-base-400">Ingen teams</span>{% endif %}
+                                </div>
+                                <div class="team-picker relative">
+                                        <button type="button" aria-haspopup="true" aria-expanded="false"
+                                            data-team-picker-target="team-picker-{{ row.tjanse.pk }}-{{ cell.day|date:'Ymd' }}"
+                                            class="w-full cursor-pointer rounded-default border border-base-200 bg-white px-2 py-1.5 text-center text-xs text-base-700 outline-none hover:bg-base-50 focus:border-primary-600 dark:border-base-700 dark:bg-base-800 dark:text-base-200 dark:hover:bg-base-700">
+                                        Vælg teams
+                                    </button>
+                                     <div id="team-picker-{{ row.tjanse.pk }}-{{ cell.day|date:'Ymd' }}" popover="auto"
+                                         class="team-picker-menu max-h-64 min-w-48 overflow-y-auto rounded-default border border-base-200 bg-white p-2 shadow-lg dark:border-base-700 dark:bg-base-800">
+                                        <label class="flex cursor-pointer items-center gap-2 border-b border-base-200 px-2 py-2 text-xs font-semibold text-base-700 dark:border-base-700 dark:text-base-200">
+                                            <input type="checkbox" name="team_{{ row.tjanse.pk }}_{{ cell.day|date:'Y-m-d' }}" value="all" {% if cell.all_teams %}checked{% endif %}>
+                                            Alle teams
+                                        </label>
+                                        {% for team in teams %}
+                                        <label class="flex cursor-pointer items-center gap-2 px-2 py-1.5 text-xs text-base-700 hover:bg-base-50 dark:text-base-200 dark:hover:bg-base-700">
+                                            <input class="team-picker-option" type="checkbox" name="team_{{ row.tjanse.pk }}_{{ cell.day|date:'Y-m-d' }}" value="{{ team.pk }}" {% if team.pk in cell.team_ids %}checked{% endif %}>
+                                            {{ team.short_name|default:team.name }}
+                                        </label>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="px-4 py-12 text-center text-base-500 dark:text-base-400">Der er ingen tjanser at vise.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+                <div class="flex justify-end border-t border-base-200 px-4 py-3 dark:border-base-700">
+                    {% component "unfold/components/button.html" with submit=1 variant="primary" %}Gem{% endcomponent %}
+                </div>
+            </form>
+
+            <section>
+                <h2 class="mb-3 text-lg font-semibold text-base-900 dark:text-base-100">Tjanse-tildelinger pr. team</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full border-collapse text-sm">
+                        <thead>
+                            <tr class="border-b border-base-200 bg-base-50 dark:border-base-700 dark:bg-base-800">
+                                <th class="px-4 py-3 text-left font-semibold text-base-700 dark:text-base-200">Team</th>
+                                <th class="px-4 py-3 text-right font-semibold text-base-700 dark:text-base-200">Antal tjanse-tildelinger</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-base-200 dark:divide-base-700">
+                            {% for team in team_assignment_counts %}
+                            <tr>
+                                <td class="px-4 py-3 text-base-700 dark:text-base-200">{{ team.short_name|default:team.name }}</td>
+                                <td class="px-4 py-3 text-right tabular-nums text-base-700 dark:text-base-200">{{ team.tjanse_assignment_count }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="2" class="px-4 py-6 text-center text-base-500 dark:text-base-400">Der er ingen teams tilknyttet eventet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+    </div>
+{% endcomponent %}
+<script>
+    document.querySelectorAll(".team-picker").forEach(function (picker) {
+        var trigger = picker.querySelector("[data-team-picker-target]");
+        var menu = document.getElementById(trigger.dataset.teamPickerTarget);
+        var allTeams = picker.querySelector('input[value="all"]');
+        var individualTeams = picker.querySelectorAll(".team-picker-option");
+
+        trigger.addEventListener("click", function () {
+            if (menu.matches(":popover-open")) {
+                menu.hidePopover();
+                trigger.setAttribute("aria-expanded", "false");
+                return;
+            }
+
+            menu.showPopover();
+            var triggerRect = trigger.getBoundingClientRect();
+            var menuRect = menu.getBoundingClientRect();
+            var edge = 8;
+            var top = triggerRect.bottom + 4;
+
+            if (top + menuRect.height > window.innerHeight - edge) {
+                top = Math.max(edge, triggerRect.top - menuRect.height - 4);
+            }
+
+            menu.style.position = "fixed";
+            menu.style.inset = "auto";
+            menu.style.margin = "0";
+            menu.style.left = Math.max(
+                edge,
+                Math.min(triggerRect.left, window.innerWidth - menuRect.width - edge)
+            ) + "px";
+            menu.style.top = top + "px";
+            menu.style.maxHeight = Math.max(96, window.innerHeight - edge * 2) + "px";
+            trigger.setAttribute("aria-expanded", "true");
+        });
+
+        menu.addEventListener("toggle", function (event) {
+            if (event.newState === "closed") {
+                trigger.setAttribute("aria-expanded", "false");
+            }
+        });
+
+        allTeams.addEventListener("change", function () {
+            if (allTeams.checked) {
+                individualTeams.forEach(function (team) {
+                    team.checked = false;
+                });
+            }
+        });
+
+        individualTeams.forEach(function (team) {
+            team.addEventListener("change", function () {
+                if (team.checked) {
+                    allTeams.checked = false;
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

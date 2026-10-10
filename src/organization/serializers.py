@@ -74,4 +74,48 @@ class KeySerializer(serializers.ModelSerializer):
             "current_user",
         ]
 
+class TjanseSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.Tjanse
+        fields = [
+            "id",
+            "title",
+            "description",
+            "created",
+            "last_updated",
+        ]
+
+class TjanseOwnershipSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.TjanseOwnership
+        fields = [
+            "id",
+            "tjanse",
+            "event",
+            "team",
+            "status",
+            "due_date",
+            "assigned_at",
+            "completed_at",
+            "created",
+            "last_updated",
+        ]
+
+class TjanseSwapRequestSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.TjanseSwapRequest
+        fields = [
+            "id",
+            "task_ownership",
+            "requesting_team",
+            "receiving_team",
+            "status",
+            "resolved_by",
+            "created",
+            "last_updated",
+        ]
+
 

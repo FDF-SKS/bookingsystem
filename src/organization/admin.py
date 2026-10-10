@@ -1,14 +1,17 @@
 import csv
 import time
-from datetime import date
+from collections import defaultdict
+from datetime import date, timedelta
 from typing import List
 
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.auth.models import Group
 from django.core.mail import send_mail
+from django.db.models import Count, Q
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+from django.utils import timezone
 from django.template.loader import render_to_string
 from django.urls import path
 from django.urls.resolvers import URLPattern
@@ -18,6 +21,7 @@ from django.utils.translation import ngettext
 from import_export import fields, resources
 from import_export.admin import ImportExportModelAdmin
 from import_export.widgets import ManyToManyWidget
+from django_tiptap_editor.admin.mixin import TipTapModelAdminMixin
 from simple_history.admin import SimpleHistoryAdmin
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.contrib.import_export.forms import ExportForm, ImportForm, SelectableFieldsExportForm
@@ -31,6 +35,9 @@ from .models import (
     Team,
     TeamEventMembership,
     TeamMembership,
+    Tjanse,
+    TjanseOwnership,
+    TjanseSwapRequest,
     Volunteer,
     VolunteerAppointment,
 )
@@ -410,4 +417,272 @@ class VolunteerAppointmentAdmin(ModelAdmin):
         if teams:
             return ", ".join([getattr(t, "name", str(t)) for t in teams])
         return "-"
+
+
+@admin.register(Tjanse)
+class TjanseAdmin(TipTapModelAdminMixin, ModelAdmin):
+    tiptap_fields = ["description"]
+    list_display = ["title", "created", "last_updated"]
+    search_fields = ["title", "description"]
+    readonly_fields = ["created", "last_updated"]
+
+
+@admin.register(TjanseOwnership)
+class TjanseOwnershipAdmin(SimpleHistoryAdmin, ModelAdmin):
+    change_list_template = "admin/organization/tjanseownership/change_list.html"
+    change_form_template = "admin/organization/tjanseownership/change_form.html"
+    list_display = ["tjanse", "event", "team", "status", "due_date", "completed_at"]
+    list_display_links = ["tjanse"]
+    list_editable = ["team", "status", "due_date"]
+    list_filter = ["status", "event", "team"]
+    search_fields = ["tjanse__title", "team__name"]
+    fields = [
+        "tjanse",
+        "event",
+        "team",
+        "due_date",
+        "status",
+        "completed_at",
+        "assigned_at",
+        "created",
+        "last_updated",
+    ]
+    readonly_fields = ["assigned_at", "created", "last_updated"]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("tjanse", "event", "team")
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "overview/",
+                self.admin_site.admin_view(self.overview_view),
+                name="organization_tjanseownership_overview",
+            ),
+            path(
+                "status-overview/",
+                self.admin_site.admin_view(self.status_overview_view),
+                name="organization_tjanseownership_status_overview",
+            ),
+        ]
+        return custom_urls + urls
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        extra_context = extra_context or {}
+        if object_id:
+            ownership = self.get_object(request, object_id)
+            if ownership:
+                extra_context["ownership_history"] = ownership.history.select_related(
+                    "history_user", "team", "tjanse"
+                ).all()
+        return super().changeform_view(request, object_id, form_url, extra_context)
+
+    def overview_view(self, request):
+        events = Event.objects.order_by("-start_date", "name")
+        event_id = request.POST.get("event") or request.GET.get("event")
+        selected_event = events.filter(pk=event_id).first() if event_id else events.first()
+        default_start = selected_event.start_date if selected_event else date.today()
+
+        try:
+            week_start = date.fromisoformat(
+                request.POST.get("week_start") or request.GET.get("week_start") or default_start.isoformat()
+            )
+        except ValueError:
+            week_start = default_start
+
+        if selected_event:
+            week_start = max(selected_event.start_date, min(week_start, selected_event.end_date))
+
+        days = [
+            week_start + timedelta(days=index)
+            for index in range((selected_event.end_date - week_start).days + 1)
+        ] if selected_event else []
+
+        if request.method == "POST" and selected_event:
+            self._save_overview_grid(request, selected_event, days)
+            return redirect(
+                f"{request.path}?event={selected_event.pk}&week_start={week_start.isoformat()}"
+            )
+
+        tjanser = Tjanse.objects.order_by("title")
+        ownerships = self.get_queryset(request).filter(
+            event=selected_event,
+            due_date__gte=days[0],
+            due_date__lte=days[-1],
+        ) if selected_event else TjanseOwnership.objects.none()
+        ownership_map = defaultdict(list)
+        for ownership in ownerships:
+            ownership_map[(ownership.tjanse_id, ownership.due_date)].append(ownership)
+        teams = list(Team.objects.order_by("name"))
+        event_team_ids = {team.pk for team in teams}
+        rows = [
+            {
+                "tjanse": tjanse,
+                "cells": [
+                    {
+                        "day": day,
+                        "ownerships": cell_ownerships,
+                        "team_ids": {ownership.team_id for ownership in cell_ownerships},
+                        "all_teams": bool(event_team_ids) and {
+                            ownership.team_id for ownership in cell_ownerships
+                        } == event_team_ids,
+                        "assignment_label": (
+                            "Alle teams"
+                            if event_team_ids and {
+                                ownership.team_id for ownership in cell_ownerships
+                            } == event_team_ids
+                            else ", ".join(
+                                ownership.team.short_name or ownership.team.name
+                                for ownership in cell_ownerships
+                            )
+                        ),
+                    }
+                    for day in days
+                    for cell_ownerships in [ownership_map.get((tjanse.pk, day), [])]
+                ],
+            }
+            for tjanse in tjanser
+        ]
+        team_assignment_counts = Team.objects.annotate(
+            tjanse_assignment_count=Count(
+                "tjanse_ownerships",
+                filter=Q(tjanse_ownerships__event=selected_event),
+            )
+        ).order_by("name") if selected_event else Team.objects.none()
+
+        context = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "title": "Tjanseoversigt",
+            "events": events,
+            "selected_event": selected_event,
+            "days": days,
+            "rows": rows,
+            "team_assignment_counts": team_assignment_counts,
+            "teams": teams,
+            "week_start": week_start.isoformat(),
+        }
+        return render(request, "admin/organization/tjanseownership/overview.html", context)
+
+    def status_overview_view(self, request):
+        events = Event.objects.order_by("-start_date", "name")
+        event_id = request.GET.get("event")
+        selected_event = events.filter(pk=event_id).first() if event_id else events.first()
+        if selected_event:
+            days = [
+                selected_event.start_date + timedelta(days=index)
+                for index in range((selected_event.end_date - selected_event.start_date).days + 1)
+            ]
+            ownerships = self.get_queryset(request).filter(
+                event=selected_event,
+                due_date__gte=selected_event.start_date,
+                due_date__lte=selected_event.end_date,
+            )
+        else:
+            days = []
+            ownerships = TjanseOwnership.objects.none()
+
+        ownership_map = defaultdict(list)
+        for ownership in ownerships:
+            ownership_map[(ownership.tjanse_id, ownership.due_date)].append(ownership)
+
+        rows = [
+            {
+                "tjanse": tjanse,
+                "cells": [
+                    {"day": day, "ownerships": ownership_map.get((tjanse.pk, day), [])}
+                    for day in days
+                ],
+            }
+            for tjanse in Tjanse.objects.order_by("title")
+        ]
+        context = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "title": "Tjanse-statusoversigt",
+            "events": events,
+            "selected_event": selected_event,
+            "days": days,
+            "rows": rows,
+        }
+        return render(
+            request,
+            "admin/organization/tjanseownership/status_overview.html",
+            context,
+        )
+
+    def _save_overview_grid(self, request, event, days):
+        event_team_ids = set(Team.objects.values_list("pk", flat=True))
+        for tjanse in Tjanse.objects.all():
+            for day in days:
+                field_key = f"{tjanse.pk}_{day.isoformat()}"
+                submitted_team_ids = request.POST.getlist(f"team_{field_key}")
+                if "all" in submitted_team_ids:
+                    selected_team_ids = event_team_ids
+                else:
+                    selected_team_ids = set()
+                    for team_id in submitted_team_ids:
+                        try:
+                            parsed_team_id = int(team_id)
+                        except (TypeError, ValueError):
+                            continue
+                        if parsed_team_id in event_team_ids:
+                            selected_team_ids.add(parsed_team_id)
+
+                ownership_qs = TjanseOwnership.objects.filter(
+                    tjanse=tjanse,
+                    event=event,
+                    due_date=day,
+                )
+                existing_by_team = {}
+                for ownership in ownership_qs.order_by("pk"):
+                    if ownership.team_id in existing_by_team:
+                        ownership.delete()
+                    else:
+                        existing_by_team[ownership.team_id] = ownership
+
+                for team_id, ownership in existing_by_team.items():
+                    if team_id not in selected_team_ids:
+                        ownership.delete()
+
+                for team_id in selected_team_ids - existing_by_team.keys():
+                    TjanseOwnership.objects.create(
+                        tjanse=tjanse,
+                        event=event,
+                        due_date=day,
+                        team_id=team_id,
+                    )
+
+
+@admin.register(TjanseSwapRequest)
+class TjanseSwapRequestAdmin(ModelAdmin):
+    list_display = ["task_ownership", "requesting_team", "receiving_team", "status", "created"]
+    list_filter = ["status"]
+    search_fields = ["task_ownership__tjanse__title", "requesting_team__name", "receiving_team__name"]
+    readonly_fields = ["created", "last_updated", "resolved_by"]
+    actions = ["accept_swap_action", "reject_swap_action"]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("task_ownership__tjanse", "requesting_team", "receiving_team")
+
+    @action(description="Godkend valgte bytter")
+    def accept_swap_action(self, request, queryset):
+        from .signals import send_tjanse_assigned_email
+        count = 0
+        for swap in queryset.filter(status="pending"):
+            swap.accept(resolved_by=request.user)
+            send_tjanse_assigned_email(swap.task_ownership)
+            count += 1
+        self.message_user(request, f"{count} tjanse-bytter blev godkendt.", messages.SUCCESS)
+
+    @action(description="Afvis valgte bytter")
+    def reject_swap_action(self, request, queryset):
+        count = 0
+        for swap in queryset.filter(status="pending"):
+            swap.reject(resolved_by=request.user)
+            count += 1
+        self.message_user(request, f"{count} tjanse-bytter blev afvist.", messages.SUCCESS)
 
