@@ -5,12 +5,9 @@ Intended to be run once daily at 18:00 via host crontab, e.g.:
 """
 from datetime import date
 
-from django.conf import settings
-from django.core.mail import send_mail
 from django.core.management.base import BaseCommand
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 
+from emailing.services import send_email
 from organization.models import TjanseOwnership
 
 
@@ -36,14 +33,7 @@ class Command(BaseCommand):
                 'tjanse': ownership.tjanse,
                 'due_date': ownership.due_date,
             }
-            message = render_to_string('organization/task_reminder_email.html', context)
-            send_mail(
-                subject,
-                strip_tags(message),
-                settings.DEFAULT_FROM_EMAIL,
-                team_emails,
-                html_message=message,
-            )
+            send_email(subject, 'organization/task_reminder_email.html', context, team_emails)
             sent_count += 1
 
         self.stdout.write(self.style.SUCCESS(f"Sendt {sent_count} tjanse-påmindelser."))

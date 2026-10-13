@@ -15,6 +15,7 @@ from unfold.contrib.constance.settings import UNFOLD_CONSTANCE_ADDITIONAL_FIELDS
 
 from django.urls import reverse_lazy
 from pathlib import Path
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 import os
 
@@ -33,7 +34,15 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 # Allowed hosts
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h]
-CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',')
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
+
+# Canonical public URL (scheme + host, no trailing slash) used in emails and notifications.
+SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000').rstrip('/')
+_site_parts = urlparse(SITE_URL)
+if _site_parts.hostname and _site_parts.hostname not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_site_parts.hostname)
+if SITE_URL.startswith('https://') and SITE_URL not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(SITE_URL)
 # Environment detection
 ENVIRONMENT = os.environ.get('ENVIRONMENT', 'dev')
 
@@ -66,16 +75,30 @@ else:
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 if ENVIRONMENT in ['staging', 'production']:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-    EMAIL_HOST = 'smtp.gmail.com'
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')     
-    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD') 
+    EMAIL_BACKEND = 'django_ses.SESBackend'
+    AWS_SES_REGION_NAME = os.environ.get('AWS_SES_REGION_NAME', 'eu-north-1')
+    AWS_SES_REGION_ENDPOINT = f'email.{AWS_SES_REGION_NAME}.amazonaws.com'
+    AWS_SES_ACCESS_KEY_ID = os.environ.get('AWS_SES_ACCESS_KEY_ID')
+    AWS_SES_SECRET_ACCESS_KEY = os.environ.get('AWS_SES_SECRET_ACCESS_KEY')
+    # Routes bounce/complaint/delivery events to the SNS topic.
+    AWS_SES_CONFIGURATION_SET = os.environ.get('AWS_SES_CONFIGURATION_SET') or None
+    AWS_SES_VERIFY_EVENT_SIGNATURES = True
 else:
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'slettenbooking@gmail.com')
+
+# --- CELERY ---
+CELERY_BROKER_URL = os.environ.get(
+    'CELERY_BROKER_URL',
+    f"redis://{os.environ.get('REDIS_HOST', 'redis')}:{os.environ.get('REDIS_PORT', 6379)}/2",
+)
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_ACKS_LATE = True
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+# Dev has no Redis; run tasks inline.
+CELERY_TASK_ALWAYS_EAGER = ENVIRONMENT == 'dev'
 
 # Debug setting
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
@@ -125,6 +148,7 @@ INSTALLED_APPS = [
     'Foto',
     'Depot',
     'Loeb',
+    'emailing',
     #"debug_toolbar",
 
 ]

@@ -5,12 +5,25 @@ import requests
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.conf import settings
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 from django_comments_xtd.models import XtdComment
+from emailing.services import send_email
 from django.contrib.contenttypes.models import ContentType
-from .models import TjanseOwnership, VolunteerAppointment
+from .discord_services import build_embed
+from .models import TjanseOwnership, TjanseSwapRequest, VolunteerAppointment
+from .tasks import enqueue_discord_embed
+
+TJANSE_STATUS_COLORS = {
+    'assigned': 0x5865F2,
+    'in_progress': 0xF1C40F,
+    'done': 0x2ECC71,
+    'not_done': 0xE74C3C,
+}
+SWAP_STATUS_COLORS = {
+    'pending': 0xF1C40F,
+    'accepted': 0x2ECC71,
+    'rejected': 0xE74C3C,
+    'cancelled': 0x95A5A6,
+}
 
 
 @receiver(post_save, sender=XtdComment)
@@ -38,7 +51,7 @@ def notify_appointment_comment(sender, instance, created, **kwargs):
     
     # Build notification message
     commenter = instance.user.get_full_name() or instance.user.username
-    appointment_link = f"https://{settings.ALLOWED_HOSTS[0]}/organization/appointment/{appointment.pk}/"
+    appointment_link = f"{settings.SITE_URL}/organization/appointment/{appointment.pk}/"
     
     message_text = (
         f"💬 **Ny kommentar på legeaftale**\n"
@@ -80,14 +93,7 @@ def send_tjanse_assigned_email(ownership):
         'tjanse': ownership.tjanse,
         'due_date': ownership.due_date,
     }
-    message = render_to_string('organization/task_assigned_email.html', context)
-    send_mail(
-        subject,
-        strip_tags(message),
-        settings.DEFAULT_FROM_EMAIL,
-        team_emails,
-        html_message=message,
-    )
+    send_email(subject, 'organization/task_assigned_email.html', context, team_emails)
 
 
 @receiver(post_save, sender=TjanseOwnership)
@@ -96,3 +102,43 @@ def notify_tjanse_assigned(sender, instance, created, **kwargs):
     if not created:
         return
     send_tjanse_assigned_email(instance)
+
+
+@receiver(post_save, sender=TjanseOwnership)
+def notify_tjanse_discord(sender, instance, created, **kwargs):
+    """Queue a Discord embed for the owning team when a tjanse is assigned or updated."""
+    team = instance.team
+    if not team.discord_webhook_url:
+        return
+    embed = build_embed(
+        title=f"{'Ny tjanse' if created else 'Tjanse opdateret'}: {instance.tjanse.title}",
+        status=instance.get_status_display(),
+        color=TJANSE_STATUS_COLORS.get(instance.status),
+        fields=[
+            ("Team", team.name),
+            ("Event", str(instance.event)),
+            ("Deadline", str(instance.due_date) if instance.due_date else "-"),
+        ],
+    )
+    enqueue_discord_embed(team.pk, embed, "Tjanse Notifikationer")
+
+
+@receiver(post_save, sender=TjanseSwapRequest)
+def notify_tjanse_swap_discord(sender, instance, created, **kwargs):
+    """Queue a Discord embed for both teams when a swap request is created or changed."""
+    requesting, receiving = instance.requesting_team, instance.receiving_team
+    tjanse = instance.task_ownership.tjanse
+    embed = build_embed(
+        title=f"{'Ny bytte-anmodning' if created else 'Bytte-anmodning opdateret'}: {tjanse.title}",
+        status=instance.get_status_display(),
+        color=SWAP_STATUS_COLORS.get(instance.status),
+        changed_by=instance.resolved_by.get_full_name() if instance.resolved_by else None,
+        fields=[
+            ("Fra team", requesting.name),
+            ("Til team", receiving.name),
+            ("Event", str(instance.task_ownership.event)),
+        ],
+    )
+    for team in {requesting.pk: requesting, receiving.pk: receiving}.values():
+        if team.discord_webhook_url:
+            enqueue_discord_embed(team.pk, embed, "Tjanse Notifikationer")

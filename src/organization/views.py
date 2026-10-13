@@ -16,6 +16,7 @@ from django.views.decorators.http import require_POST
 from django.views import generic
 from django.urls import reverse_lazy
 from .forms import RegisterUserForm
+from emailing.forms import BrandedPasswordResetForm
 from . import models
 from . import forms
 from django.db.models import F, Q
@@ -86,7 +87,8 @@ def register_user(request):
 
 class ResetPasswordView(SuccessMessageMixin, PasswordResetView):
     template_name = 'organization/password_reset.html'
-    email_template_name = 'organization/password_reset_email.html'
+    form_class = BrandedPasswordResetForm
+    email_template_name = 'emailing/password_reset.html'
     subject_template_name = 'organization/password_reset_subject.txt'
     success_message = "We've emailed you instructions for setting your password, " \
                       "if an account exists with the email you entered. You should receive them shortly." \

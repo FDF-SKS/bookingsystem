@@ -398,15 +398,13 @@ class AktivitetsTeamBookingAdmin(AktivitetsTeamBaseAdmin):
         email_count = 0
         
         for booking in queryset:
-            assigned = booking.assigned_aktivitetsteam.all()
-            if assigned.exists():
-                send_ical_via_email(queryset, email_template, settings.DEFAULT_FROM_EMAIL)
-                email_count += len(assigned)
-        
+            email_count += booking.assigned_aktivitetsteam.count()
+
         if email_count > 0:
+            send_ical_via_email(queryset, email_template, settings.DEFAULT_FROM_EMAIL)
             self.message_user(
                 request, 
-                f"✅ {email_count} email(s) sendt til frivillige.",
+                f"✅ {email_count} email(s) sat i kø til frivillige.",
                 messages.SUCCESS
             )
         else:

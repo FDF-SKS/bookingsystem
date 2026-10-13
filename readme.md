@@ -221,3 +221,30 @@ docker compose exec db pg_dump -U mglavind production_db > backups/db_backup_$(d
 Dette opretter en backup fil med dagens dato i filnavnet (f.eks. `db_backup_2026-02-12.sql`)
 
 ---
+
+### Email (Amazon SES)
+
+Emails sendes via Celery (`worker`-servicen) og Amazon SES (`django-ses`). Status følges under Admin > Emails.
+
+**Miljøvariabler (`.env` / `.env.staging`):**
+```
+SITE_URL=https://booking.markusglavind.dk
+DEFAULT_FROM_EMAIL=<verificeret afsender i SES>
+AWS_SES_REGION_NAME=eu-north-1
+AWS_SES_ACCESS_KEY_ID=...
+AWS_SES_SECRET_ACCESS_KEY=...
+AWS_SES_CONFIGURATION_SET=<navn på configuration set>
+```
+
+**AWS-opsætning:**
+1. Verificér domænet i SES (DKIM, SPF, DMARC) og ansøg om production access.
+2. Opret et SNS-topic og en configuration set med event destination (Delivery, Bounce, Complaint) til topicet.
+3. Tilføj en HTTPS-subscription på `https://<domæne>/ses/notifications/` (bekræftes automatisk af Django).
+4. IAM-bruger med kun `ses:SendRawEmail` (og `ses:SendEmail`) til afsender-identiteten.
+
+**Test på staging:** send til `success@`, `bounce@` og `complaint@simulator.amazonses.com` og kontrollér status i Email-log.
+
+**Oprydning af email-log:** bodies slettes straks efter afsendelse. Kør dagligt via cron for at rydde fejlede emails (>7 dage) og slette log-rækker (>90 dage):
+```bash
+30 3 * * * docker compose exec -T web python manage.py cleanup_email_logs
+```

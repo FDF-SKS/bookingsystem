@@ -53,6 +53,20 @@ services:
       - /root/booking-system/static:/app/staticfiles
       - /root/booking-system/media:/app/media
 
+  worker:
+    image: mglavind/booking-app:latest
+    container_name: django_worker_prod
+    restart: always
+    # Bypasses the web entrypoint (migrations/gunicorn).
+    entrypoint: ["celery", "-A", "core", "worker", "-l", "info", "--concurrency", "2"]
+    environment:
+      DEBUG: "False"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+
   nginx:
     image: nginx:latest
     container_name: nginx_proxy

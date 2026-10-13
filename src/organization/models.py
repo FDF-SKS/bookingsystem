@@ -75,6 +75,7 @@ class Team(models.Model):
     short_name = models.CharField(max_length=30, db_index=True)   
     events = models.ManyToManyField(Event, through='TeamEventMembership', db_index=True)
     discord_webhook_url = models.URLField(null=True, blank=True, help_text="Discord webhook URL for real-time notifications. Get this from Server Settings > Integrations > Webhooks > Copy Webhook URL")
+    discord_topic_thread_id = models.CharField(max_length=64, null=True, blank=True, help_text="ID på Discord-tråden i forumkanalen. Oprettes automatisk.")
     history = HistoricalRecords()
 
 

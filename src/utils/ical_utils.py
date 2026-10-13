@@ -1,8 +1,6 @@
 from icalendar import Calendar, Event, vCalAddress, vText, Alarm
 from datetime import datetime, timedelta
-from django.core.mail import EmailMessage
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
+from emailing.services import send_email
 
 def convert_to_ical(booking):
     ical_event = Event()
@@ -114,15 +112,15 @@ def send_ical_via_email(queryset, email_template, from_email):
         for volunteer in booking.assigned_aktivitetsteam.all():
             subject = f"Booking Detaljer for {booking.item}"
             context = {'volunteer': volunteer, 'booking': booking}
-            message = render_to_string(email_template, context)
-            plain_message = strip_tags(message)
-
-            email = EmailMessage(
-                subject=subject,
-                body=plain_message,
-                from_email=from_email,
-                to=[volunteer.email],
+            send_email(
+                subject,
+                email_template,
+                context,
+                [volunteer.email],
+                attachments=[{
+                    'filename': f"booking_{booking.id}.ics",
+                    'mimetype': 'text/calendar',
+                    'content': ical_content,
+                }],
             )
-            email.attach(f"booking_{booking.id}.ics", ical_content, "text/calendar")
-            email.send()
 

@@ -13,6 +13,7 @@ from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.template.loader import render_to_string
+from emailing.services import send_email
 from django.urls import path
 from django.urls.resolvers import URLPattern
 from django.utils.html import strip_tags
@@ -277,50 +278,20 @@ class VolunteerAdmin(SimpleHistoryAdmin, ModelAdmin, ImportExportModelAdmin):
 
     @admin.action(description="Send 'Hjælp til at komme igang' email")
     def send_email_action(self, request, queryset):
-        MAX_EMAILS = 50  # Safety cap for Gmail
-        count = queryset.count()
+        subject = "Velkommen til Seniorkursus Slettens booking system"
+        email_template = "organization/reset_password_guide_email.html"
+        queued_count = 0
 
-        if count > MAX_EMAILS:
-            self.message_user(
-                request, 
-                f"FEJL: Du har valgt {count} personer. Max grænsen er {MAX_EMAILS} for at undgå at blive blokeret af Gmail.", 
-                level=messages.ERROR
-            )
-            return
+        for volunteer in queryset:
+            if not volunteer.email:
+                continue
+            context = {'volunteer': volunteer, 'first_team': volunteer.teams.first()}
+            queued_count += len(send_email(subject, email_template, context, [volunteer.email]))
 
-        sent_count = 0
-        last_volunteer = None
-
-        try:
-            for volunteer in queryset:
-                subject = "Velkommen til Seniorkursus Slettens booking system"
-                email_template = "organization/reset_password_guide_email.html"
-                context = {'volunteer': volunteer, 'first_team': volunteer.teams.first()}
-                message = render_to_string(email_template, context)
-
-                # send_mail returns 1 on success
-                success = send_mail(
-                    subject, 
-                    strip_tags(message), 
-                    'slettenbooking@gmail.com', 
-                    [volunteer.email], 
-                    html_message=message
-                )
-                
-                if success:
-                    sent_count += 1
-                    last_volunteer = volunteer
-                    time.sleep(1) # 1 second pause between emails (Safe for Gmail)
-
-            self.message_user(request, f"Succes: {sent_count} emails blev sendt.")
-
-        except Exception as e:
-            # If Google blocks us halfway, we tell the user exactly where we stopped
-            self.message_user(
-                request, 
-                f"PROCES AFBRUDT: Kun {sent_count} blev sendt. Sidste succesfulde var {last_volunteer}. Fejl: {str(e)}", 
-                level=messages.ERROR
-            )
+        self.message_user(
+            request,
+            f"{queued_count} emails er sat i kø. Status kan følges under Emails > Email-log.",
+        )
 
     @action(description="Deactivate selected volunteers")
     def deactivate_volunteers(self, request, queryset):
@@ -511,7 +482,7 @@ class TjanseOwnershipAdmin(SimpleHistoryAdmin, ModelAdmin):
             event=selected_event,
             due_date__gte=days[0],
             due_date__lte=days[-1],
-        ) if selected_event else TjanseOwnership.objects.none()
+        ) if selected_event and days else TjanseOwnership.objects.none()
         ownership_map = defaultdict(list)
         for ownership in ownerships:
             ownership_map[(ownership.tjanse_id, ownership.due_date)].append(ownership)

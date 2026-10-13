@@ -1,27 +1,16 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Booking Detaljer</title>
-</head>
-<body>
-    <p>Hey! {{ volunteer.first_name }},</p>
-    <p>Så er det opdateret bookinger, og du får her følgende info</p>
-    <ul>
-        <li>Emne: {{ booking.item }}</li>
-        <li>Team: {{ booking.team }}</li>
-        <li>Kontaktperson: {{ booking.team_contact }} - {{booking.team_contact.phone}}</li>
-        <li>Lokation: {{ booking.location }}, {{ booking.address }}</li>
-        <li>Start: {{ booking.start_date }} {{ booking.start_time }}</li>
-        <li>Slut: {{ booking.end_date }} {{ booking.end_time }}</li>
-    </ul>
-    Bemærkninger
-    {{booking.remarks}}
-
-    interne bemærkninger:
-    {{booking.remarks_internal}}
-
-    <p>Mvh</p>
-    <p>Din Teamleder</p>
-</body>
-</html>
-
+{% extends "emailing/base_email.html" %}
+{% block title %}Booking: {{ booking.item }}{% endblock %}
+{% block content %}
+<p style="margin:0 0 16px 0;">Hej {{ volunteer.first_name }}, bookingerne er opdateret. Kalenderfilen er vedhæftet.</p>
+<table role="presentation" width="100%" cellpadding="6" cellspacing="0" border="0" style="margin:0 0 8px 0;background-color:#f1f4f7;border-left:4px solid #FF733C;border-radius:8px;">
+  <tr><td style="font-weight:700;color:#003255;width:130px;">Emne</td><td>{{ booking.item }}</td></tr>
+  <tr><td style="font-weight:700;color:#003255;">Team</td><td>{{ booking.team }}</td></tr>
+  <tr><td style="font-weight:700;color:#003255;">Kontaktperson</td><td>{{ booking.team_contact }}{% if booking.team_contact.phone %} - {{ booking.team_contact.phone }}{% endif %}</td></tr>
+  <tr><td style="font-weight:700;color:#003255;">Lokation</td><td>{{ booking.location }}, {{ booking.address }}</td></tr>
+  <tr><td style="font-weight:700;color:#003255;">Start</td><td>{{ booking.start_date }} {{ booking.start_time }}</td></tr>
+  <tr><td style="font-weight:700;color:#003255;">Slut</td><td>{{ booking.end_date }} {{ booking.end_time }}</td></tr>
+</table>
+{% if booking.remarks %}<p style="margin:16px 0 4px 0;font-weight:700;color:#003255;">Bemærkninger</p><p style="margin:0;">{{ booking.remarks|linebreaksbr }}</p>{% endif %}
+{% if booking.remarks_internal %}<p style="margin:16px 0 4px 0;font-weight:700;color:#003255;">Interne bemærkninger</p><p style="margin:0;">{{ booking.remarks_internal|linebreaksbr }}</p>{% endif %}
+{% endblock %}
+{% block signature %}Din Teamleder{% endblock %}

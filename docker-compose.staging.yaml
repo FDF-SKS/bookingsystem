@@ -47,6 +47,19 @@ services:
     # Collect static files first so nginx can serve them, then run migrations and start the dev server
     command: sh -c "python manage.py collectstatic --noinput && python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"
 
+  worker:
+    build: .
+    container_name: django_worker_staging
+    restart: always
+    entrypoint: ["celery", "-A", "core", "worker", "-l", "info", "--concurrency", "2"]
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env.staging
+
 volumes:
   postgres_data_staging:
   static_volume:
