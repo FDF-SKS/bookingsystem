@@ -61,7 +61,7 @@ notepad .env  # eller åbn i VS Code med: code .env
 
 
 
-Der er gjort klar til at der kan ligges en frontend på, derfor skal vi navigere ind i mappen "src"
+Vi navigerer ind i mappen "src"
 
 ```bash 
 cd src

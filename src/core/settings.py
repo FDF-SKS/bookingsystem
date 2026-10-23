@@ -134,7 +134,6 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'frontend',
     'core',
     'django_bootstrap5',
     'template_partials',
