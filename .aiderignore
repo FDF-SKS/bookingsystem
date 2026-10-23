@@ -1,0 +1,11 @@
+**/node_modules/**
+**/venv/**
+**/.git/**
+**/dist/**
+**/build/**
+src/staticfiles/**
+src/media/**
+media_volume/**
+certbot/**
+src/db.sqlite3
+*.zip

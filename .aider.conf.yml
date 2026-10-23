@@ -1,0 +1,5 @@
+# Always load conventions as read-only context
+read: CONVENTIONS.md
+
+# Keep the repo map enabled; excluded paths are listed in .aiderignore
+map-tokens: 2048
