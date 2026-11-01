@@ -56,7 +56,7 @@ cd bookingsystem
 Django kører på Python, så for at sikre at vi har de rigtige pakker installeret, så laver vi et virtual environment. 
 ```bash 
 python -m venv venv
-venv\Scripts\activate.bat
+venv\Scripts\activate
 ```
 
 > Får du i PowerShell fejlen *"running scripts is disabled on this system"*, kør da én gang:
