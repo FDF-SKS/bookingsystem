@@ -265,6 +265,10 @@ TEMPLATES = [
 
 # In settings.py
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Logger den præcise årsag når CSRF-kontrollen fejler. Kun til serverloggen –
+# klienten får fortsat Djangos standard-403-side (se core/views.py).
+CSRF_FAILURE_VIEW = 'core.views.csrf_failure'
 WSGI_APPLICATION = 'core.wsgi.application'
 
 

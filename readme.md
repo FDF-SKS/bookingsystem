@@ -188,6 +188,16 @@ Staging-miljøet er tilgængeligt på `http://localhost:8001`. Email-nøglerne i
 > docker compose -f docker-compose.staging.yaml --env-file .env.staging down -v
 > ```
 
+> 🧯 **Fejlfinding (403 ved login):** Et `POST` til `/accounts/login/` med status 403 betyder, at CSRF-kontrollen fejlede – ikke at passwordet er forkert. Årsagen skrives kun til serverloggen (brugeren ser fortsat Djangos standard-403-side):
+> ```bash
+> docker compose -f docker-compose.staging.yaml --env-file .env.staging logs web | grep CSRF
+> ```
+> De typiske årsager er:
+> - Du åbner siden på én adresse og logger ind på en anden (`localhost` og `127.0.0.1` deler ikke cookies). Brug samme adresse hele vejen.
+> - Siden blev indlæst før containeren blev genstartet – genindlæs login-siden og prøv igen.
+> - Adressen mangler i `CSRF_TRUSTED_ORIGINS` i `.env.staging` (skabelonen har både staging-domænet og `http://localhost:8001`).
+> - nginx skal sende `proxy_set_header Host $http_host` (ikke `$host`). Med `$host` mister Django porten, og så afvises samme-origin POSTs på ikke-standard-porte som `localhost:8001`.
+
 > 🧯 **Fejlfinding (Windows):** Fejler `web` med `exec /app/entrypoint.sh: no such file or directory`, skyldes det næsten altid CRLF-linieskift i en Windows-checkout – shebang'en bliver `#!/bin/bash\r`. Repoet har en `.gitattributes`, der tvinger LF, og `dockerfile` fjerner desuden eventuelle `\r` ved build. Kør derfor en **rebuild** af imaget:
 > ```bash
 > docker compose -f docker-compose.staging.yaml --env-file .env.staging build --no-cache web
