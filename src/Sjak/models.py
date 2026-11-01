@@ -1,9 +1,9 @@
+
 from django.db import models
 from django.urls import reverse
-import datetime
-from django.utils import timezone
 
 from organization.models import Event
+
 
 class SjakItemType(models.Model):
 

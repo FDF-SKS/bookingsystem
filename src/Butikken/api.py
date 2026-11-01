@@ -1,7 +1,6 @@
-from rest_framework import viewsets, permissions
+from rest_framework import permissions, viewsets
 
-from . import serializers
-from . import models
+from . import models, serializers
 
 
 class ButikkenItemViewSet(viewsets.ModelViewSet):

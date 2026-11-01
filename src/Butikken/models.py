@@ -1,8 +1,9 @@
+from datetime import date
+
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
-from organization.models import Team, Volunteer
-from datetime import date
+
 
 class ButikkenItem(models.Model):
 
@@ -20,7 +21,6 @@ class ButikkenItem(models.Model):
     class Meta:
         verbose_name = "Butiksvare"
         verbose_name_plural = "Butiksvarer"
-        pass
 
     def __str__(self):
         return str(self.name)
@@ -80,7 +80,6 @@ class ButikkenBooking(models.Model):
     class Meta:
         verbose_name = "Butiksbestilling"
         verbose_name_plural = "Butiksbestillinger"
-        pass
 
     def __str__(self):
         return str(self.pk)
@@ -215,7 +214,6 @@ class Recipe(models.Model):
     class Meta:
         verbose_name = "Måltidspakke"
         verbose_name_plural = "Måltidspakker"
-        pass
 
     def __str__(self):
         return str(self.name)
@@ -292,7 +290,6 @@ class MealPlan(models.Model):
     class Meta:
         verbose_name = "Måltid"
         verbose_name_plural = "Måltider"
-        pass
 
     def __str__(self):
         return f"{self.name}"
@@ -302,13 +299,6 @@ class MealPlan(models.Model):
 
     def get_update_url(self):
         return reverse("mealplan_update", args=(self.pk,))
-
-    @staticmethod
-    def get_htmx_create_url():
-        return reverse("mealplan_htmx_create")
-
-    def get_htmx_delete_url(self):
-        return reverse("mealplan_htmx_delete", args=(self.pk,))
 
 
 class MealOption(models.Model):
@@ -325,7 +315,6 @@ class MealOption(models.Model):
     class Meta:
         verbose_name = "Måltidsvalgmulighed"
         verbose_name_plural = "Måltidsvalgmulighedr"
-        pass
 
     def __str__(self):
         return f"{self.recipe.name}"
@@ -335,13 +324,6 @@ class MealOption(models.Model):
 
     def get_update_url(self):
         return reverse("mealoption_update", args=(self.pk,))
-
-    @staticmethod
-    def get_htmx_create_url():
-        return reverse("mealoption_htmx_create")
-
-    def get_htmx_delete_url(self):
-        return reverse("mealoption_htmx_delete", args=(self.pk,))
     
 class TeamMealPlan(models.Model):
 
@@ -364,7 +346,6 @@ class TeamMealPlan(models.Model):
     class Meta:
         verbose_name = "Måltidsbestilling"
         verbose_name_plural = "Måltidsbestillinger"
-        pass
 
     def __str__(self):
         return str(self.pk)
@@ -374,13 +355,6 @@ class TeamMealPlan(models.Model):
 
     def get_update_url(self):
         return reverse("Butikken_TeamMealPlan_update", args=(self.pk,))
-
-    @staticmethod
-    def get_htmx_create_url():
-        return reverse("Butikken_TeamMealPlan_htmx_create")
-
-    def get_htmx_delete_url(self):
-        return reverse("Butikken_TeamMealPlan_htmx_delete", args=(self.pk,))
 
 
 

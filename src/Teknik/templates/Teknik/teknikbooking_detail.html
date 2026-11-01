@@ -59,7 +59,7 @@
                                                 <small class="d-block text-muted">Fra</small>
                                                 <strong>{{ object.start_date|date:"d. M Y" }}</strong> kl. {{ object.start_time|time:"H:i" }}
                                             </div>
-                                            <bs_icon class="bi bi-arrow-right text-muted me-3"></bs_icon>
+                                            <i class="bi bi-arrow-right text-muted me-3"></i>
                                             <div>
                                                 <small class="d-block text-muted">Til</small>
                                                 <strong>{{ object.end_date|date:"d. M Y" }}</strong> kl. {{ object.end_time|time:"H:i" }}
@@ -101,19 +101,19 @@
 
                     {% if object.location %}
                         <div class="mt-5">
-                            <h4 class="fw-bold mb-3"><bs_icon class="bi bi-geo-alt me-2"></bs_icon>Lokation</h4>
+                            <h4 class="fw-bold mb-3"><i class="bi bi-geo-alt me-2"></i>Lokation</h4>
                             
                             <div id="detail-map" class="rounded-4 shadow-sm border mb-3" style="height: 400px !important; width: 100%; position: relative;"></div>
                             
                             <div class="d-flex flex-wrap gap-2">
                                 <a href="https://www.google.com/maps/search/?api=1&query={{ object.coords_list.0|unlocalize }},{{ object.coords_list.1|unlocalize }}" 
                                 target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                                    <bs_icon class="bi bi-google me-1"></bs_icon>Åbn i Google Maps
+                                    <i class="bi bi-google me-1"></i>Åbn i Google Maps
                                 </a>
 
                                 <a href="https://www.openstreetmap.org/?mlat={{ object.coords_list.0|unlocalize }}&mlon={{ object.coords_list.1|unlocalize }}#map=17/{{ object.coords_list.0|unlocalize }}/{{ object.coords_list.1|unlocalize }}" 
                                 target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                                    <bs_icon class="bi bi-map me-1"></bs_icon>Se på OpenStreetMap
+                                    <i class="bi bi-map me-1"></i>Se på OpenStreetMap
                                 </a>
                             </div>
                         </div>
@@ -129,7 +129,7 @@
                         <h6 class="fw-bold mb-3 text-uppercase small text-muted">Handlinger</h6>
                         <div class="d-grid gap-2">
                             <a class="btn btn-secondary py-2 rounded-pill" href="{{ object.get_update_url }}">
-                                <bs_icon class="bi bi-pencil me-1"></bs_icon> Rediger booking
+                                <i class="bi bi-pencil me-1"></i> Rediger booking
                             </a>
                             
                             {% if user.is_staff %}

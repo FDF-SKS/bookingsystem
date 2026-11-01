@@ -16,7 +16,7 @@
     <div class="mb-4 mt-2">
         <h1 class="display-5">Opdater nøgle</h1>
         <div class="alert alert-light" role="alert">
-            {% bs_icon "info-circle" %} Redigerer nuværende placering for nøgle: 
+            <i class="bi bi-info-circle"></i> Redigerer nuværende placering for nøgle: 
             <span class="badge bg-primary">{{ object.number }}</span>
         </div>
     </div>
@@ -45,14 +45,14 @@
                     <div class="col-md-12 mb-3">
                         {% bootstrap_field form.current_user %}
                         <small class="text-muted">
-                            {% bs_icon "person-check" %} Vælg den person, der nu har fået nøglen udleveret.
+                            <i class="bi bi-person-check"></i> Vælg den person, der nu har fået nøglen udleveret.
                         </small>
                     </div>
                 </div>
 
                 <div class="d-grid gap-2 d-md-flex justify-content-md-start mt-4">
                     <button type="submit" class="btn btn-primary btn-lg px-5">
-                        {% bs_icon "save" %} Gem ændringer
+                        <i class="bi bi-save"></i> Gem ændringer
                     </button>
                     <a href="{% url 'organization_Key_list' %}" class="btn btn-outline-secondary btn-lg">
                         Annuller

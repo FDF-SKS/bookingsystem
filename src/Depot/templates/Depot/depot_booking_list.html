@@ -9,12 +9,12 @@
     <div class="row mb-4">
         <div class="col-md-8">
             <h1 class="mb-0">
-                <bs_icon class="bi bi-calendar-check"></bs_icon> Depot Bookinger
+                <i class="bi bi-calendar-check"></i> Depot Bookinger
             </h1>
         </div>
         <div class="col-md-4 text-end">
             <a href="{% url 'Depot_DepotBooking_create' %}" class="btn btn-primary">
-                <bs_icon class="bi bi-plus-circle"></bs_icon> Ny booking
+                <i class="bi bi-plus-circle"></i> Ny booking
             </a>
         </div>
     </div>
@@ -50,7 +50,7 @@
                 </div>
                 <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" class="btn btn-outline-secondary w-100">
-                        <bs_icon class="bi bi-funnel"></bs_icon> Filter
+                        <i class="bi bi-funnel"></i> Filter
                     </button>
                 </div>
             </form>
@@ -98,10 +98,10 @@
                         <td>{{ booking.created_at|date:"d/m/Y" }}</td>
                         <td>
                             <a href="{{ booking.get_update_url }}" class="btn btn-sm btn-warning">
-                                <bs_icon class="bi bi-pencil"></bs_icon>
+                                <i class="bi bi-pencil"></i>
                             </a>
                             <a href="{% url 'Depot_DepotBooking_delete' booking.pk %}" class="btn btn-sm btn-danger">
-                                <bs_icon class="bi bi-trash"></bs_icon>
+                                <i class="bi bi-trash"></i>
                             </a>
                         </td>
                     </tr>
@@ -148,7 +148,7 @@
 
     {% else %}
     <div class="alert alert-info" role="alert">
-        <bs_icon class="bi bi-info-circle"></bs_icon> Ingen bookinger fundet.
+        <i class="bi bi-info-circle"></i> Ingen bookinger fundet.
     </div>
     {% endif %}
 </div>

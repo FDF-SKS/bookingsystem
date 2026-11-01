@@ -24,7 +24,7 @@
         <h1 class="display-5">Aktivitetsteam booking</h1>
         {% if user.is_authenticated and user.events.first %}
             <p class="text-muted">
-                {% bs_icon "info-circle" %} Deadline for Aktivitetsteam bestillinger: 
+                <i class="bi bi-info-circle"></i> Deadline for Aktivitetsteam bestillinger: 
                 <span class="badge bg-warning text-dark">{{ user.events.first.deadline_aktivitetsteam }}</span>
             </p>
         {% endif %}
@@ -63,7 +63,7 @@
                                 <div id="label-layer" class="timeline-label-layer" style="width: 5000px;"></div>
 
                                 <div id="ghost-bar" class="booking-box bg-primary shadow" style="display:none; opacity: 0.9; z-index: 10; top: 40px; height: 40px;">
-                                    <span class="ps-1">{% bs_icon "plus-circle" %} Din booking</span>
+                                    <span class="ps-1"><i class="bi bi-plus-circle"></i> Din booking</span>
                                 </div>
 
                                 <div id="existing-bookings-layer"></div>
@@ -91,7 +91,7 @@
             
 
             <h5 class="fw-bold border-bottom pb-2 mb-3 mt-4">
-                <bs_icon class="bi bi-geo-alt me-2"></bs_icon>Lokation
+                <i class="bi bi-geo-alt me-2"></i>Lokation
             </h5>
             <div class="row">
                 <div class="col-12 mb-4">
@@ -108,7 +108,7 @@
 
         <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-5">
             <button type="submit" class="btn btn-primary btn-lg px-5">
-                {% bs_icon "save" %} Gem booking
+                <i class="bi bi-save"></i> Gem booking
             </button>
             <a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_list' %}" class="btn btn-outline-secondary btn-lg">Annuller</a>
         </div>
@@ -235,13 +235,13 @@
                         ghostBar.classList.add('conflict');
                         ghostBar.innerHTML = `
                             <div class="booking-content">
-                                <span>{% bs_icon "exclamation-triangle" %} KONFLIKT</span>
+                                <span><i class="bi bi-exclamation-triangle"></i> KONFLIKT</span>
                             </div>`;
                     } else {
                         ghostBar.classList.remove('conflict');
                         ghostBar.innerHTML = `
                             <div class="booking-content">
-                                <span>{% bs_icon "plus-circle" %} Din booking</span>
+                                <span><i class="bi bi-plus-circle"></i> Din booking</span>
                             </div>`;
                     }
                 }

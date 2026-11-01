@@ -7,6 +7,6 @@ class ButikkenConfig(AppConfig):
     verbose_name = 'Butikken (Provisions Booking)'
 
     def ready(self):
-        import Butikken.signals
+        import Butikken.signals  # noqa: F401
 
 

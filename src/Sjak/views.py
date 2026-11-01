@@ -1,32 +1,22 @@
-from django.views import generic
-from django.urls import reverse_lazy
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, login, logout, get_user_model
-from django.utils.decorators import method_decorator
-from django.urls import reverse
-from django.contrib.auth.decorators import user_passes_test
 import logging
-from . import models
-from . import forms
-from organization.models import EventMembership, Event, Volunteer
 
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse, reverse_lazy
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views import generic
 
 # HTMX
-from django.views.decorators.http import require_POST, require_http_methods
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
-from django.shortcuts import render, get_object_or_404
+from django.views.decorators.http import require_POST
 
-from django.views.decorators.cache import cache_page
-from django.core.cache import cache
-from django.views.generic import FormView
-from django.contrib.messages.views import SuccessMessageMixin
-from organization.models import Event  # Import the Event model
-from django.utils import timezone
-from django.shortcuts import redirect
-from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from itertools import groupby
-from operator import itemgetter
+from organization.models import Event, Volunteer
+
+from . import forms, models
+
 logger = logging.getLogger(__name__)
 
 class SjakKanbanView(LoginRequiredMixin, UserPassesTestMixin, generic.ListView):
@@ -128,8 +118,8 @@ class SjakKanbanView(LoginRequiredMixin, UserPassesTestMixin, generic.ListView):
         Group bookings by the specified field.
         Returns a dictionary with group keys and booking lists.
         """
+
         from organization.models import Volunteer
-        from django.db.models import Q
         
         grouped = {}
         
@@ -171,7 +161,7 @@ class SjakKanbanView(LoginRequiredMixin, UserPassesTestMixin, generic.ListView):
                         'tag_id': tag.id,
                         'tag_color': tag.color
                     }
-                except:
+                except Exception:
                     pass
         
         elif group_by == 'assigned_sjak':
@@ -194,7 +184,7 @@ class SjakKanbanView(LoginRequiredMixin, UserPassesTestMixin, generic.ListView):
                         'count': bookings.filter(assigned_sjak=staff).count(),
                         'staff_id': staff.id
                     }
-                except:
+                except Exception:
                     pass
         
         elif group_by == 'item':
@@ -210,7 +200,7 @@ class SjakKanbanView(LoginRequiredMixin, UserPassesTestMixin, generic.ListView):
                         'count': bookings.filter(item=item).count(),
                         'item_id': item.id
                     }
-                except:
+                except Exception:
                     pass
         
         return grouped
@@ -335,8 +325,8 @@ class SjakBookingDetailView(LoginRequiredMixin, generic.DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from django_comments_xtd.models import XtdComment
         from django.contrib.contenttypes.models import ContentType
+        from django_comments_xtd.models import XtdComment
         
         content_type = ContentType.objects.get_for_model(models.SjakBooking)
         context['comments'] = XtdComment.objects.filter(
@@ -486,16 +476,6 @@ class SjakItemTypeDeleteView(generic.DeleteView):
 
 
 @login_required
-def search_item(request):
-    search_text = request.POST.get('search')
-    results = models.SjakItem.objects.filter(name__icontains=search_text)
-    context = {"results": results}
-    return render(request, 'Sjak/partials/search-results.html', context)
-
-def clear(request):
-    return HttpResponse("")
-
-@login_required
 @user_passes_test(lambda u: u.is_staff)
 @require_POST
 def update_booking_field(request, pk):
@@ -526,7 +506,6 @@ def update_booking_field(request, pk):
         if field_name == 'assigned_sjak':
             # Handle Volunteer foreign key
             if field_value and field_value != 'None':
-                from organization.models import Volunteer
                 try:
                     staff = Volunteer.objects.get(id=int(field_value))
                     setattr(booking, field_name, staff)
@@ -597,11 +576,11 @@ def update_booking_field(request, pk):
             'id': booking.id,
             'field': field_name,
             'value': field_value,
-            'message': f'Booking updated'
+            'message': 'Booking updated'
         })
     
     except Exception as e:
-        logger.error(f"Error updating booking field: {str(e)}")
+        logger.error(f"Error updating booking field: {e!s}")
         return JsonResponse({'error': 'Failed to update booking'}, status=500)
 
 @login_required
@@ -630,7 +609,7 @@ def update_booking_status(request, pk):
             'message': f'Booking updated to {booking.get_status_display()}'
         })
     except Exception as e:
-        logger.error(f"Error updating booking status: {str(e)}")
+        logger.error(f"Error updating booking status: {e!s}")
         return JsonResponse({'error': 'Failed to update booking'}, status=500)
 
 

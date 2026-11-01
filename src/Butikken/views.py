@@ -1,27 +1,28 @@
-import logging
-from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views import generic
-from django.urls import reverse, reverse_lazy
-from . import models
-from . import forms
-from django.contrib.auth.mixins import LoginRequiredMixin
-from .models import MealBooking, Meal, Day, Option, Recipe, MealPlan, MealOption, TeamMealPlan, MealBooking, TeamMealPlan
-from organization.models import Event, TeamMembership
-from django.db.models import Count
-import logging
-from django.contrib.admin.models import LogEntry
-from django.contrib.contenttypes.models import ContentType
-logger = logging.getLogger(__name__)
-
-from .forms import TeamMealPlanForm
-
-from django.contrib import messages
-from django.utils import timezone
+import contextlib
 import json
+import logging
 from datetime import time
 from decimal import Decimal, InvalidOperation
+
+from django.contrib import messages
+from django.contrib.admin.models import LogEntry
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.contenttypes.models import ContentType
+from django.forms import modelformset_factory
+from django.shortcuts import redirect, render
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views import generic
+
+from organization.models import Event
+
+from . import forms, models
+from .forms import BulkMealForm, TeamMealPlanForm
+from .models import MealBooking, TeamMealPlan
+
+logger = logging.getLogger(__name__)
 
 
 class ButikkenItemListView(LoginRequiredMixin, generic.ListView):
@@ -32,19 +33,6 @@ class ButikkenItemListView(LoginRequiredMixin, generic.ListView):
     def get_queryset(self):
         queryset = models.ButikkenItem.objects.all().order_by('name')  # Order by the 'name' field
         return queryset
-    
-    def sort_items(request):
-        sort_by = request.GET.get('sort', 'default')  # Default sorting option
-
-        if sort_by == 'name':
-            object_list = models.ButikkenItem.objects.all().order_by('name')
-        else:
-            object_list = models.ButikkenItem.objects.all()
-
-        context = {
-            'object_list': object_list,
-        }
-        return render(request, 'your_template.html', context)
 
 
 class ButikkenItemCreateView(LoginRequiredMixin, generic.CreateView):
@@ -89,11 +77,8 @@ class ButikkenBookingListView(LoginRequiredMixin, generic.ListView):
             # Get user's team efficiently with single query
             try:
                 team = user.teammembership_set.select_related('team').values_list('team', flat=True).first()
-                if team:
-                    queryset = queryset.filter(team_id=team)
-                else:
-                    queryset = queryset.none()
-            except:
+                queryset = queryset.filter(team_id=team) if team else queryset.none()
+            except Exception:
                 queryset = queryset.none()
         
         # Get sort parameter from GET request
@@ -185,17 +170,6 @@ class ButikkenBookingUpdateView(LoginRequiredMixin, generic.UpdateView):
         
         context['unit_map'] = unit_map
         return context
-
-    
-def create_butikken_booking(request):
-    print("Hello from Def")  # Print to terminal the current user
-    if request.method == 'POST':
-        form = forms.ButikkenBookingForm(request.POST or None)
-        if form.is_valid():
-            ButikkenBooking = form.save()
-            context = {'booking': ButikkenBooking}
-            return render(request, 'Butikken/partials/booking.html', context)
-    return render(request, 'Butikken/partials/form.html' , {'form': forms.ButikkenBookingForm()})
 
 
 class ButikkenBookingDetailView(LoginRequiredMixin, generic.DetailView):
@@ -410,10 +384,7 @@ class ButikkenOrderListView(LoginRequiredMixin, generic.ListView):
         if not user.is_staff:
             # limit to user's team if available
             team = user.teammembership_set.select_related('team').values_list('team', flat=True).first()
-            if team:
-                qs = qs.filter(team_id=team)
-            else:
-                qs = qs.none()
+            qs = qs.filter(team_id=team) if team else qs.none()
         return qs
 
 
@@ -529,11 +500,9 @@ class ButikkenOrderUpdateView(LoginRequiredMixin, generic.UpdateView):
         context = super().get_context_data(**kwargs)
         # Ensure the template always has a proper form instance available
         # so template tags like `bootstrap_field` receive a valid BoundField.
-        try:
+        with contextlib.suppress(Exception):
+            # Fallback: keep the existing form if construction fails.
             context['form'] = self.get_form()
-        except Exception:
-            # Fallback: do not override if form construction fails
-            pass
         from .models import ButikkenItem
         context['items'] = ButikkenItem.objects.all()
         context['bookings'] = self.object.bookings.select_related('item', 'team_contact')
@@ -608,7 +577,7 @@ class ButikkenOrderUpdateView(LoginRequiredMixin, generic.UpdateView):
                 b.save()
                 del existing[item_id]
             else:
-                bk = ButikkenBooking.objects.create(
+                ButikkenBooking.objects.create(
                     order=self.object,
                     item=item_obj,
                     team=self.object.team,
@@ -629,55 +598,6 @@ class ButikkenOrderUpdateView(LoginRequiredMixin, generic.UpdateView):
 class ButikkenOrderDeleteView(LoginRequiredMixin, generic.DeleteView):
     model = models.ButikkenOrder
     success_url = reverse_lazy("Butikken_ButikkenOrder_list")
-
-
-@login_required
-def butikken_order_add_item(request, pk):
-    from django.http import HttpResponseBadRequest
-    order = get_object_or_404(models.ButikkenOrder, pk=pk)
-    if request.method != 'POST':
-        return HttpResponseBadRequest('Invalid method')
-    # Use the lightweight add-item form for HTMX adds
-    form = forms.ButikkenAddItemForm(request.POST)
-    if form.is_valid():
-        item = form.cleaned_data.get('item')
-        quantity = form.cleaned_data.get('quantity')
-        unit = form.cleaned_data.get('unit') or (item.content_unit if item else '')
-        start_date = form.cleaned_data.get('start_date')
-        start_time = form.cleaned_data.get('start_time')
-        remarks = form.cleaned_data.get('remarks')
-
-        # Fallback: if quantity is empty, try to use item's content_normal
-        if not quantity:
-            try:
-                quantity = Decimal(item.content_normal)
-            except Exception:
-                quantity = Decimal('1')
-
-        # Build booking instance
-        booking = models.ButikkenBooking(
-            order=order,
-            item=item,
-            team=order.team,
-            team_contact=(order.team_contact or request.user),
-            start_date=start_date,
-            start_time=start_time,
-            quantity=quantity,
-            unit=unit or '',
-            remarks=remarks or '',
-        )
-        booking.save()
-        return render(request, 'Butikken/partials/booking.html', {'booking': booking})
-    else:
-        return HttpResponseBadRequest(form.errors.as_json(), content_type='application/json')
-
-
-@login_required
-def butikken_order_remove_item(request, order_pk, pk):
-    booking = get_object_or_404(models.ButikkenBooking, pk=pk, order_id=order_pk)
-    booking.delete()
-    # Return empty string so HTMX can remove the row via outerHTML swap
-    return HttpResponse('')
 
 
 class TeamMealPlanUpdateView(LoginRequiredMixin, generic.UpdateView):
@@ -781,12 +701,6 @@ class RecipeDeleteView(LoginRequiredMixin, generic.DeleteView):
     success_url = reverse_lazy("Butikken_Recipe_list")
 
 
-
-
-from django.forms import modelformset_factory
-from django.shortcuts import render, redirect
-from .models import TeamMealPlan
-from .forms import BulkMealForm
 
 def bulk_meal_update(request):
     user = request.user

@@ -1,11 +1,10 @@
-from django.http import HttpResponse
-from django.shortcuts import render, get_object_or_404
-from django.contrib.auth import authenticate, login
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST, require_http_methods
-from django.utils import timezone
 from datetime import datetime, time
+
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from django.shortcuts import render
+from django.utils import timezone
+
 
 def get_status_color(status):
     """Map booking status to Bootstrap color."""

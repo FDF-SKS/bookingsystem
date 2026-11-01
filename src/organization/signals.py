@@ -2,12 +2,14 @@
 Django signals for organization models - handles Discord notifications and comments.
 """
 import requests
+from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.conf import settings
 from django_comments_xtd.models import XtdComment
+
 from emailing.services import send_email
-from django.contrib.contenttypes.models import ContentType
+
 from .discord_services import build_embed
 from .models import TjanseOwnership, TjanseSwapRequest, VolunteerAppointment
 from .tasks import enqueue_discord_embed
@@ -142,3 +144,17 @@ def notify_tjanse_swap_discord(sender, instance, created, **kwargs):
     for team in {requesting.pk: requesting, receiving.pk: receiving}.values():
         if team.discord_webhook_url:
             enqueue_discord_embed(team.pk, embed, "Tjanse Notifikationer")
+
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def sync_allauth_email_address(sender, instance, created, **kwargs):
+    from allauth.account.models import EmailAddress
+
+    # allauth's own signup creates the row itself
+    if getattr(instance, '_skip_email_sync', False) or not instance.email:
+        return
+    email = instance.email.lower()
+    EmailAddress.objects.filter(user=instance, primary=True).exclude(email__iexact=email).delete()
+    EmailAddress.objects.get_or_create(
+        user=instance, email=email, defaults={'verified': True, 'primary': True}
+    )

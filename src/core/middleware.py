@@ -4,8 +4,8 @@ App Feature Gate Middleware
 This middleware blocks access to disabled apps by returning a 404 response.
 It checks the constance configuration to determine if an app is enabled.
 """
-from django.shortcuts import render
 from constance import config
+from django.shortcuts import render
 
 
 class AppFeatureGateMiddleware:

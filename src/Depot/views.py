@@ -1,9 +1,15 @@
-from django.shortcuts import render
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
-from .models import DepotItem, DepotBooking
-from .forms import DepotItemForm, DepotBookingForm
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
+
+from .forms import DepotBookingForm, DepotItemForm
+from .models import DepotBooking, DepotItem
 
 
 class DepotItemListView(LoginRequiredMixin, ListView):

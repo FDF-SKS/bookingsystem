@@ -7,6 +7,6 @@ class AktivitetsTeamConfig(AppConfig):
     verbose_name = 'AktivitetsTeam (Aktivitet Booking)'
 
     def ready(self):
-        import AktivitetsTeam.signals
+        import AktivitetsTeam.signals  # noqa: F401
 
 

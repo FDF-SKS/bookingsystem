@@ -38,13 +38,11 @@
 
     <link rel="stylesheet" href="{% static 'css/custom.css' %}">
     <link rel="stylesheet" href="{% static 'css/tiptap-theme.css' %}">
-    
-    <script src="https://unpkg.com/htmx.org@2.0.2"></script>
 
     {% block extra_css %}{% endblock %}
 </head>
 
-<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}' class="pt-0">
+<body class="pt-0">
 
     <nav class="navbar navbar-expand-lg border-bottom shadow-sm sticky-top">
         <div class="container-fluid">
@@ -248,10 +246,11 @@
                         <div class="nav-item dropdown">
                             <a class="nav-link d-flex align-items-center text-primary" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 <span class="me-2">Hej {{ user.first_name }}!</span>
-                                {% bs_icon 'person-circle' %} 
+                                <i class="bi bi-person-circle"></i> 
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="{% url 'organization_Volunteer_detail' request.user.pk %}">Min profil</a></li>
+                                <li><a class="dropdown-item" href="{% url 'mfa_index' %}">Sikkerhed & login</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li class="dropdown-header">Tema</li>
                                 <li><a class="dropdown-item" href="#" data-theme-option="system">System</a></li>
@@ -279,12 +278,6 @@
     {% comment %} <script src="{% static 'js/sidebars.js' %}"></script> {% endcomment %}
 
     <script type="text/javascript">window.$sleek=[];window.SLEEK_PRODUCT_ID=535324369;(function(){d=document;s=d.createElement("script");s.src="https://client.sleekplan.com/sdk/e.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>  
-
-    <script>
-        document.body.addEventListener('htmx:configRequest', (event) => {
-            event.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
-        })
-    </script>
 
     <script>
         // Dynamically show Danish weekday + day for date inputs on booking forms
@@ -340,7 +333,7 @@
 
             document.addEventListener('DOMContentLoaded', function(){
                 scan();
-                // Observe for dynamic forms or HTMX swaps
+                // Observe for dynamically added forms
                 const mo = new MutationObserver((mutations)=>{
                     for(const m of mutations){
                         m.addedNodes.forEach(node=>{

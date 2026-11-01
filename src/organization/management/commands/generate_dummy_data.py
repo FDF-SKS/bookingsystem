@@ -1,6 +1,9 @@
 import random
+
 from django.core.management.base import BaseCommand
-from organization.models import Team, Volunteer, TeamMembership
+
+from organization.models import Team, TeamMembership, Volunteer
+
 
 class Command(BaseCommand):
     help = 'Generate dummy data for Team, Volunteer, and TeamMembership models'
@@ -25,7 +28,7 @@ class Command(BaseCommand):
         volunteers = Volunteer.objects.all()
         for volunteer in volunteers:
             team = random.choice(teams)
-            membership = TeamMembership.objects.create(
+            TeamMembership.objects.create(
                 team=team,
                 member=volunteer,
                 role='Member'

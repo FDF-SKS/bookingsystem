@@ -1,5 +1,6 @@
 # Core Framework
 Django==5.2.10
+django-allauth[mfa]>=65.0
 djangorestframework>=3.16.1
 asgiref>=3.11.0
 djlint>=1.36.4
@@ -48,4 +49,3 @@ redis>=5.0
 
 # Geographic Data
 geopy>=2.5.0
-geographiclib>=2.1

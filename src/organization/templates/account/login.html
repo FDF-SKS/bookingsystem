@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
+    <div class="row w-100 justify-content-center">
+        <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+
+            <div class="text-center mb-4">
+                <div class="bg-primary d-inline-flex align-items-center justify-content-center rounded-circle shadow-sm text-white" style="width: 64px; height: 64px;">
+                    <i class="bi bi-shield-lock fs-2"></i>
+                </div>
+                <h2 class="fw-bold mt-3 login-title">Log ind</h2>
+                <p class="text-muted small">SKS Bookingside</p>
+            </div>
+
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+                <div class="card-body p-4 p-md-5">
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger border-0 small rounded-3 mb-4" role="alert">
+                            {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+                        </div>
+                    {% endif %}
+
+                    <form method="POST" action="{% url 'account_login' %}">
+                        {% csrf_token %}
+                        {% if redirect_field_value %}
+                            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small text-muted" for="id_login">E-mail</label>
+                            <input type="email" name="login" class="form-control bg-light py-2"
+                                   autocomplete="email" required id="id_login"
+                                   value="{{ form.login.value|default:'' }}" placeholder="din@email.dk">
+                            {% for error in form.login.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <label class="form-label fw-semibold small text-muted" for="id_password">Kodeord</label>
+                                <a href="{% url 'password_reset' %}" class="small text-decoration-none text-primary mb-2">Glemt?</a>
+                            </div>
+                            <input type="password" name="password" class="form-control bg-light py-2"
+                                   autocomplete="current-password" required id="id_password" placeholder="••••••••">
+                            {% for error in form.password.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 fw-bold shadow-sm">
+                            Log ind
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        {% if PASSKEY_LOGIN_ENABLED %}
+                            <button type="submit" form="mfa_login" id="passkey_login" class="btn btn-outline-primary w-100 py-2 rounded-3 mb-2">Log ind med passkey</button>
+                        {% endif %}
+                        {% if LOGIN_BY_CODE_ENABLED %}
+                            <a href="{% url 'account_request_login_code' %}" class="small text-decoration-none">Send mig en engangskode i stedet</a>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light border-0 py-3 text-center">
+                    <span class="text-muted small">Har du ikke en konto?</span>
+                    <a href="{% url 'account_signup' %}" class="small fw-bold text-decoration-none text-primary ms-1">Opret bruger</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+    {% if PASSKEY_LOGIN_ENABLED %}
+        {% include "mfa/webauthn/snippets/login_script.html" with button_id="passkey_login" %}
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,1 @@
+{% load allauth %}<span class="badge rounded-pill {% if attrs.tags and 'warning' in attrs.tags %}bg-warning text-dark{% elif attrs.tags and 'primary' in attrs.tags %}bg-primary{% else %}bg-secondary{% endif %}"{% if attrs.title %} title="{{ attrs.title }}"{% endif %}>{% slot %}{% endslot %}</span>

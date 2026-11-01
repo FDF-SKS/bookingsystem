@@ -1,6 +1,9 @@
-from icalendar import Calendar, Event, vCalAddress, vText, Alarm
 from datetime import datetime, timedelta
+
+from icalendar import Alarm, Calendar, Event, vCalAddress, vText
+
 from emailing.services import send_email
+
 
 def convert_to_ical(booking):
     ical_event = Event()

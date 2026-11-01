@@ -1,0 +1,5 @@
+Din kode til at logge ind i Seniorkursus Slettens booking system er:
+
+{{ code }}
+
+Koden udløber om få minutter og kan kun bruges én gang. Har du ikke bedt om den, kan du ignorere denne email.

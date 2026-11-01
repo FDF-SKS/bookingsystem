@@ -10,24 +10,24 @@ Udnytter Django Unfold package til avancerede admin features:
 """
 
 import csv
+
 from django import forms
 from django.conf import settings
 from django.contrib import admin, messages
+from django.contrib.admin import SimpleListFilter
 from django.http import HttpResponse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-from django.contrib.admin import SimpleListFilter
-
-from unfold.admin import ModelAdmin, TabularInline
-from unfold.decorators import action, display
-from import_export.admin import ImportExportModelAdmin
 from import_export import resources
+from import_export.admin import ImportExportModelAdmin
+from unfold.admin import ModelAdmin, TabularInline
 from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
+from unfold.decorators import display
 
 from organization.models import Volunteer
-from . import models
 from utils.ical_utils import export_selected_to_ical, send_ical_via_email
 
+from . import models
 
 # ============================================================================
 # IMPORT/EXPORT RESSOURCER
@@ -263,7 +263,7 @@ class AktivitetsTeamBookingAdmin(AktivitetsTeamBaseAdmin):
     list_fullwidth = True
     date_hierarchy = "start_date"
     ordering = ["-start_date"]
-    actions = AktivitetsTeamBaseAdmin.actions + ["export_selected_to_ical_action", "send_ical_via_email_action"]
+    actions = [*AktivitetsTeamBaseAdmin.actions, "export_selected_to_ical_action", "send_ical_via_email_action"]
     
     list_display = [
         "item", "team",
@@ -368,7 +368,6 @@ class AktivitetsTeamBookingAdmin(AktivitetsTeamBaseAdmin):
         
         # Opret en beskrivende filnavn baseret på datointervallet
         first_booking = queryset.first()
-        last_booking = queryset.last()
         start_date = first_booking.start_date.strftime("%d-%m-%Y")
         count = queryset.count()
         filename = f"aktiviteter_{count}_bookinger_{start_date}.ics"
@@ -410,39 +409,7 @@ class AktivitetsTeamBookingAdmin(AktivitetsTeamBaseAdmin):
         else:
             self.message_user(
                 request,
-                f"⚠️ Ingen frivillige tilknyttet de valgte bookinger.",
+                "⚠️ Ingen frivillige tilknyttet de valgte bookinger.",
                 messages.WARNING
             )
-
-
-# ============================================================================
-# ADMIN FORMULARER
-# ============================================================================
-
-class AktivitetsTeamItemAdminForm(forms.ModelForm):
-    """Formular for AktivitetsTeamItem."""
-    
-    class Meta:
-        model = models.AktivitetsTeamItem
-        fields = [
-            "name", "category", "description", "short_description",
-            "is_active", "youtube_link", "description_flow",
-            "description_eksempel", "description_aktiverede",
-            "location", "image",
-        ]
-
-
-class AktivitetsTeamBookingAdminForm(forms.ModelForm):
-    """Formular for AktivitetsTeamBooking."""
-    
-    class Meta:
-        model = models.AktivitetsTeamBooking
-        fields = [
-            "item", "team", "team_contact", "status", "start_date",
-            "start_time", "end_date", "end_time", "location",
-            "remarks", "remarks_internal",
-        ]
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 

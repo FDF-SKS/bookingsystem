@@ -1,6 +1,5 @@
 {% extends "base.html" %}
 {% load static %}
-{# Note: Using your custom 'bs_icon' tag as requested #}
 
 {% block content %}
 <div class="container py-4">
@@ -20,7 +19,7 @@
                     {% if request.user == object %}
                     <div class="position-absolute top-0 end-0 m-3">
                         <a href="{% url 'organization_Volunteer_update' object.pk %}" class="btn btn-light btn-sm rounded-circle shadow-sm">
-                            <bs_icon class="bi bi-gear-fill text-muted"></bs_icon>
+                            <i class="bi bi-gear-fill text-muted"></i>
                         </a>
                     </div>
                     {% endif %}
@@ -45,10 +44,10 @@
                 <div class="card-body px-4 pb-4">
                     <div class="d-flex gap-2 justify-content-center mb-4">
                         <a href="tel:{{ object.phone }}" class="btn btn-outline-primary px-4 rounded-pill fw-bold">
-                            <bs_icon class="bi bi-telephone me-1"></bs_icon> Ring op
+                            <i class="bi bi-telephone me-1"></i> Ring op
                         </a>
                         <a href="mailto:{{ object.email }}" class="btn btn-outline-primary px-4 rounded-pill fw-bold">
-                            <bs_icon class="bi bi-envelope me-1"></bs_icon> Send mail
+                            <i class="bi bi-envelope me-1"></i> Send mail
                         </a>
                     </div>
 
@@ -56,14 +55,14 @@
                         <div class="col-md-6">
                             <h6 class="text-uppercase text-muted small fw-bold mb-3 ls-1">Kontaktdetaljer</h6>
                             <div class="d-flex align-items-center mb-3">
-                                <div class="bg-light p-2 rounded-3 me-3"><bs_icon class="bi bi-envelope text-primary"></bs_icon></div>
+                                <div class="bg-light p-2 rounded-3 me-3"><i class="bi bi-envelope text-primary"></i></div>
                                 <div>
                                     <small class="text-muted d-block">E-mail</small>
                                     <span class="fw-medium">{{ object.email }}</span>
                                 </div>
                             </div>
                             <div class="d-flex align-items-center mb-3">
-                                <div class="bg-light p-2 rounded-3 me-3"><bs_icon class="bi bi-telephone text-primary"></bs_icon></div>
+                                <div class="bg-light p-2 rounded-3 me-3"><i class="bi bi-telephone text-primary"></i></div>
                                 <div>
                                     <small class="text-muted d-block">Telefon</small>
                                     <span class="fw-medium">{{ object.phone }}</span>
@@ -102,11 +101,11 @@
                 <div class="card-footer bg-light border-0 py-4 text-center">
                     {% if request.user == object %}
                         <a href="{% url 'organization_Volunteer_update' object.pk %}" class="btn btn-secondary px-5 rounded-pill fw-bold shadow-sm">
-                            <bs_icon class="bi bi-pencil-square me-2"></bs_icon> Rediger mine oplysninger
+                            <i class="bi bi-pencil-square me-2"></i> Rediger mine oplysninger
                         </a>
                     {% else %}
                         <small class="text-muted">
-                            <bs_icon class="bi bi-lock-fill me-1"></bs_icon> 
+                            <i class="bi bi-lock-fill me-1"></i> 
                             Denne profil kan kun redigeres af {{ object.first_name }} eller en administrator
                         </small>
                     {% endif %}
@@ -115,7 +114,7 @@
 
             <div class="text-center mt-4">
                 <a href="{% url 'organization_Volunteer_list' %}" class="text-muted text-decoration-none small">
-                    <bs_icon class="bi bi-arrow-left me-1"></bs_icon> Tilbage til listen
+                    <i class="bi bi-arrow-left me-1"></i> Tilbage til listen
                 </a>
             </div>
         </div>

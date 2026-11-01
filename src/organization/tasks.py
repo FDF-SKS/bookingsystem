@@ -10,9 +10,9 @@ from django.conf import settings
 from django.db import transaction
 
 from .discord_services import (
-    build_embed,
     DiscordRateLimited,
     DiscordTransientError,
+    build_embed,
     send_team_embed,
 )
 

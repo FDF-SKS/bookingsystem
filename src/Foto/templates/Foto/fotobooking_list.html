@@ -79,10 +79,10 @@
 
               <td>
                 <a href="{% url 'Foto_FotoBooking_update' object.pk %}" class="btn btn-outline-warning btn-sm disabled">
-                  {% bs_icon 'pencil' %}  
+                  <i class="bi bi-pencil"></i>  
                 </a>
                 <a href="{% url 'Foto_FotoBooking_delete' object.pk %}" class="btn btn-outline-danger btn-sm disabled">
-                  {% bs_icon 'trash' %}  
+                  <i class="bi bi-trash"></i>  
                 </a>
               </td>
             </tr>
@@ -111,21 +111,21 @@
             </td>
             <td>
                   <a href="{% url 'Foto_FotoBooking_detail' object.pk %}" class="btn btn-primary btn-sm">
-                      {% bs_icon 'eye-fill' %}
+                      <i class="bi bi-eye-fill"></i>
                   </a>
                   <a href="{% url 'Foto_FotoBooking_delete' object.pk %}" class="btn btn-outline-danger btn-sm">
-                      {% bs_icon 'trash' %}
+                      <i class="bi bi-trash"></i>
                   </a>
             </td>
             <td>
               <div class="d-flex gap-2 align-items-center">
                   <form method="post" action="{% url 'Foto_FotoBooking_reject' object.pk %}?next=Foto_FotoBooking_list" class="d-inline">
                       {% csrf_token %}
-                      <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center">{% bs_icon 'x-lg' %}</button>
+                      <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center"><i class="bi bi-x-lg"></i></button>
                   </form>
                   <form method="post" action="{% url 'Foto_FotoBooking_approve' object.pk %}?next=Foto_FotoBooking_list" class="d-inline">
                       {% csrf_token %}
-                      <button type="submit" class="btn btn-success btn-sm d-flex align-items-center">{% bs_icon 'check-circle-fill' %}</button>
+                      <button type="submit" class="btn btn-success btn-sm d-flex align-items-center"><i class="bi bi-check-circle-fill"></i></button>
                   </form>
               </div>
           </td>    
@@ -133,7 +133,7 @@
             {% get_comment_count for object as comment_count %}
             {% if comment_count %}
                 <a href="{{object.get_absolute_url}}" class="btn btn-outline-secondary btn-sm">
-                    {{ comment_count }} {% bs_icon 'chat-left-dots' %}
+                    {{ comment_count }} <i class="bi bi-chat-left-dots"></i>
                 </a>
             {% endif %}
           </td>

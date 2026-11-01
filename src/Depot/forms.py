@@ -1,8 +1,9 @@
+from datetime import datetime, time
+
 from django import forms
 from django.core.exceptions import ValidationError
-from datetime import datetime, time
-from .models import DepotItem, DepotBooking
-from organization.models import Team, Volunteer
+
+from .models import DepotBooking, DepotItem
 
 
 class DepotItemForm(forms.ModelForm):

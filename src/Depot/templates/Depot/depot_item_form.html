@@ -13,9 +13,9 @@
                 <div class="card-header bg-light">
                     <h4 class="mb-0">
                         {% if form.instance.pk %}
-                            <bs_icon class="bi bi-pencil"></bs_icon> Rediger genstand
+                            <i class="bi bi-pencil"></i> Rediger genstand
                         {% else %}
-                            <bs_icon class="bi bi-plus-circle"></bs_icon> Tilføj ny genstand
+                            <i class="bi bi-plus-circle"></i> Tilføj ny genstand
                         {% endif %}
                     </h4>
                 </div>
@@ -27,10 +27,10 @@
                         
                         <div class="d-grid gap-2 d-sm-flex">
                             <button type="submit" class="btn btn-primary">
-                                <bs_icon class="bi bi-check-circle"></bs_icon> Gem
+                                <i class="bi bi-check-circle"></i> Gem
                             </button>
                             <a href="{% url 'Depot_DepotItem_list' %}" class="btn btn-outline-secondary">
-                                <bs_icon class="bi bi-x-circle"></bs_icon> Annuller
+                                <i class="bi bi-x-circle"></i> Annuller
                             </a>
                         </div>
                     </form>

@@ -15,10 +15,12 @@ Examples:
     python manage.py test_discord_notification --webhook https://discord.com/api/webhooks/...
 """
 
+from datetime import timedelta
+
 from django.core.management.base import BaseCommand
 from django.utils import timezone
-from datetime import timedelta
-from organization.models import Team, Volunteer
+
+from organization.models import Team
 from Sjak.models import SjakBooking, SjakItem, SjakItemType
 
 
@@ -97,6 +99,6 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS(f'✓ Test booking created: ID {booking.id}'))
             self.stdout.write(self.style.SUCCESS(f'✓ Discord notification should be sent to: {team.discord_webhook_url}'))
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'✗ Error creating test booking: {str(e)}'))
+            self.stdout.write(self.style.ERROR(f'✗ Error creating test booking: {e!s}'))
 
 

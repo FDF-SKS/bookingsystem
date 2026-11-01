@@ -1,11 +1,11 @@
 import uuid
 
 from django.db import models
-from django.urls import reverse
 from django.db.models import Max
-from utils.fields import SafeLocationField
+from django.urls import reverse
 
-from organization.models import Event, Team, Volunteer
+from organization.models import Event, Team
+from utils.fields import SafeLocationField
 
 
 class Loeb(models.Model):

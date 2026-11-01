@@ -14,10 +14,10 @@
         <h1 class="h2 mb-0">Vores tjanser</h1>
         <div class="d-flex flex-wrap gap-2">
             <a href="{% url 'organization_Tjanse_overview' %}" class="btn btn-outline-primary">
-                {% bs_icon "table" %} <span>Alle tjanser</span>
+                <i class="bi bi-table"></i> <span>Alle tjanser</span>
             </a>
             <a href="{% url 'organization_TjanseSwapRequest_list' %}" class="btn btn-outline-secondary">
-                {% bs_icon "arrow-left-right" %} <span>Tjanse-bytter</span>
+                <i class="bi bi-arrow-left-right"></i> <span>Tjanse-bytter</span>
             </a>
         </div>
     </div>
@@ -30,7 +30,7 @@
                     <div class="fw-bold">{{ ownership.tjanse.title }}</div>
                     <small class="text-muted">{{ ownership.event.name }} · {{ ownership.team.name }}</small>
                     {% if ownership.due_date %}
-                        <br><small class="text-muted">{% bs_icon "calendar" %} Frist: {{ ownership.due_date|date:"d/m" }}</small>
+                        <br><small class="text-muted"><i class="bi bi-calendar"></i> Frist: {{ ownership.due_date|date:"d/m" }}</small>
                     {% endif %}
                 </a>
                 <div class="text-end d-flex align-items-center gap-2">

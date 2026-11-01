@@ -1,12 +1,14 @@
-from django import forms
-from django.forms.widgets import SelectDateWidget
-from organization.models import Team, TeamMembership, Volunteer, Event
-from SOS.models import SOSItem, SOSType, SOSBooking
-from django.contrib.auth.models import Group
-from . import models
-from django.forms import BaseFormSet, TextInput, formset_factory
-from django.utils import timezone
 from datetime import time
+
+from django import forms
+from django.forms import TextInput
+from django.utils import timezone
+
+from organization.models import Event, Team, TeamMembership, Volunteer
+from SOS.models import SOSItem
+
+from . import models
+
 
 class SOSBookingForm(forms.ModelForm):
     start_date = forms.DateField(
@@ -82,7 +84,7 @@ class SOSBookingForm(forms.ModelForm):
         return instance
     
     def __init__(self, *args, user=None, **kwargs):
-        super(SOSBookingForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["item"].queryset = SOSItem.objects.all()
         self.fields["team"].queryset = Team.objects.all()
         self.fields["team_contact"].queryset = Volunteer.objects.all()
@@ -135,7 +137,7 @@ class SOSItemForm(forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
-        super(SOSItemForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
 

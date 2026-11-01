@@ -1,7 +1,8 @@
-from rest_framework import viewsets, filters, permissions
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import DepotItem, DepotBooking
-from .serializers import DepotItemSerializer, DepotBookingSerializer
+from rest_framework import filters, permissions, viewsets
+
+from .models import DepotBooking, DepotItem
+from .serializers import DepotBookingSerializer, DepotItemSerializer
 
 
 class DepotItemViewSet(viewsets.ModelViewSet):

@@ -7,4 +7,4 @@ class LoebConfig(AppConfig):
     verbose_name = 'Løb'
 
     def ready(self):
-        import Loeb.signals
+        import Loeb.signals  # noqa: F401

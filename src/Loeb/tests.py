@@ -1,8 +1,9 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from .models import Hold, Loeb, PhysicalStation, Task, TaskSubmission
 from organization.models import Event, Team, TeamMembership, Volunteer
+
+from .models import Hold, Loeb, PhysicalStation, Task, TaskSubmission
 
 
 class LoebModelTests(TestCase):
@@ -198,15 +199,16 @@ class LoebModelTests(TestCase):
         self.assertContains(qr_response, '<a href="https://example.com">link</a>')
 
     def test_task_form_uses_tiptap_widget(self):
-        from .forms import TaskForm
         from django_tiptap_editor.widgets.tiptap_widget import TipTapWidget
+
+        from .forms import TaskForm
 
         form = TaskForm(user=self.user)
         self.assertIsInstance(form.fields['description'].widget, TipTapWidget)
 
     def test_loeb_preview_page_shows_tasks_and_qr_codes(self):
         self.client.force_login(self.user)
-        task = Task.objects.create(
+        Task.objects.create(
             loeb=self.loeb,
             title='Preview Station Task',
             description='<p>Løs denne <em>gåde</em> ved posten.</p>',
@@ -215,7 +217,7 @@ class LoebModelTests(TestCase):
             order=1,
             is_published=True,
         )
-        hold = Hold.objects.create(loeb=self.loeb, name='Preview Hold', pin_code='PREV1')
+        Hold.objects.create(loeb=self.loeb, name='Preview Hold', pin_code='PREV1')
 
         response = self.client.get(reverse('Loeb_Loeb_preview', args=[self.loeb.pk]))
         self.assertEqual(response.status_code, 200)

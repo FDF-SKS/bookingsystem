@@ -6,10 +6,10 @@ This command checks the status of all feature toggles and displays:
 - Backend connectivity status
 - Status of each app toggle (enabled/disabled)
 """
-from django.core.management.base import BaseCommand, CommandError
-from django.conf import settings
-from constance import config
 import redis
+from constance import config
+from django.conf import settings
+from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):

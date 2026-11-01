@@ -1,18 +1,14 @@
-from django.db import models
-from django.contrib.auth.models import AbstractUser
-from django.urls import reverse
-from django.utils import timezone
-from simple_history.models import HistoricalRecords
-from PIL import Image
-from io import BytesIO
-from django.core.files.base import ContentFile
-from django_tiptap_editor.fields import TipTapJSONField
 import os
+from io import BytesIO
 
+from django.contrib.auth.models import AbstractUser, UserManager
+from django.core.files.base import ContentFile
+from django.db import models
+from django.urls import reverse
+from django_tiptap_editor.fields import TipTapJSONField
+from PIL import Image
+from simple_history.models import HistoricalRecords
 
-
-
-    
 
 class TeamMembership(models.Model):
 
@@ -87,7 +83,21 @@ class Team(models.Model):
         return str(self.name)
     
 
+class VolunteerManager(UserManager):
+    """Look users up by their ``USERNAME_FIELD`` (email), case-insensitively."""
+
+    def get_by_natural_key(self, username):
+        return self.get(**{f'{self.model.USERNAME_FIELD}__iexact': username})
+
+
 class Volunteer(AbstractUser):
+
+    objects = VolunteerManager()
+
+    # Log in with the e-mail address; ``username`` is kept as a secondary,
+    # auto-generated identifier for legacy code and imports.
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
 
     # Fields
     username = models.CharField(max_length=30, unique=True, db_index=True)
@@ -140,7 +150,7 @@ class Volunteer(AbstractUser):
             
             # Save thumbnail
             self.image_thumbnail.save(thumb_filename, ContentFile(thumb_io.read()), save=False)
-        except Exception as e:
+        except Exception:
             # Silently fail if thumbnail generation fails
             pass
 

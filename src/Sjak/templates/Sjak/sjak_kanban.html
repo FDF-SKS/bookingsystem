@@ -20,11 +20,11 @@
         </div>
         <div class="d-flex gap-2">
             <a href="{% url 'Sjak_SjakBooking_list' %}" class="btn btn-sm btn-outline-secondary">
-                <bs_icon class="bi bi-list-ul"></bs_icon>
+                <i class="bi bi-list-ul"></i>
                 List
             </a>
             <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#filterModal">
-                <bs_icon class="bi bi-funnel"></bs_icon>
+                <i class="bi bi-funnel"></i>
                 Filters
             </button>
         </div>
@@ -70,25 +70,25 @@
                     <h5 class="mb-0 fw-bold text-dark">
                         <span class="me-2">
                             {% if group_by == 'status' and group_key == 'Pending' %}
-                                <bs_icon class="bi bi-clock"></bs_icon>
+                                <i class="bi bi-clock"></i>
                             {% elif group_by == 'status' and group_key == 'Approved' %}
-                                <bs_icon class="bi bi-check-circle"></bs_icon>
+                                <i class="bi bi-check-circle"></i>
                             {% elif group_by == 'status' and group_key == 'Rejected' %}
-                                <bs_icon class="bi bi-x-circle"></bs_icon>
+                                <i class="bi bi-x-circle"></i>
                             {% elif group_by == 'status_internal' and group_key == 'Afventer' %}
-                                <bs_icon class="bi bi-hourglass"></bs_icon>
+                                <i class="bi bi-hourglass"></i>
                             {% elif group_by == 'status_internal' and group_key == 'Igang' %}
-                                <bs_icon class="bi bi-play-circle"></bs_icon>
+                                <i class="bi bi-play-circle"></i>
                             {% elif group_by == 'status_internal' and group_key == 'Klar' %}
-                                <bs_icon class="bi bi-check2"></bs_icon>
+                                <i class="bi bi-check2"></i>
                             {% elif group_by == 'status_internal' and group_key == 'Afsluttet' %}
-                                <bs_icon class="bi bi-check-all"></bs_icon>
+                                <i class="bi bi-check-all"></i>
                             {% elif group_by == 'tag' %}
-                                <bs_icon class="bi bi-tag"></bs_icon>
+                                <i class="bi bi-tag"></i>
                             {% elif group_by == 'assigned_sjak' %}
-                                <bs_icon class="bi bi-person"></bs_icon>
+                                <i class="bi bi-person"></i>
                             {% elif group_by == 'item' %}
-                                <bs_icon class="bi bi-box"></bs_icon>
+                                <i class="bi bi-box"></i>
                             {% endif %}
                         </span>
                         {{ group_data.label }}
@@ -114,25 +114,25 @@
                             {% if booking.item.image %}
                                 <img src="{{ booking.item.image.url }}" alt="{{ booking.item }}">
                             {% else %}
-                                <span class="kanban-card-icon"><bs_icon class="bi bi-box"></bs_icon></span>
+                                <span class="kanban-card-icon"><i class="bi bi-box"></i></span>
                             {% endif %}
                             <strong>{{ booking.item.name }}</strong>
                         </div>
 
                         <div class="kanban-card-meta">
-                            <bs_icon class="bi bi-calendar"></bs_icon>
+                            <i class="bi bi-calendar"></i>
                             <span>{{ booking.start_date|date:"d. M" }}</span>
                         </div>
 
                         <div class="kanban-card-meta">
-                            <bs_icon class="bi bi-person-circle"></bs_icon>
+                            <i class="bi bi-person-circle"></i>
                             <span>{{ booking.team_contact.first_name|truncatechars:10 }}</span>
                         </div>
 
                         {% if booking.tag %}
                         <div class="mt-2">
                             <span class="badge" style="background-color: {% if booking.tag == 'Urgent' %}#dc3545{% elif booking.tag == 'Low Priority' %}#6c757d{% elif booking.tag == 'In Review' %}#0dcaf0{% else %}#ffc107{% endif %};">
-                                <bs_icon class="bi bi-tag"></bs_icon> {{ booking.tag }}
+                                <i class="bi bi-tag"></i> {{ booking.tag }}
                             </span>
                         </div>
                         {% endif %}
@@ -141,20 +141,20 @@
                     <div class="kanban-card-footer">
                         <div class="btn-group btn-group-xs w-100">
                             <button type="button" class="btn btn-sm btn-outline-primary quick-action-btn" data-booking-id="{{ booking.id }}" data-field="status" data-current="{{ booking.status }}">
-                                <bs_icon class="bi bi-flag"></bs_icon>
+                                <i class="bi bi-flag"></i>
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-primary quick-action-btn" data-booking-id="{{ booking.id }}" data-field="tag" data-current="{{ booking.tag }}">
-                                <bs_icon class="bi bi-tag"></bs_icon>
+                                <i class="bi bi-tag"></i>
                             </button>
                             <a href="{{ booking.get_absolute_url }}" class="btn btn-sm btn-outline-secondary">
-                                <bs_icon class="bi bi-eye"></bs_icon>
+                                <i class="bi bi-eye"></i>
                             </a>
                         </div>
                     </div>
                 </div>
                 {% empty %}
                 <div class="kanban-empty-state">
-                    <div><bs_icon class="bi bi-inbox" style="font-size: 2.5rem;"></bs_icon></div>
+                    <div><i class="bi bi-inbox" style="font-size: 2.5rem;"></i></div>
                     <p>No bookings</p>
                 </div>
                 {% endfor %}
@@ -272,7 +272,7 @@
 <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
     <div id="updateToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="toast-header bg-success text-white border-0">
-            <strong class="me-auto"><bs_icon class="bi bi-check-circle"></bs_icon> Success</strong>
+            <strong class="me-auto"><i class="bi bi-check-circle"></i> Success</strong>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
         </div>
         <div class="toast-body" id="toastMessage">Booking updated</div>

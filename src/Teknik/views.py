@@ -1,18 +1,16 @@
-from django.views import generic
-from django.urls import reverse_lazy
-from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
-from . import models
-from . import forms
-
 from django.contrib import messages
-from organization.models import EventMembership, Event
-from django.utils import timezone
-from django.shortcuts import redirect
-from django.shortcuts import get_object_or_404
-from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
-from geopy.geocoders import Nominatim
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views import generic
+
+from organization.models import Event
+
+from . import forms, models
+
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
@@ -50,39 +48,6 @@ class TeknikBookingListView(LoginRequiredMixin, generic.ListView):
         return models.TeknikBooking.objects.select_related(
             'team', 'team_contact', 'item'
         ).defer('location').order_by('item', 'start_date')
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
-
-        # Fetch the user's team membership
-        user_team_membership = user.teammembership_set.select_related('team').first()
-        is_staff = user.is_staff
-
-        # Filter the object list based on the user's team membership and staff status
-        if is_staff:
-            filtered_object_list = context['object_list']
-        else:
-            filtered_object_list = [
-            obj for obj in context['object_list']
-            if user_team_membership and obj.team == user_team_membership.team
-            ]
-
-        # Fetch user events
-        user_events = list(user.events.filter(is_active=True).values('name', 'deadline_teknik'))
-
-        # Fetch volunteer team memberships
-        volunteer_team_memberships = list(user.teammembership_set.select_related('team').values('team__name'))
-
-        context.update({
-            'filtered_object_list': filtered_object_list,
-            'is_staff': is_staff,
-            'user_team_membership': user_team_membership,
-            'user_events': user_events,
-            'volunteer_team_memberships': volunteer_team_memberships,
-        })
-
-        return context
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -145,8 +110,8 @@ class TeknikBookingDetailView(LoginRequiredMixin, generic.DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from django_comments_xtd.models import XtdComment
         from django.contrib.contenttypes.models import ContentType
+        from django_comments_xtd.models import XtdComment
         
         context['object_dict'] = self.object.to_dict()
         

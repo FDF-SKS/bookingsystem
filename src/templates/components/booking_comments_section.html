@@ -6,7 +6,7 @@
 
 <div class="comments-section mb-4">
     <h5 class="fw-bold mb-3 border-bottom pb-2">
-        {% bs_icon "chat-left-text" %} Kommentarer
+        <i class="bi bi-chat-left-text"></i> Kommentarer
         <span class="badge bg-secondary rounded-pill ms-2">{{ comments|length }}</span>
     </h5>
     
@@ -35,7 +35,7 @@
                                     <div class="small">
                                         {% if user.is_staff or user == comment.user %}
                                             <a class="text-decoration-none text-danger" href="/comments/delete/{{ comment.id }}/" title="Slet kommentar">
-                                                {% bs_icon "trash" %}
+                                                <i class="bi bi-trash"></i>
                                             </a>
                                         {% endif %}
                                     </div>

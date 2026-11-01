@@ -210,7 +210,7 @@ body {
 
 /* --- UI COMPONENTS --- */
 
-.bs_icon { 
+.bi { 
     display: inline-flex;
     align-items: center;
     justify-content: center;

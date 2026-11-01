@@ -1,36 +1,57 @@
 name: Django Tests
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: django-tests-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
+    name: Django tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
 
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_DB: test_db
-          POSTGRES_USER: user
-          POSTGRES_PASSWORD: password
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    strategy:
+      fail-fast: false
+      matrix:
+        # Matches the Python version used in the production Dockerfile.
+        python-version: ["3.13"]
+
+    env:
+      # Test-safe values. Real secrets are only provided at deploy time.
+      DJANGO_SECRET_KEY: ci-only-secret-key-not-for-production
+      ENVIRONMENT: dev
+      DEBUG: "False"
+      SITE_URL: http://testserver
+      DJANGO_ALLOWED_HOSTS: testserver,localhost,127.0.0.1
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: src/requirements.txt
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r src/requirements.txt
+
+      - name: Django system checks
+        working-directory: src
+        run: python manage.py check
+
+      - name: Check for missing migrations
+        working-directory: src
+        run: python manage.py makemigrations --check --dry-run
+
+      - name: Run test suite
+        working-directory: src
+        run: python manage.py test --verbosity 2

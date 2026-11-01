@@ -11,7 +11,7 @@
             <div class="card border-danger">
                 <div class="card-header bg-danger text-white">
                     <h4 class="mb-0">
-                        <bs_icon class="bi bi-exclamation-triangle"></bs_icon> Slet Vare
+                        <i class="bi bi-exclamation-triangle"></i> Slet Vare
                     </h4>
                 </div>
                 
@@ -22,10 +22,10 @@
                     <form method="post" class="d-grid gap-2 d-sm-flex">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-danger">
-                            <bs_icon class="bi bi-trash"></bs_icon> Slet
+                            <i class="bi bi-trash"></i> Slet
                         </button>
                         <a href="{{ object.get_absolute_url }}" class="btn btn-outline-secondary">
-                            <bs_icon class="bi bi-x-circle"></bs_icon> Annuller
+                            <i class="bi bi-x-circle"></i> Annuller
                         </a>
                     </form>
                 </div>

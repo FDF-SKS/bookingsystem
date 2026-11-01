@@ -79,7 +79,7 @@
 
                         <!-- Footer Cart Summary -->
                         <div class="text-muted small d-flex align-items-center gap-2 pt-2 border-top">
-                            {% bs_icon "inbox" %} 
+                            <i class="bi bi-inbox"></i> 
                             <span id="cart-total-count">Total: 0 unikke varer tilføjet bestillingen</span>
                         </div>
                     </div>
@@ -133,7 +133,7 @@
 
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-navy btn-lg py-2 shadow-sm d-flex align-items-center justify-content-center gap-2">
-                        {% bs_icon "cart-check" %} Gem bestilling
+                        <i class="bi bi-cart-check"></i> Gem bestilling
                     </button>
                     <a href="{% url 'Butikken_ButikkenOrder_list' %}" class="btn btn-outline-secondary py-2 text-center">Annuller</a>
                 </div>
@@ -258,7 +258,7 @@
                     <td class="text-muted">${item.unit}</td>
                     <td class="text-end">
                         <button type="button" class="btn btn-link text-danger p-0" onclick="removeCartItem('${item.id}')">
-                            {% bs_icon "trash" %}
+                            <i class="bi bi-trash"></i>
                         </button>
                     </td>
                 `;
@@ -271,7 +271,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="fw-bold text-body">${item.name}</span>
                         <button type="button" class="btn btn-link text-danger p-0" onclick="removeCartItem('${item.id}')">
-                            {% bs_icon "trash" %}
+                            <i class="bi bi-trash"></i>
                         </button>
                     </div>
                     <div class="d-flex align-items-center justify-content-between text-muted small">

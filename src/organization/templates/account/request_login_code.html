@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 80vh;">
+    <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4 p-md-5">
+                <h3 class="fw-bold text-center mb-2">Log ind med engangskode</h3>
+                <p class="text-muted small text-center mb-4">Vi sender en kode til din e-mail.</p>
+                <form method="POST" action="{% url 'account_request_login_code' %}">
+                    {% csrf_token %}
+                    {% for error in form.non_field_errors %}<div class="alert alert-danger small">{{ error }}</div>{% endfor %}
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted" for="id_email">E-mail</label>
+                        <input type="email" name="email" id="id_email" class="form-control bg-light py-2"
+                               autocomplete="email" required value="{{ form.email.value|default:'' }}">
+                        {% for error in form.email.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 py-2 rounded-3 fw-bold">Send kode</button>
+                </form>
+                <div class="text-center mt-3 small">
+                    <a href="{% url 'account_login' %}" class="text-decoration-none">Tilbage til log ind</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

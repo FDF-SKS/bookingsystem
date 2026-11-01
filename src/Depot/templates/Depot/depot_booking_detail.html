@@ -9,15 +9,15 @@
     <div class="row mb-4">
         <div class="col-md-8">
             <h1 class="mb-0">
-                <bs_icon class="bi bi-calendar-check"></bs_icon> Booking detaljer
+                <i class="bi bi-calendar-check"></i> Booking detaljer
             </h1>
         </div>
         <div class="col-md-4 text-end">
             <a href="{{ booking.get_update_url }}" class="btn btn-warning">
-                <bs_icon class="bi bi-pencil"></bs_icon> Rediger
+                <i class="bi bi-pencil"></i> Rediger
             </a>
             <a href="{% url 'Depot_DepotBooking_list' %}" class="btn btn-outline-secondary">
-                <bs_icon class="bi bi-arrow-left"></bs_icon> Tilbage
+                <i class="bi bi-arrow-left"></i> Tilbage
             </a>
         </div>
     </div>
@@ -136,10 +136,10 @@
                 </div>
                 <div class="list-group list-group-flush">
                     <a href="{{ booking.get_update_url }}" class="list-group-item list-group-item-action">
-                        <bs_icon class="bi bi-pencil"></bs_icon> Rediger booking
+                        <i class="bi bi-pencil"></i> Rediger booking
                     </a>
                     <a href="{% url 'Depot_DepotBooking_delete' booking.pk %}" class="list-group-item list-group-item-action text-danger">
-                        <bs_icon class="bi bi-trash"></bs_icon> Slet booking
+                        <i class="bi bi-trash"></i> Slet booking
                     </a>
                 </div>
             </div>

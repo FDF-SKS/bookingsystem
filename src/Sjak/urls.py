@@ -1,14 +1,7 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework import routers
 
-from . import api
-from django.contrib import admin
-from django.contrib.auth.decorators import login_required
-from django.conf import settings
-from django.conf.urls.static import static
-from . import views
-
-
+from . import api, views
 
 router = routers.DefaultRouter()
 router.register("SjakItem", api.SjakItemViewSet)
@@ -40,20 +33,7 @@ urlpatterns = [
     path("Sjak/SjakItemType/detail/<int:pk>/", views.SjakItemTypeDetailView.as_view(), name="Sjak_SjakItemType_detail"),
     path("Sjak/SjakItemType/update/<int:pk>/", views.SjakItemTypeUpdateView.as_view(), name="Sjak_SjakItemType_update"),
     path("Sjak/SjakItemType/delete/<int:pk>/", views.SjakItemTypeDeleteView.as_view(), name="Sjak_SjakItemType_delete"),
-
-
-    # HTMX
-    #path('create-Booking', views.create_booking, name='create-SjakBooking'),
-    #path('update-Booking/<int:pk>/', views.update_booking, name='update-SjakBooking'),
-    #path('delete-Booking/<int:pk>/', views.delete_booking, name='delete-SjakBooking'),
-    #path('search/', views.search, name='search'),
 ]
-
-htmx_urlpatterns = [
-    path('search-item/', views.search_item, name='search-item'),
-]
-
-urlpatterns += htmx_urlpatterns
 
 
 

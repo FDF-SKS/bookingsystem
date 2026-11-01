@@ -1,16 +1,16 @@
-from django.views import generic
-from django.urls import reverse_lazy
-from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
-from . import models
-from . import forms
 from django.contrib import messages
-from organization.models import EventMembership, Event
-from django.utils import timezone
-from django.shortcuts import redirect
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render, get_object_or_404
-from django.contrib.auth.decorators import user_passes_test
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views import generic
+
+from organization.models import Event
+
+from . import forms, models
+
 
 class FotoItemListView(LoginRequiredMixin,generic.ListView):
     model = models.FotoItem
@@ -103,27 +103,6 @@ class FotoBookingCreateView(LoginRequiredMixin, generic.CreateView):
         event = Event.objects.filter(is_active=True).first()
         self.item_id = kwargs.get('item_id')
 
-        if event and event.deadline_aktivitetsteam < timezone.now().date():
-            messages.error(request, 'Deadline for booking overskredet')
-            return redirect('AktivitetsTeam_AktivitetsTeamBooking_list')  # replace with the name of your list view url
-        return super().dispatch(request, *args, **kwargs)
-
-
-    def get_form_kwargs(self):
-        kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
-        print(self.request.user)
-        return kwargs
-    
-class FotoBookingCreateView(LoginRequiredMixin, generic.CreateView):
-    model = models.FotoBooking
-    form_class = forms.FotoBookingForm
-
-    @method_decorator(login_required)
-    def dispatch(self, request, *args, **kwargs):
-        event = Event.objects.filter(is_active=True).first()
-        self.item_id = kwargs.get('item_id')
-
         # Fixed: Changed from deadline_aktivitetsteam to deadline_foto
         if event and event.deadline_foto < timezone.now().date():
             messages.error(request, 'Deadline for booking overskredet')
@@ -154,8 +133,8 @@ class FotoBookingDetailView(LoginRequiredMixin, generic.DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from django_comments_xtd.models import XtdComment
         from django.contrib.contenttypes.models import ContentType
+        from django_comments_xtd.models import XtdComment
         
         content_type = ContentType.objects.get_for_model(models.FotoBooking)
         context['comments'] = XtdComment.objects.filter(

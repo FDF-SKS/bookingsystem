@@ -1,7 +1,9 @@
-from PIL import Image
-from django.core.files.base import ContentFile
 import io
 import uuid
+
+from django.core.files.base import ContentFile
+from PIL import Image
+
 
 def process_image(image_field, instance):
     # Rename the image

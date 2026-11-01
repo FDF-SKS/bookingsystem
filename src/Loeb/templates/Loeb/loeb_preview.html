@@ -50,13 +50,13 @@
         </div>
         <div class="d-flex flex-wrap gap-2">
             <button type="button" class="btn btn-outline-secondary" onclick="window.print();">
-                {% bs_icon 'printer' %} Udskriv oversigt & QR
+                <i class="bi bi-printer"></i> Udskriv oversigt & QR
             </button>
             <a href="{% url 'Loeb_Hold_login' object.pk %}" target="_blank" class="btn btn-outline-info">
-                {% bs_icon 'box-arrow-up-right' %} Åbn hold-login
+                <i class="bi bi-box-arrow-up-right"></i> Åbn hold-login
             </a>
             <a href="{% url 'Loeb_Loeb_detail' object.pk %}" class="btn btn-primary">
-                {% bs_icon 'arrow-left' %} Tilbage til løb
+                <i class="bi bi-arrow-left"></i> Tilbage til løb
             </a>
         </div>
     </div>
@@ -73,7 +73,7 @@
         <div class="card-header bg-primary bg-opacity-10 py-3 rounded-top-4 border-0">
             <div class="d-flex justify-content-between align-items-center">
                 <h2 class="h5 fw-bold mb-0 text-primary">
-                    {% bs_icon 'qr-code' %} Startpost: Hold Login
+                    <i class="bi bi-qr-code"></i> Startpost: Hold Login
                 </h2>
                 <span class="badge bg-primary">Fælles for alle hold</span>
             </div>
@@ -90,7 +90,7 @@
                            download="hold-login-qr.png" 
                            target="_blank" 
                            class="btn btn-sm btn-outline-secondary">
-                            {% bs_icon 'download' %} Hent stor QR
+                            <i class="bi bi-download"></i> Hent stor QR
                         </a>
                     </div>
                 </div>
@@ -132,7 +132,7 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="h4 fw-bold mb-0">Opgaver & Post-QR-koder ({{ preview_tasks|length }})</h2>
         <a href="{% url 'Loeb_Task_create' %}?loeb={{ object.pk }}" class="btn btn-primary btn-sm no-print">
-            {% bs_icon 'plus-lg' %} Ny opgave
+            <i class="bi bi-plus-lg"></i> Ny opgave
         </a>
     </div>
 
@@ -223,7 +223,7 @@
                                                 </div>
                                                 <div class="no-print">
                                                     <a href="{% url 'Loeb_Task_update' item.task.pk %}" class="btn btn-sm btn-outline-warning">
-                                                        {% bs_icon 'pencil' %} Tilknyt station
+                                                        <i class="bi bi-pencil"></i> Tilknyt station
                                                     </a>
                                                 </div>
                                             {% endif %}
@@ -233,13 +233,13 @@
                                             <div class="no-print mt-3 pt-3 border-top">
                                                 <div class="d-flex flex-wrap justify-content-center gap-2">
                                                     <a href="{{ item.qr_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                                        {% bs_icon 'box-arrow-up-right' %} Åbn post URL
+                                                        <i class="bi bi-box-arrow-up-right"></i> Åbn post URL
                                                     </a>
                                                     <a href="https://api.qrserver.com/v1/create-qr-code/?size=600x600&data={{ item.qr_url|urlencode }}" 
                                                        download="qr-{{ item.qr_code }}.png" 
                                                        target="_blank" 
                                                        class="btn btn-sm btn-outline-secondary">
-                                                        {% bs_icon 'download' %} Hent QR
+                                                        <i class="bi bi-download"></i> Hent QR
                                                     </a>
                                                     <button type="button" class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText('{{ item.qr_url }}'); this.textContent='Kopieret!'; setTimeout(() => this.textContent='Kopiér link', 1500);">
                                                         Kopiér link
@@ -259,12 +259,12 @@
         <div class="card border-0 shadow-sm rounded-4 text-center py-5">
             <div class="card-body">
                 <div class="text-muted mb-3">
-                    {% bs_icon 'clipboard-x' size='3rem' %}
+                    <i class="bi bi-clipboard-x" style="font-size:3rem"></i>
                 </div>
                 <h3 class="h5 fw-bold">Ingen opgaver endnu</h3>
                 <p class="text-muted mb-4">Opret opgaver og tilknyt stationer for at forhåndsvise dem og generere QR-koder.</p>
                 <a href="{% url 'Loeb_Task_create' %}?loeb={{ object.pk }}" class="btn btn-primary">
-                    {% bs_icon 'plus-lg' %} Opret den første opgave
+                    <i class="bi bi-plus-lg"></i> Opret den første opgave
                 </a>
             </div>
         </div>

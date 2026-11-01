@@ -1,21 +1,21 @@
-from multiprocessing import context
-from django.views import generic
-from django.shortcuts import render
-from django.urls import reverse_lazy
-from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
-from django.db.models import F
-from . import models
-from . import forms
-from django.contrib import messages
-from organization.models import EventMembership, Event
-from django.utils import timezone
-from django.shortcuts import redirect
-from django.shortcuts import get_object_or_404
-from django.contrib.auth.decorators import user_passes_test
-from django.contrib.auth.mixins import LoginRequiredMixin
-from geopy.geocoders import Nominatim
+import json
 import logging
+from datetime import datetime, time, timedelta
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.serializers.json import DjangoJSONEncoder
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views import generic
+
+from organization.models import Event
+
+from . import forms, models
+
 logger = logging.getLogger(__name__)
 
 
@@ -97,14 +97,6 @@ def gantt_chart_view(request):
     time_ranges = []  # Add your time ranges if needed
     return render(request, 'gantt_chart.html', {'tasks': tasks, 'time_ranges': time_ranges})
 
-import json
-import logging
-from datetime import datetime, timedelta, time
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views import generic
-
-import json
-from django.core.serializers.json import DjangoJSONEncoder
 
 class TimelinePreviewMixin:
     """Provides timeline data for booking forms."""
@@ -171,7 +163,8 @@ class AktivitetsTeamBookingListView(LoginRequiredMixin, generic.ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         active_event = Event.objects.filter(is_active=True).first()
-        if not active_event: return context
+        if not active_event:
+            return context
 
         timeline_start = datetime.combine(active_event.start_date, time.min)
         timeline_end = datetime.combine(active_event.end_date, time.max)
@@ -217,8 +210,8 @@ class AktivitetsTeamBookingListView(LoginRequiredMixin, generic.ListView):
                 row_bookings.append({
                     'id': b.id,
                     'team_name': b.team.name if b.team else "Booking",
-                    'left_val': "{:.2f}".format(offset_hours),
-                    'width_val': "{:.2f}".format(duration_hours),
+                    'left_val': f"{offset_hours:.2f}",
+                    'width_val': f"{duration_hours:.2f}",
                     'level': level,
                     'status': b.status.lower() if b.status else 'pending',
                     'hover_content': (
@@ -307,7 +300,6 @@ class AktivitetsTeamBookingCreateView(LoginRequiredMixin, TimelinePreviewMixin, 
         context = super().get_context_data(**kwargs)
         # Add timeline data
         context.update(self.get_timeline_context())
-        aktivitetsteam_items = models.AktivitetsTeamItem.objects.all()
         return context
 
 
@@ -365,8 +357,8 @@ class AktivitetsTeamBookingDetailView(LoginRequiredMixin, generic.DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from django_comments_xtd.models import XtdComment
         from django.contrib.contenttypes.models import ContentType
+        from django_comments_xtd.models import XtdComment
         
         context['object_dict'] = self.object.to_dict()
         

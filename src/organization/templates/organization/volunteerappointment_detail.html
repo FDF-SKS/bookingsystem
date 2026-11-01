@@ -20,11 +20,11 @@
         </div>
         <div>
             {% if object.status == 'accepted' %}
-                <span class="badge bg-success fs-5 px-4 py-2">{% bs_icon "check-circle" %} {{ object.get_status_display }}</span>
+                <span class="badge bg-success fs-5 px-4 py-2"><i class="bi bi-check-circle"></i> {{ object.get_status_display }}</span>
             {% elif object.status == 'rejected' %}
-                <span class="badge bg-danger fs-5 px-4 py-2">{% bs_icon "x-circle" %} {{ object.get_status_display }}</span>
+                <span class="badge bg-danger fs-5 px-4 py-2"><i class="bi bi-x-circle"></i> {{ object.get_status_display }}</span>
             {% else %}
-                <span class="badge bg-warning text-dark fs-5 px-4 py-2">{% bs_icon "clock" %} {{ object.get_status_display }}</span>
+                <span class="badge bg-warning text-dark fs-5 px-4 py-2"><i class="bi bi-clock"></i> {{ object.get_status_display }}</span>
             {% endif %}
         </div>
     </div>
@@ -47,7 +47,7 @@
                             </div>
                         {% endif %}
                         <div>
-                            <span class="fs-5">{% bs_icon "person" %} {{ object.requester.get_full_name|default:object.requester.username }}</span>
+                            <span class="fs-5"><i class="bi bi-person"></i> {{ object.requester.get_full_name|default:object.requester.username }}</span>
                             {% with object.requester.teams.first as team %}
                                 {% if team %}<small class="text-muted d-block">({{ team.short_name }})</small>{% endif %}
                             {% endwith %}
@@ -67,7 +67,7 @@
                             </div>
                         {% endif %}
                         <div>
-                            <span class="fs-5">{% bs_icon "person-fill" %} {{ object.receiver.get_full_name|default:object.receiver.username }}</span>
+                            <span class="fs-5"><i class="bi bi-person-fill"></i> {{ object.receiver.get_full_name|default:object.receiver.username }}</span>
                             {% with object.receiver.teams.first as team %}
                                 {% if team %}<small class="text-muted d-block">({{ team.short_name }})</small>{% endif %}
                             {% endwith %}
@@ -103,21 +103,21 @@
             <div class="d-flex flex-wrap gap-2 mt-5">
                 {% if user == object.requester %}
                     <a href="{{ object.get_update_url }}" class="btn btn-warning btn-lg px-4">
-                        {% bs_icon "pencil" %} Rediger
+                        <i class="bi bi-pencil"></i> Rediger
                     </a>
                     <a href="{% url 'organization_VolunteerAppointment_delete' object.pk %}" class="btn btn-danger btn-lg px-4">
-                        {% bs_icon "trash" %} Slet
+                        <i class="bi bi-trash"></i> Slet
                     </a>
                 {% endif %}
 
                 {% if user == object.receiver %}
                     <form action="{% url 'appointment_status_update' object.pk 'accepted' %}" method="post" class="d-inline">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-success btn-lg px-4">{% bs_icon "check-lg" %} Ja</button>
+                        <button type="submit" class="btn btn-success btn-lg px-4"><i class="bi bi-check-lg"></i> Ja</button>
                     </form>
                     <form action="{% url 'appointment_status_update' object.pk 'rejected' %}" method="post" class="d-inline">
                         {% csrf_token %}
-                        <button type="submit" class="btn btn-danger btn-lg px-4">{% bs_icon "x-lg" %} Nej</button>
+                        <button type="submit" class="btn btn-danger btn-lg px-4"><i class="bi bi-x-lg"></i> Nej</button>
                     </form>
                     <form action="{% url 'appointment_status_update' object.pk 'pending' %}" method="post" class="d-inline">
                         {% csrf_token %}
@@ -126,7 +126,7 @@
                 {% endif %}
 
                 <a href="{% url 'organization_VolunteerAppointment_list' %}" class="btn btn-outline-secondary btn-lg px-4 ms-md-auto">
-                    {% bs_icon "arrow-left" %} Tilbage
+                    <i class="bi bi-arrow-left"></i> Tilbage
                 </a>
             </div>
         </div>

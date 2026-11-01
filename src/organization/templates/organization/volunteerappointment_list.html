@@ -18,7 +18,7 @@
             <h1 class="h2 mb-0">Mine legeaftaler</h1>
         </div>
         <a href="{% url 'organization_VolunteerAppointment_create' %}" class="btn btn-primary">
-            {% bs_icon "plus-lg" %} <span class="d-none d-sm-inline">Ny legeaftale</span>
+            <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Ny legeaftale</span>
         </a>
     </div>
 
@@ -48,7 +48,7 @@
                             {% endif %}
                         </div>
                         <small class="text-muted">
-                            {% bs_icon "clock" %} {{ appt.start_time|time:"H:i" }}
+                            <i class="bi bi-clock"></i> {{ appt.start_time|time:"H:i" }}
                         </small>
                         {% if appt.requester == user %}
                             <span class="badge bg-light text-dark border ms-1" style="font-size: 0.65rem;">Afsender</span>
@@ -62,14 +62,14 @@
                 <div class="text-end d-flex align-items-center">
                     <div class="me-2">
                         {% if appt.status == 'accepted' %}
-                            <span class="badge rounded-pill bg-success px-2 py-1">{% bs_icon "check-lg" %}</span>
+                            <span class="badge rounded-pill bg-success px-2 py-1"><i class="bi bi-check-lg"></i></span>
                         {% elif appt.status == 'rejected' %}
-                            <span class="badge rounded-pill bg-danger px-2 py-1">{% bs_icon "x-lg" %}</span>
+                            <span class="badge rounded-pill bg-danger px-2 py-1"><i class="bi bi-x-lg"></i></span>
                         {% else %}
-                            <span class="badge rounded-pill bg-warning text-dark px-2 py-1">{% bs_icon "clock" %}</span>
+                            <span class="badge rounded-pill bg-warning text-dark px-2 py-1"><i class="bi bi-clock"></i></span>
                         {% endif %}
                     </div>
-                    {% bs_icon "chevron-right" %}
+                    <i class="bi bi-chevron-right"></i>
                 </div>
             </div>
         </a>

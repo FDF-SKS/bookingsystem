@@ -1,11 +1,11 @@
 from io import BytesIO
 from tempfile import TemporaryDirectory
 
-from PIL import Image
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from PIL import Image
 
 from core.tiptap_uploads import MAX_IMAGE_UPLOAD_BYTES
 

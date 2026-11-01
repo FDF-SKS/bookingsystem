@@ -10,7 +10,7 @@
             <div class="card border-danger">
                 <div class="card-header bg-danger text-white">
                     <h4 class="mb-0">
-                        {% bs_icon 'exclamation-triangle' %} Slet ordre
+                        <i class="bi bi-exclamation-triangle"></i> Slet ordre
                     </h4>
                 </div>
                 <div class="card-body">
@@ -40,10 +40,10 @@
                     <form method="post" class="d-grid gap-2 d-sm-flex">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-danger">
-                            {% bs_icon 'trash' %} Slet
+                            <i class="bi bi-trash"></i> Slet
                         </button>
                         <a href="{% url 'Butikken_ButikkenOrder_detail' object.pk %}" class="btn btn-outline-secondary">
-                            {% bs_icon 'x-circle' %} Annuller
+                            <i class="bi bi-x-circle"></i> Annuller
                         </a>
                     </form>
                 </div>

@@ -1,11 +1,10 @@
 from uuid import uuid4
 
-from PIL import Image, UnidentifiedImageError
 from django.core.files.storage import default_storage
 from django.http import JsonResponse
 from django_tiptap_editor.views.base_image_upload_view import BaseImageUploadView
 from django_tiptap_editor.views.image_upload_error import ImageUploadError
-
+from PIL import Image, UnidentifiedImageError
 
 MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024
 MAX_IMAGE_PIXELS = 25_000_000

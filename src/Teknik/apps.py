@@ -7,6 +7,6 @@ class TeknikConfig(AppConfig):
     verbose_name = 'Teknik (Teknik Booking)'
 
     def ready(self):
-        import Teknik.signals
+        import Teknik.signals  # noqa: F401
 
 

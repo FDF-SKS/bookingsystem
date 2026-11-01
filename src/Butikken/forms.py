@@ -1,21 +1,17 @@
-from django import forms
-from Butikken.models import ButikkenItemType, ButikkenItem, Day, Meal, Option, Recipe
-from organization.models import Team, TeamMembership, Volunteer, Event
-from django.shortcuts import render, redirect
-from django.urls import reverse
-from django.forms import BaseFormSet, TextInput, formset_factory
-from . import models
-from django.contrib.auth.models import User
-from django.contrib.auth import get_user_model
-from django.forms import inlineformset_factory, BaseInlineFormSet
-from django.utils import timezone
 from datetime import time
 
-
-
 from django import forms
-from .models import MealPlan, MealOption, TeamMealPlan, MealBooking
-from django.contrib.auth.models import User
+from django.forms import (
+    TextInput,
+)
+from django.utils import timezone
+
+from Butikken.models import ButikkenItem, ButikkenItemType, Day, Meal, Recipe
+from organization.models import Event, Team, TeamMembership, Volunteer
+
+from . import models
+from .models import MealBooking, MealOption, MealPlan, TeamMealPlan
+
 
 class MealBookingForm(forms.ModelForm):
     class Meta:
@@ -31,7 +27,7 @@ class MealBookingForm(forms.ModelForm):
             "status": forms.Select(attrs={"class": "form-control", "data-error": "Please select a status."}),
         }
     def __init__(self, *args, user=None, **kwargs):
-        super(MealBookingForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["team_contact"].queryset = Volunteer.objects.all().order_by("first_name")
         self.fields["team"].queryset = Team.objects.all().order_by("name")
         
@@ -57,7 +53,7 @@ class MealForm(forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
-        super(MealForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["day"].queryset = Day.objects.all()
 
 class OptionForm(forms.ModelForm):
@@ -69,7 +65,7 @@ class OptionForm(forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
-        super(OptionForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["meal"].queryset = Meal.objects.all()
         self.fields["recipe"].queryset = Recipe.objects.all()
 
@@ -104,7 +100,7 @@ class ButikkenItemForm(forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
-        super(ButikkenItemForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["type"].queryset = ButikkenItemType.objects.all()
 
 class ButikkenBookingForm(forms.ModelForm):
@@ -170,7 +166,7 @@ class ButikkenBookingForm(forms.ModelForm):
         return instance
     
     def __init__(self, *args, user=None, **kwargs):
-        super(ButikkenBookingForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["item"].queryset = ButikkenItem.objects.all()
         self.fields["team"].queryset = Team.objects.all()
         self.fields["team_contact"].queryset = Volunteer.objects.all()
@@ -243,7 +239,7 @@ class ButikkenOrderForm(forms.ModelForm):
         }
 
     def __init__(self, *args, user=None, **kwargs):
-        super(ButikkenOrderForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["team"].queryset = Team.objects.all()
         self.fields["team_contact"].queryset = Volunteer.objects.all()
         if user:
@@ -278,17 +274,6 @@ class ButikkenOrderForm(forms.ModelForm):
             pass
 
 
-class ButikkenAddItemForm(forms.Form):
-    item = forms.ModelChoiceField(queryset=ButikkenItem.objects.all(), widget=forms.Select(attrs={"class": "form-select"}))
-    quantity = forms.DecimalField(max_digits=10, decimal_places=2, initial=1, widget=forms.NumberInput(attrs={"class": "form-control", "step": "1"}))
-    # Make unit readonly so it is shown but not editable; JS will prefill this from the item
-    unit = forms.CharField(required=False, widget=forms.TextInput(attrs={"class": "form-control", "readonly": "readonly"}))
-    start_date = forms.DateField(widget=TextInput(attrs={"type": "date", "class": "form-control"}))
-    start_time = forms.TimeField(widget=TextInput(attrs={"type": "time", "class": "form-control"}))
-    remarks = forms.CharField(required=False, widget=forms.Textarea(attrs={"class": "form-control", "rows": 2}))
-
-
-
 class ButikkenItemTypeForm(forms.ModelForm):
     class Meta:
         model = models.ButikkenItemType
@@ -309,7 +294,7 @@ class MealPlanForm(forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
-        super(MealPlanForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 class MealOptionForm(forms.ModelForm):
     class Meta:
@@ -320,7 +305,7 @@ class MealOptionForm(forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
-        super(MealOptionForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["meal_plan"].queryset = MealPlan.objects.all()
         self.fields["recipe"].queryset = Recipe.objects.all()
 
@@ -344,7 +329,7 @@ class TeamMealPlanForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         meal_plan = kwargs.pop('meal_plan', None)
         user = kwargs.pop('user', None)
-        super(TeamMealPlanForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["meal_plan"].queryset = MealPlan.objects.all()
         self.fields["team"].queryset = Team.objects.all()
         

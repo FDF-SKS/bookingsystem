@@ -1,11 +1,15 @@
+from datetime import time
+
 from django import forms
 from django.forms import TextInput
 from django.utils import timezone
-from datetime import time
-from . import models
-from Sjak.models import SjakItem, SjakItemType, SjakItemLocation
-from organization.models import Team, TeamMembership, Volunteer, Event
+
+from organization.models import Event, Team, TeamMembership, Volunteer
+from Sjak.models import SjakItem, SjakItemLocation, SjakItemType
 from utils.image_utils import process_image
+
+from . import models
+
 
 class SjakBookingForm(forms.ModelForm): 
     # Defined without initial values to prevent crashes on startup
@@ -64,7 +68,7 @@ class SjakBookingForm(forms.ModelForm):
         }
 
     def __init__(self, *args, user=None, **kwargs):
-        super(SjakBookingForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         
         # 1. Setup Querysets
         self.fields["item"].queryset = SjakItem.objects.all().order_by("name")
@@ -147,7 +151,7 @@ class SjakItemForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        super(SjakItemForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["item_type"].queryset = SjakItemType.objects.all().order_by("name")
         self.fields["location"].queryset = SjakItemLocation.objects.all().order_by("name")
 

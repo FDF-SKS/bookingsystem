@@ -1,28 +1,21 @@
+from datetime import time
+
 from django import forms
-from . import models
+from django.forms import TextInput
 from django.utils import timezone
 
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
-from datetime import time
-from django.forms import TextInput
+from . import models
 
 
-class RegisterUserForm(UserCreationForm):
-    email = forms.EmailField(widget=forms.EmailInput(attrs={'class': 'form-control'}))
-    first_name = forms.CharField(max_length=50, widget=forms.TextInput(attrs={'class': 'form-control'}))
-    last_name = forms.CharField(max_length=50, widget=forms.TextInput(attrs={'class': 'form-control'}))
+class AllauthSignupForm(forms.Form):
+    first_name = forms.CharField(max_length=30, label='Fornavn')
+    last_name = forms.CharField(max_length=30, label='Efternavn')
+    field_order = ['first_name', 'last_name', 'email', 'password1', 'password2']
 
-    class Meta:
-        model = models.Volunteer  # Use your custom Volunteer model here
-        fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
-
-    def __init__(self, *args, **kwargs):
-        super(RegisterUserForm, self).__init__(*args, **kwargs)
-
-        self.fields['username'].widget.attrs['class'] = 'form-control'
-        self.fields['password1'].widget.attrs['class'] = 'form-control'
-        self.fields['password2'].widget.attrs['class'] = 'form-control'
+    def signup(self, request, user):
+        user.first_name = self.cleaned_data['first_name']
+        user.last_name = self.cleaned_data['last_name']
+        user.save()
 
 
 
@@ -46,7 +39,7 @@ class TeamMembershipForm(forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
-        super(TeamMembershipForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["team"].queryset = models.Team.objects.all()
         self.fields["member"].queryset = models.Volunteer.objects.all()
 
@@ -79,7 +72,7 @@ class EventMembershipForm(forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
-        super(EventMembershipForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["event"].queryset = models.Event.objects.all()
         self.fields["volunteer"].queryset = models.Volunteer.objects.all()
 
@@ -92,7 +85,7 @@ class TeamEventMembershipForm(forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
-        super(TeamEventMembershipForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["event"].queryset = models.Event.objects.all()
         self.fields["team"].queryset = models.Team.objects.all()
 
@@ -157,7 +150,7 @@ class VolunteerProfileUpdateForm(forms.ModelForm):
     def clean_email(self):
         email = self.cleaned_data.get('email')
         # Check if email is unique, excluding the current user
-        if models.Volunteer.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
+        if models.Volunteer.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError('Denne e-mail adresse er allerede i brug. Væg venligst en anden.')
         return email
 
@@ -194,7 +187,7 @@ class KeyForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        super(KeyForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.fields["current_user"].queryset = models.Volunteer.objects.all().order_by('first_name')
 
 
@@ -228,7 +221,7 @@ class AppointmentForm(forms.ModelForm):
         
 
     def __init__(self, *args, user=None, **kwargs):
-        super(AppointmentForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         
         # 1. Setup Querysets
         # We order by first_name to make the dropdown readable

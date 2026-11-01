@@ -5,7 +5,7 @@
 - PostgreSQL 17 in Docker (SQLite fallback for local dev), Redis 7 (cache, Constance backend, Celery broker)
 - Celery for async tasks (`src/core/celery.py`, `emailing/tasks.py`, `organization/tasks.py`)
 - Admin UI: django-unfold, django-import-export, django-simple-history
-- Frontend: server-rendered templates, HTMX in several apps, django-template-partials, bootstrap5, tiptap editor
+- Frontend: server-rendered templates, bootstrap5, tiptap editor
 - Email via Amazon SES (django-ses); settings toggles via django-constance
 - Served by gunicorn behind nginx (certbot for TLS); docker-compose for dev/staging/prod
 
@@ -18,7 +18,7 @@
 
 ## Patterns
 - Service-layer modules for heavy logic (e.g. `emailing/services.py`, `organization/discord_services.py`); keep views thin
-- DRF serializers + `api.py` for API endpoints; HTMX views in `htmx.py` for partial updates
+- DRF serializers + `api.py` for API endpoints
 - Side effects via Django signals (`signals.py`) and Celery tasks
 - Model changes require migrations in the app's `migrations/`
 

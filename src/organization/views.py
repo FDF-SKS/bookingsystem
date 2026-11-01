@@ -1,28 +1,25 @@
 from datetime import timedelta
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.admin.models import LogEntry, ADDITION
-from django.contrib.contenttypes.models import ContentType
-from django.utils.timezone import now
-from django.http import Http404
 from django.contrib import messages
-from django.contrib.messages.views import SuccessMessageMixin
-from django.contrib.auth import authenticate, login, logout, get_user_model
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.views import LoginView, PasswordResetView
+from django.contrib.auth import get_user_model, logout
 from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-from django.views import generic
-from django.urls import reverse_lazy
-from .forms import RegisterUserForm
-from emailing.forms import BrandedPasswordResetForm
-from . import models
-from . import forms
-from django.db.models import F, Q
-from .models import Team, TeamMembership
-from django.db.models import IntegerField
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.views import PasswordResetView
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.messages.views import SuccessMessageMixin
+from django.db.models import IntegerField, Q
 from django.db.models.functions import Cast
+from django.http import Http404
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse_lazy
+from django.utils.timezone import now
+from django.views import generic
+from django.views.decorators.http import require_POST
+
+from emailing.forms import BrandedPasswordResetForm
+
+from . import forms, models
+from .models import Team, TeamMembership
 
 User = get_user_model()
 
@@ -32,57 +29,10 @@ User = get_user_model()
 def home(request):
     return render(request, 'index.html')
 
-def login_user(request):
-    if request.method == "POST":
-        username = request.POST['username'].lower()  # Convert to lowercase
-        password = request.POST['password']
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            return redirect('index')
-        else:
-            messages.error(request, "There was an error logging in. Please try again.")
-            return redirect('login_user')
-    else:
-        return render(request, 'organization/login.html', {})
-
 def logout_user(request):
 	logout(request)
 	messages.success(request, ("You Were Logged Out!"))
 	return redirect('home')
-
-
-def register_user(request):
-    if request.method == "POST":
-        form = RegisterUserForm(request.POST)
-        if form.is_valid():
-            new_username = form.cleaned_data['username'].lower()  # Convert to lowercase
-            password = form.cleaned_data['password1']
-
-            User = get_user_model()  # Get the custom user model
-            
-            # Create a new user instance and set is_active to False
-            new_user = User.objects.create_user(username=new_username, password=password, is_active=False)
-
-            # Check if the team "Unassigned users" exists
-            try:
-                new_users_team = Team.objects.get(name="Unassigned users")
-            except Team.DoesNotExist:
-                # Handle the case when the team doesn't exist
-                pass
-            else:
-                # Create a TeamMembership for the new user
-                TeamMembership.objects.create(team=new_users_team, member=new_user)
-
-            messages.success(request, "Registration Successful!")
-            return redirect('home')
-    else:
-        form = RegisterUserForm()
-
-    return render(request, 'organization/register_user.html', {
-        'form': form,
-    })
-
 
 
 class ResetPasswordView(SuccessMessageMixin, PasswordResetView):
@@ -332,9 +282,8 @@ class VolunteerAppointmentDetailView(LoginRequiredMixin, generic.DetailView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from django_comments_xtd.models import XtdComment
-        from django.contrib.contenttypes.models import ContentType
         from django.urls import reverse
+        from django_comments_xtd.models import XtdComment
         
         # Get all comments for this appointment
         content_type = ContentType.objects.get_for_model(models.VolunteerAppointment)
@@ -388,9 +337,8 @@ def appointment_status_update(request, pk, new_status):
 @require_POST
 def appointment_comment_add(request, pk):
     """Add a comment to a VolunteerAppointment."""
-    from django_comments_xtd.models import XtdComment
-    from django.contrib.contenttypes.models import ContentType
     from django.conf import settings
+    from django_comments_xtd.models import XtdComment
     
     appointment = get_object_or_404(models.VolunteerAppointment, pk=pk)
     
@@ -405,7 +353,7 @@ def appointment_comment_add(request, pk):
     
     content_type = ContentType.objects.get_for_model(models.VolunteerAppointment)
     
-    comment = XtdComment.objects.create(
+    XtdComment.objects.create(
         content_type=content_type,
         object_pk=str(appointment.pk),
         user=request.user,

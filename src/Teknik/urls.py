@@ -1,9 +1,7 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework import routers
 
-from . import api
-from . import views
-
+from . import api, views
 
 router = routers.DefaultRouter()
 router.register("TeknikBooking", api.TeknikBookingViewSet)

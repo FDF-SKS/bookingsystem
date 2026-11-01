@@ -21,14 +21,14 @@
         
         <div class="d-none d-md-block">
             <a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_create' %}" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-4 py-2">
-                <bs_icon class="bi bi-plus-lg"></bs_icon>
+                <i class="bi bi-plus-lg"></i>
                 <span>Ny Booking</span>
             </a>
         </div>
 
         <div class="text-md-end w-100 w-md-auto">
             <div class="badge bg-light text-dark border p-2 fw-normal w-100 w-md-auto">
-                <bs_icon class="bi bi-clock-history me-1"></bs_icon>
+                <i class="bi bi-clock-history me-1"></i>
                 Deadline: {% if user_events %}{{ user_events.0.deadline_aktivitetsteam }}{% else %}Ingen{% endif %}
             </div>
         </div>
@@ -53,9 +53,9 @@
                                 <span class="ms-1 badge rounded-pill bg-light text-dark border small">{{ object.quantity|default_if_none:"" }} {% if object.quantity %}stk{% endif %}</span>
                             </div>
                             <div class="small text-muted d-flex align-items-center flex-wrap gap-2 mt-1">
-                                <span><bs_icon class="bi bi-person"></bs_icon> {{ object.team_contact }}</span>
-                                <span class="d-sm-none"><bs_icon class="bi bi-calendar3"></bs_icon> {{ object.start_date|date:"d/m" }}</span>
-                                <span><bs_icon class="bi bi-clock"></bs_icon> {{ object.start_time|time:"H:i" }} - {{ object.end_time|time:"H:i" }}</span>
+                                <span><i class="bi bi-person"></i> {{ object.team_contact }}</span>
+                                <span class="d-sm-none"><i class="bi bi-calendar3"></i> {{ object.start_date|date:"d/m" }}</span>
+                                <span><i class="bi bi-clock"></i> {{ object.start_time|time:"H:i" }} - {{ object.end_time|time:"H:i" }}</span>
                             </div>
                         </div>
                     </div>
@@ -64,17 +64,17 @@
                         <div class="status-box">
                             {% if object.status == 'Approved' %}
                                 <span class="badge bg-success rounded-pill px-3 py-2 d-flex align-items-center gap-1">
-                                    <bs_icon class="bi bi-check-lg"></bs_icon>
+                                    <i class="bi bi-check-lg"></i>
                                     <span class="d-none d-md-inline small text-uppercase">Godkendt</span>
                                 </span>
                             {% elif object.status == 'Rejected' %}
                                 <span class="badge bg-danger rounded-pill px-3 py-2 d-flex align-items-center gap-1">
-                                    <bs_icon class="bi bi-x-lg"></bs_icon>
+                                    <i class="bi bi-x-lg"></i>
                                     <span class="d-none d-md-inline small text-uppercase">Afvist</span>
                                 </span>
                             {% else %}
                                 <span class="badge bg-warning text-dark rounded-pill px-3 py-2 d-flex align-items-center gap-1 border">
-                                    <bs_icon class="bi bi-hourglass-split"></bs_icon>
+                                    <i class="bi bi-hourglass-split"></i>
                                     <span class="d-none d-md-inline small text-uppercase">Afventer</span>
                                 </span>
                             {% endif %}
@@ -85,13 +85,13 @@
                             <form method="post" action="{% url 'AktivitetsTeam_AktivitetsTeamBooking_reject' object.pk %}?next={{ request.path }}" class="m-0">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-outline-danger btn-circle shadow-sm" title="Afvis">
-                                    <bs_icon class="bi bi-x-lg"></bs_icon>
+                                    <i class="bi bi-x-lg"></i>
                                 </button>
                             </form>
                             <form method="post" action="{% url 'AktivitetsTeam_AktivitetsTeamBooking_approve' object.pk %}?next={{ request.path }}" class="m-0">
                                 {% csrf_token %}
                                 <button type="submit" class="btn btn-outline-success btn-circle shadow-sm" title="Godkend">
-                                    <bs_icon class="bi bi-check-lg"></bs_icon>
+                                    <i class="bi bi-check-lg"></i>
                                 </button>
                             </form>
                         </div>
@@ -100,13 +100,13 @@
                         <div class="d-flex gap-1 align-items-center border-start ps-2 ps-md-3">
                             {% if not is_staff %}
                                 <a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_update' object.pk %}" class="btn btn-light btn-circle text-muted" title="Rediger">
-                                    <bs_icon class="bi bi-pencil"></bs_icon>
+                                    <i class="bi bi-pencil"></i>
                                 </a>
                             {% endif %}
                             
                             {% get_comment_count for object as comment_count %}
                             <a href="{{ object.get_absolute_url }}" class="btn btn-light btn-circle text-muted position-relative" title="Kommentarer">
-                                <bs_icon class="bi bi-chat-dots"></bs_icon>
+                                <i class="bi bi-chat-dots"></i>
                                 {% if comment_count %}
                                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white" style="font-size: 0.65rem; padding: 0.35em 0.55em; z-index: 2;">
                                         {{ comment_count }}
@@ -127,7 +127,7 @@
 
     <div class="d-md-none fixed-bottom bg-white border-top p-3 shadow-lg">
         <a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_create' %}" class="btn btn-primary btn-lg w-100 d-flex align-items-center justify-content-center gap-2 py-3 rounded-pill shadow">
-            <bs_icon class="bi bi-plus-lg"></bs_icon>
+            <i class="bi bi-plus-lg"></i>
             <span class="fw-bold">Ny Booking</span>
         </a>
     </div>

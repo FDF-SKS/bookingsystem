@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import DepotItem, DepotBooking
+
+from .models import DepotBooking, DepotItem
 
 
 class DepotItemSerializer(serializers.ModelSerializer):

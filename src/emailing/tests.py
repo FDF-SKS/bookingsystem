@@ -51,9 +51,11 @@ class SendEmailTests(TestCase):
 
     def test_permanent_error_marks_failed_without_retry(self):
         err = ClientError({'Error': {'Code': 'MessageRejected', 'Message': 'no'}}, 'SendRawEmail')
-        with mock.patch('django.core.mail.EmailMultiAlternatives.send', side_effect=err):
-            with self.captureOnCommitCallbacks(execute=True):
-                send_email('Hej', TEMPLATE, CTX, ['a@example.com'])
+        with (
+            mock.patch('django.core.mail.EmailMultiAlternatives.send', side_effect=err),
+            self.captureOnCommitCallbacks(execute=True),
+        ):
+            send_email('Hej', TEMPLATE, CTX, ['a@example.com'])
         log = EmailMessageLog.objects.get()
         self.assertEqual(log.status, Status.FAILED)
         self.assertEqual(log.attempts, 1)
@@ -61,6 +63,7 @@ class SendEmailTests(TestCase):
 
     def test_cleanup_wipes_old_failed_bodies_and_deletes_old_rows(self):
         from datetime import timedelta
+
         from django.core.management import call_command
         from django.utils import timezone
 
@@ -90,9 +93,11 @@ class SendEmailTests(TestCase):
             self_.extra_headers['message_id'] = 'ses-123'
             return 1
 
-        with mock.patch('django.core.mail.EmailMultiAlternatives.send', flaky):
-            with self.captureOnCommitCallbacks(execute=True):
-                send_email('Hej', TEMPLATE, CTX, ['a@example.com'])
+        with (
+            mock.patch('django.core.mail.EmailMultiAlternatives.send', flaky),
+            self.captureOnCommitCallbacks(execute=True),
+        ):
+            send_email('Hej', TEMPLATE, CTX, ['a@example.com'])
         log = EmailMessageLog.objects.get()
         self.assertEqual(calls['n'], 2)
         self.assertEqual(log.status, Status.SENT)

@@ -29,21 +29,21 @@
         </div>
         <div class="d-flex flex-column align-items-end gap-2">
             {% if object.status == 'Pending' %}
-                <span class="status-badge bg-warning text-dark">{% bs_icon "clock" %} Afventer</span>
+                <span class="status-badge bg-warning text-dark"><i class="bi bi-clock"></i> Afventer</span>
             {% elif object.status == 'Approved' %}
-                <span class="status-badge bg-success text-white">{% bs_icon "check-circle" %} Godkendt</span>
+                <span class="status-badge bg-success text-white"><i class="bi bi-check-circle"></i> Godkendt</span>
             {% elif object.status == 'Rejected' %}
-                <span class="status-badge bg-danger text-white">{% bs_icon "x-circle" %} Afvist</span>
+                <span class="status-badge bg-danger text-white"><i class="bi bi-x-circle"></i> Afvist</span>
             {% endif %}
             
             <div class="mt-2">
                 {% if user.is_staff or user.teammembership_set.first.team == object.team %}
                     <a href="{{ object.get_update_url }}" class="btn btn-outline-primary rounded-pill px-4">
-                        {% bs_icon "pencil" %} Rediger
+                        <i class="bi bi-pencil"></i> Rediger
                     </a>
                 {% else %}
                     <button class="btn btn-outline-secondary rounded-pill px-4" disabled>
-                        {% bs_icon "lock" %} Låst
+                        <i class="bi bi-lock"></i> Låst
                     </button>
                 {% endif %}
             </div>
@@ -60,14 +60,14 @@
                         <div class="col-md-6 border-end">
                             <div class="detail-label">Starttidspunkt</div>
                             <div class="detail-value">
-                                {% bs_icon "calendar-check" %} {{ object.start_date|date:"l \d. j. F" }} <br>
+                                <i class="bi bi-calendar-check"></i> {{ object.start_date|date:"l \d. j. F" }} <br>
                                 <span class="text-dark small">kl. {{ object.start_time|time:"H:i" }}</span>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="detail-label">Sluttidspunkt</div>
                             <div class="detail-value">
-                                {% bs_icon "calendar-x" %} {{ object.end_date|date:"l \d. j. F" }} <br>
+                                <i class="bi bi-calendar-x"></i> {{ object.end_date|date:"l \d. j. F" }} <br>
                                 <span class="text-dark small">kl. {{ object.end_time|time:"H:i" }}</span>
                             </div>
                         </div>
@@ -76,7 +76,7 @@
                     <div class="mb-4">
                         <div class="detail-label">Lokation</div>
                         <div class="detail-value">
-                            {% bs_icon "geo-alt" %} {{ object.location|default:"Ingen lokation angivet" }}
+                            <i class="bi bi-geo-alt"></i> {{ object.location|default:"Ingen lokation angivet" }}
                         </div>
                     </div>
 
@@ -91,19 +91,19 @@
 
                     {% if object.location %}
                         <div class="mt-5">
-                            <h4 class="fw-bold mb-3"><bs_icon class="bi bi-geo-alt me-2"></bs_icon>Lokation</h4>
+                            <h4 class="fw-bold mb-3"><i class="bi bi-geo-alt me-2"></i>Lokation</h4>
                             
                             <div id="detail-map" class="rounded-4 shadow-sm border mb-3" style="height: 400px !important; width: 100%; position: relative;"></div>
                             
                             <div class="d-flex flex-wrap gap-2">
                                 <a href="https://www.google.com/maps/search/?api=1&query={{ object.coords_list.0|unlocalize }},{{ object.coords_list.1|unlocalize }}" 
                                 target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                                    <bs_icon class="bi bi-google me-1"></bs_icon>Åbn i Google Maps
+                                    <i class="bi bi-google me-1"></i>Åbn i Google Maps
                                 </a>
 
                                 <a href="https://www.openstreetmap.org/?mlat={{ object.coords_list.0|unlocalize }}&mlon={{ object.coords_list.1|unlocalize }}#map=17/{{ object.coords_list.0|unlocalize }}/{{ object.coords_list.1|unlocalize }}" 
                                 target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                                    <bs_icon class="bi bi-map me-1"></bs_icon>Se på OpenStreetMap
+                                    <i class="bi bi-map me-1"></i>Se på OpenStreetMap
                                 </a>
                             </div>
                         </div>
@@ -127,7 +127,7 @@
                             <img src="{{ object.team_contact.image.url }}" alt="{{ object.team_contact.get_full_name }}" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;" loading="lazy">
                         {% else %}
                             <div class="bg-soft-primary rounded-circle p-2 me-3">
-                                {% bs_icon "person-circle" extra_classes="fs-3 text-primary" %}
+                                <i class="bi bi-person-circle fs-3 text-primary"></i>
                             </div>
                         {% endif %}
                         <div>
@@ -162,7 +162,7 @@
             <div class="card card-custom border-primary bg-white shadow">
                 <div class="card-body p-4">
                     <h5 class="card-title mb-3">
-                        {% bs_icon "shield-check" %} Admin Kontrol
+                        <i class="bi bi-shield-check"></i> Admin Kontrol
                     </h5>
                     <div class="d-grid gap-2">
                         <form method="post" action="{% url 'AktivitetsTeam_AktivitetsTeamBooking_approve' object.pk %}?next={{ request.path }}">
@@ -180,7 +180,7 @@
 
             <div class="mt-4 d-grid">
                 <a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_list' %}" class="btn btn-link text-muted">
-                    {% bs_icon "arrow-left" %} Tilbage til listen
+                    <i class="bi bi-arrow-left"></i> Tilbage til listen
                 </a>
             </div>
         </div>

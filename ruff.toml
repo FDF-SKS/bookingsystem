@@ -1,0 +1,44 @@
+target-version = "py310"
+
+# Lint policy for this Django project.
+#
+# We intentionally do NOT enable Ruff's full rule universe (which Zed's bundled
+# Ruff otherwise reports): many rules are false positives for Django (mutable
+# class attributes on models, uppercase app package names) or impose stylistic
+# preferences that would churn the whole codebase.
+[lint]
+select = [
+    "E4",  # pycodestyle: imports
+    "E7",  # pycodestyle: statements (bare except, ...)
+    "E9",  # pycodestyle: runtime errors
+    "F",   # pyflakes: undefined names, unused imports/variables
+    "I",   # isort: import ordering
+    "PIE", # flake8-pie
+    "RUF", # Ruff-specific rules
+    "SIM", # flake8-simplify
+    "UP",  # pyupgrade
+]
+ignore = [
+    # Django models legitimately declare mutable class attributes
+    # (STATUS_CHOICES, colour maps, ...).
+    "RUF012",
+    # Explicit patterns that are intentional and readable in this codebase.
+    "RUF019",
+    "RUF059",
+]
+
+[lint.isort]
+known-first-party = [
+    "core",
+    "organization",
+    "emailing",
+    "utils",
+    "AktivitetsTeam",
+    "Butikken",
+    "Depot",
+    "Foto",
+    "Loeb",
+    "Sjak",
+    "SOS",
+    "Teknik",
+]

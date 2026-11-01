@@ -1,13 +1,15 @@
-from django.views import generic
-from django.urls import reverse_lazy
-from django.contrib.auth.decorators import login_required
-from django.utils.decorators import method_decorator
-from . import models
-from . import forms
-from organization.models import Event  # Import the Event model
-from django.utils import timezone
-from django.shortcuts import redirect
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+from django.urls import reverse_lazy
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views import generic
+
+from organization.models import Event  # Import the Event model
+
+from . import forms, models
+
 
 class SOSBookingListView(generic.ListView):
     model = models.SOSBooking

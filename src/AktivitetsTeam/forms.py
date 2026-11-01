@@ -1,11 +1,13 @@
-from django import forms
-from django.core.validators import MaxValueValidator
-from django.utils import timezone
-from organization.models import TeamMembership, Volunteer, Event, EventMembership, Team
-from AktivitetsTeam.models import AktivitetsTeamItem
-from . import models
-from django.forms import TextInput
 from datetime import time
+
+from django import forms
+from django.forms import TextInput
+from django.utils import timezone
+
+from AktivitetsTeam.models import AktivitetsTeamItem
+from organization.models import Event, Team, TeamMembership, Volunteer
+
+from . import models
 
 
 class AktivitetsTeamItemForm(forms.ModelForm):
@@ -24,15 +26,6 @@ class AktivitetsTeamItemForm(forms.ModelForm):
             "image": forms.ClearableFileInput(attrs={"class": "form-control"}),
         }
 
-
-
-from django import forms
-from django.forms.widgets import TextInput
-from django.utils import timezone
-from datetime import time
-from . import models
-from .models import AktivitetsTeamItem
-from organization.models import Team, Volunteer, TeamMembership, Event
 
 class AktivitetsTeamBookingForm(forms.ModelForm):
     # Define fields without initial/queryset values at the class level
@@ -83,7 +76,7 @@ class AktivitetsTeamBookingForm(forms.ModelForm):
         }
 
     def __init__(self, *args, user=None, **kwargs):
-        super(AktivitetsTeamBookingForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         
         # 1. Populate Dynamic Querysets Safely
         self.fields["item"].queryset = AktivitetsTeamItem.objects.filter(is_active=True).order_by("name")

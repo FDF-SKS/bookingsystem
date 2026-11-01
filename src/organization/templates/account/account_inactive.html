@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container d-flex align-items-center justify-content-center" style="min-height: 60vh;">
+    <div class="col-12 col-sm-8 col-md-6 col-lg-4 text-center">
+        <h3 class="fw-bold mb-3">Afventer godkendelse</h3>
+        <p class="text-muted">Din bruger er oprettet, men skal godkendes af en administrator, før du kan logge ind.</p>
+        <a href="{% url 'account_login' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-4">Til log ind</a>
+    </div>
+</div>
+{% endblock %}

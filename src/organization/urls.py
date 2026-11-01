@@ -1,14 +1,11 @@
-from django.urls import path, include
-from rest_framework import routers
-from organization.views import ResetPasswordView
 from django.contrib.auth import views as auth_views
-from django.contrib.auth.views import LoginView
+from django.urls import include, path
+from django.views.generic.base import RedirectView
+from rest_framework import routers
 
+from organization.views import ResetPasswordView
 
-
-from . import api
-from . import views
-
+from . import api, views
 
 router = routers.DefaultRouter()
 router.register("EventMembership", api.EventMembershipViewSet)
@@ -24,9 +21,9 @@ router.register("TjanseSwapRequest", api.TjanseSwapRequestViewSet)
 
 urlpatterns = [
      path('', views.home, name="home"),
-     path('login_user', views.login_user, name="login_user"),
+     path('login_user', RedirectView.as_view(pattern_name='account_login', query_string=True), name="login_user"),
      path('logout_user', views.logout_user, name='logout_user'),
-     path('register_user', views.register_user, name='register_user'),
+     path('register_user', RedirectView.as_view(pattern_name='account_signup', query_string=True), name='register_user'),
      path('password-reset', ResetPasswordView.as_view(), name='password_reset'),
      path('password-reset-confirm/<uidb64>/<token>/', 
           auth_views.PasswordResetConfirmView.as_view(template_name='organization/password_reset_confirm.html'),

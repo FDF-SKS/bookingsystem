@@ -19,7 +19,7 @@
                 {% for cat in categories %}
                 <a href="?category={{ cat.slug }}" 
                    class="btn btn-sm rounded-pill px-4 {% if current_category == cat.slug %}btn-secondary shadow-sm{% else %}btn-outline-secondary{% endif %}">
-                    {% if cat.bs_icon %}<bs_icon class="bi {{ cat.bs_icon }} me-1"></bs_icon>{% endif %}
+                    {% if cat.bs_icon %}<i class="bi {{ cat.bs_icon }} me-1"></i>{% endif %}
                     {{ cat.name }}
                 </a>
                 {% endfor %}
@@ -37,14 +37,14 @@
                         <img src="{{ object.image.url }}" class="w-100 h-100 object-fit-cover" alt="{{ object.name }}">
                     {% else %}
                         <div class="w-100 h-100 bg-light d-flex align-items-center justify-content-center text-muted">
-                            <bs_icon class="bi bi-camera2 fs-1"></bs_icon>
+                            <i class="bi bi-camera2 fs-1"></i>
                         </div>
                     {% endif %}
                     
                     {% if object.category %}
                     <div class="position-absolute top-0 start-0 m-3">
                         <span class="badge rounded-pill bg-white text-body shadow-sm py-2 px-3">
-                            {% if object.category.bs_icon %}<bs_icon class="bi {{ object.category.bs_icon }} me-1 text-secondary"></bs_icon>{% endif %}
+                            {% if object.category.bs_icon %}<i class="bi {{ object.category.bs_icon }} me-1 text-secondary"></i>{% endif %}
                             {{ object.category.name }}
                         </span>
                     </div>
@@ -60,7 +60,7 @@
                     <div class="row g-2">
                         <div class="col-12">
                             <a href="{% url 'Foto_FotoBooking_create_with_item' object.id %}" class="btn btn-secondary w-100 py-2 rounded-3 fw-bold shadow-sm">
-                                <bs_icon class="bi bi-camera-fill me-2"></bs_icon>Book nu
+                                <i class="bi bi-camera-fill me-2"></i>Book nu
                             </a>
                         </div>
                     </div>
@@ -70,7 +70,7 @@
         {% empty %}
         <div class="col-12 text-center py-5">
             <div class="bg-light d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 80px; height: 80px;">
-                <bs_icon class="bi bi-camera fs-2 text-muted"></bs_icon>
+                <i class="bi bi-camera fs-2 text-muted"></i>
             </div>
             <h4 class="fw-bold">Ingen fotovarer fundet</h4>
             <p class="text-muted">Prøv at vælge en anden kategori eller kom tilbage senere.</p>

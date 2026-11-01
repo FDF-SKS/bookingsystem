@@ -1,0 +1,8 @@
+{% load allauth %}
+<section class="card shadow-sm border-0 rounded-4 mb-3">
+    <h2 class="h6 text-uppercase text-muted fw-bold card-header bg-white border-0 pt-4 px-4 pb-0">{% slot title %}{% endslot %}</h2>
+    <div class="card-body px-4">
+        {% slot body %}{% endslot %}
+        {% if slots.actions %}<div class="d-flex flex-wrap gap-2 mt-3">{% for action in slots.actions %}{{ action }}{% endfor %}</div>{% endif %}
+    </div>
+</section>

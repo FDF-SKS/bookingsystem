@@ -1,0 +1,6 @@
+{% extends "emailing/base_email.html" %}
+{% block title %}{{ subject }}{% endblock %}
+{% block content %}
+<p style="margin:0;white-space:pre-line;">{{ body }}</p>
+{% endblock %}
+{% block signature %}Markus Glavind og Seniorkursus Sletten{% endblock %}

@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.urls import reverse
 from django_tiptap_editor.admin.mixin import TipTapModelAdminMixin
 from import_export.admin import ImportExportModelAdmin
 from unfold.admin import ModelAdmin

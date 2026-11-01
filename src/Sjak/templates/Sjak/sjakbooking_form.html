@@ -55,7 +55,7 @@
         <h1 class="display-5">{% if form.instance.pk %}Rediger{% else %}Ny{% endif %} Sjak booking</h1>
         {% if user.is_authenticated and user.events.first %}
             <p class="text-muted">
-                {% bs_icon "info-circle" %} Deadline: 
+                <i class="bi bi-info-circle"></i> Deadline: 
                 <span class="badge bg-warning text-dark">{{ user.events.first.deadline_sjak|default:"Ikke sat" }}</span>
             </p>
         {% endif %}
@@ -74,7 +74,7 @@
                             <div class="input-group">
                                 {% bootstrap_field form.item show_label=False wrapper_class="flex-grow-1 mb-0" %}
                                 <button class="btn btn-outline-secondary" type="button" id="clear-item-btn">
-                                    {% bs_icon "x-lg" %}
+                                    <i class="bi bi-x-lg"></i>
                                 </button>
                             </div>
                             <div class="form-text">Begynd at skrive for at filtrere listen...</div>
@@ -128,7 +128,7 @@
 
                 <div class="d-grid gap-2">
                     <button type="submit" class="btn btn-primary btn-lg shadow-sm">
-                        {% bs_icon 'check2-circle' %} Gem booking
+                        <i class="bi bi-check2-circle"></i> Gem booking
                     </button>
                     <a href="{% url 'Sjak_SjakBooking_list' %}" class="btn btn-outline-secondary">Annuller</a>
                 </div>

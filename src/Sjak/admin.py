@@ -1,24 +1,21 @@
-import csv
 from django.conf import settings
 from django.contrib import admin, messages
+from django.contrib.contenttypes.admin import GenericTabularInline
 from django.http import HttpResponse
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
-
-from unfold.admin import ModelAdmin, TabularInline
-from unfold.decorators import display, action
-from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
-from import_export.admin import ImportExportModelAdmin
-from import_export import fields, resources
-from import_export.widgets import ForeignKeyWidget
-
 from django_comments_xtd.models import XtdComment
-from django.contrib.contenttypes.admin import GenericTabularInline
+from import_export import fields, resources
+from import_export.admin import ImportExportModelAdmin
+from import_export.widgets import ForeignKeyWidget
+from unfold.admin import ModelAdmin
+from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
+from unfold.decorators import action, display
 
-from .models import SjakItem, SjakBooking, SjakItemType, SjakItemLocation, SjakTag
-from .forms import SjakBookingForm, SjakItemForm
 from utils.ical_utils import export_selected_to_ical
 
+from .forms import SjakBookingForm
+from .models import SjakBooking, SjakItem, SjakItemLocation, SjakItemType, SjakTag
 
 # ============================================================================
 # IMPORT/EXPORT RESSOURCER

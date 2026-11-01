@@ -35,7 +35,7 @@
         <h1 class="display-5">{% if object %}Rediger{% else %}Ny{% endif %} legeaftale</h1>
         {% if user.is_authenticated and user.events.first %}
         <div class="alert alert-light" role="alert">
-            {% bs_icon "info-circle" %} Du opretter en aftale for eventet: 
+            <i class="bi bi-info-circle"></i> Du opretter en aftale for eventet: 
             <span class="badge bg-primary">{{ user.events.first.name }}</span>
         </div>
         {% endif %}
@@ -80,7 +80,7 @@
 
                 <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-5 mt-4">
                     <button type="submit" class="btn btn-primary btn-lg px-5">
-                        {% bs_icon "send" %} {% if object %}Opdater{% else %}Send{% endif %} anmodning
+                        <i class="bi bi-send"></i> {% if object %}Opdater{% else %}Send{% endif %} anmodning
                     </button>
                     <a href="{% url 'organization_VolunteerAppointment_list' %}" class="btn btn-outline-secondary btn-lg">Annuller</a>
                 </div>

@@ -1,17 +1,13 @@
+
 from django.contrib import admin
-from django.db import transaction
 from django.utils.html import format_html
-from unfold.admin import ModelAdmin, TabularInline
-from unfold.decorators import display
+from import_export import fields, resources
 from import_export.admin import ImportExportModelAdmin
-from import_export import resources, fields
-from import_export.widgets import ForeignKeyWidget
+from unfold.admin import ModelAdmin, TabularInline
 from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
-import csv
-from io import StringIO, BytesIO
+from unfold.decorators import display
 
-from .models import DepotItem, DepotBooking, DepotLocation
-
+from .models import DepotBooking, DepotItem, DepotLocation
 
 # --- Custom Widgets & Fields ---
 

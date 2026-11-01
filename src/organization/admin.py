@@ -1,34 +1,23 @@
-import csv
-import time
 from collections import defaultdict
 from datetime import date, timedelta
-from typing import List
 
-from django import forms
 from django.contrib import admin, messages
 from django.contrib.auth.models import Group
-from django.core.mail import send_mail
 from django.db.models import Count, Q
-from django.http import HttpResponse
 from django.shortcuts import redirect, render
-from django.utils import timezone
-from django.template.loader import render_to_string
-from emailing.services import send_email
 from django.urls import path
-from django.urls.resolvers import URLPattern
-from django.utils.html import strip_tags
-from django.utils.translation import ngettext
-
+from django_tiptap_editor.admin.mixin import TipTapModelAdminMixin
 from import_export import fields, resources
 from import_export.admin import ImportExportModelAdmin
 from import_export.widgets import ManyToManyWidget
-from django_tiptap_editor.admin.mixin import TipTapModelAdminMixin
 from simple_history.admin import SimpleHistoryAdmin
 from unfold.admin import ModelAdmin, TabularInline
-from unfold.contrib.import_export.forms import ExportForm, ImportForm, SelectableFieldsExportForm
+from unfold.contrib.import_export.forms import ExportForm, ImportForm
 from unfold.decorators import action
 
-from . import models
+from Butikken.models import MealPlan, TeamMealPlan
+from emailing.services import send_email
+
 from .models import (
     Event,
     EventMembership,
@@ -42,6 +31,7 @@ from .models import (
     Volunteer,
     VolunteerAppointment,
 )
+
 
 # 1. Widget specifically for creating Teams on the fly
 class CreateTeamIfNotFoundWidget(ManyToManyWidget):
@@ -162,8 +152,6 @@ class TeamMembershipInline(TabularInline):
 
 # --- Admin Classes ---
 
-
-from Butikken.models import MealPlan, TeamMealPlan
 
 @admin.register(Team)
 class TeamAdmin(SimpleHistoryAdmin, ModelAdmin):

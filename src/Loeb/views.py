@@ -1,11 +1,10 @@
 from django.contrib import messages
-from django.contrib.auth import get_user_model
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
-from django.views import generic
 from django.urls import reverse, reverse_lazy
+from django.views import generic
 
 from organization.models import TeamMembership
 
@@ -277,11 +276,6 @@ class TaskUpdateView(LoginRequiredMixin, generic.UpdateView):
 class TaskDeleteView(LoginRequiredMixin, generic.DeleteView):
     model = models.Task
     success_url = reverse_lazy('Loeb_Task_list')
-
-
-class HoldListView(LoginRequiredMixin, generic.ListView):
-    model = models.Hold
-    context_object_name = 'hold_list'
 
 
 class HoldListView(LoginRequiredMixin, generic.ListView):

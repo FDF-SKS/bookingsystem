@@ -1,51 +1,35 @@
 import csv
-from django.contrib import admin, messages
-from django.shortcuts import redirect
-from django.http import HttpResponse
 
-# Unfold & Import/Export
-from unfold.admin import ModelAdmin, TabularInline 
-from unfold.decorators import action, display
+from django.contrib import admin, messages
+from django.http import HttpResponse
+from import_export import fields, resources
 from import_export.admin import ImportExportModelAdmin
-from import_export import resources, fields
 from import_export.widgets import ForeignKeyWidget
 
+# Unfold & Import/Export
+from unfold.admin import ModelAdmin, TabularInline
+
 # Unfold Contrib for styled Import/Export forms
-from unfold.contrib.import_export.forms import ExportForm, ImportForm, SelectableFieldsExportForm
+from unfold.contrib.import_export.forms import (
+    ImportForm,
+    SelectableFieldsExportForm,
+)
+from unfold.decorators import display
+
+from organization.models import Team
 
 # Models & Forms
 from .models import (
-    ButikkenItem, ButikkenBooking, ButikkenItemType, 
-    Day, Recipe, Meal, Option, MealBooking, 
-    MealPlan, MealOption, TeamMealPlan, Team, Volunteer
+    ButikkenBooking,
+    ButikkenItem,
+    ButikkenOrder,
+    MealOption,
+    MealPlan,
+    Recipe,
+    TeamMealPlan,
 )
-from .models import ButikkenOrder
-from .forms import ButikkenBookingForm, MealPlanForm
 
 # --- Resources ---
-
-class TeamMealPlanResource(resources.ModelResource):
-    # Explicitly map the ForeignKey fields to use the 'name' attribute instead of 'id'
-    team = fields.Field(
-        column_name='Team',
-        attribute='team',
-        widget=ForeignKeyWidget(Team, 'name')
-    )
-    meal_plan = fields.Field(
-        column_name='Måltidsplan',
-        attribute='meal_plan',
-        widget=ForeignKeyWidget(MealPlan, 'name')
-    )
-    meal_option = fields.Field(
-        column_name='Valgt Menu',
-        attribute='meal_option',
-        widget=ForeignKeyWidget(MealOption, 'id') # Or another identifying field
-    )
-
-    class Meta:
-        model = TeamMealPlan
-        fields = ('id', 'team', 'meal_plan', 'meal_option', 'status')
-        export_order = ('id', 'team', 'meal_plan', 'meal_option', 'status')
 
 class ButikkenItemResource(resources.ModelResource):
     class Meta:

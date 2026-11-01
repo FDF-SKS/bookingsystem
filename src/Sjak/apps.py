@@ -7,6 +7,6 @@ class SjakConfig(AppConfig):
     verbose_name = 'Sjak (Equipment Booking)'
 
     def ready(self):
-        import Sjak.signals
+        import Sjak.signals  # noqa: F401
 
 

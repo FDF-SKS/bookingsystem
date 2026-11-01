@@ -9,9 +9,8 @@ Tests cover:
 - Static and media files always accessible
 - URL trailing slash handling
 """
-from django.test import TestCase, override_settings, Client
-from constance import config
 from constance.test import override_config
+from django.test import Client, TestCase
 
 
 class FeatureToggleMiddlewareTests(TestCase):
@@ -234,8 +233,9 @@ class FeatureToggleContextProcessorTests(TestCase):
         """Test that templates have access to config object."""
         # This would require a view that renders a template
         # For now, we test that the config is accessible
-        from core.context_processors import app_feature_toggles
         from django.test import RequestFactory
+
+        from core.context_processors import app_feature_toggles
 
         factory = RequestFactory()
         request = factory.get('/')
@@ -246,8 +246,9 @@ class FeatureToggleContextProcessorTests(TestCase):
 
     def test_config_values_are_correct(self):
         """Test that config values match toggle settings."""
-        from core.context_processors import app_feature_toggles
         from django.test import RequestFactory
+
+        from core.context_processors import app_feature_toggles
 
         factory = RequestFactory()
         request = factory.get('/')

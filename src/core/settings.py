@@ -9,18 +9,15 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-from django.templatetags.static import static
-from django.utils.translation import gettext_lazy as _
-from unfold.contrib.constance.settings import UNFOLD_CONSTANCE_ADDITIONAL_FIELDS
-
-from django.urls import reverse_lazy
+import os
 from pathlib import Path
 from urllib.parse import urlparse
-from dotenv import load_dotenv
-import os
 
-import os
-from pathlib import Path
+from django.templatetags.static import static
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
+from dotenv import load_dotenv
+from unfold.contrib.constance.settings import UNFOLD_CONSTANCE_ADDITIONAL_FIELDS
 
 # Load .env files locally (optional)
 
@@ -128,6 +125,10 @@ INSTALLED_APPS = [
     'map_location',
     'django_tiptap_editor',
     'organization',
+    "allauth",  # after organization so its templates override allauth's
+    "allauth.account",
+    "allauth.mfa",
+    "django.contrib.humanize",  # used by allauth's default MFA templates
     'django.contrib.staticfiles',
     'import_export',
     'django.contrib.auth',
@@ -160,6 +161,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'simple_history.middleware.HistoryRequestMiddleware',
     'core.middleware.AppFeatureGateMiddleware',
@@ -323,9 +325,27 @@ AUTH_USER_MODEL = 'organization.Volunteer'
 # Set the authentication backend to use Django's default ModelBackend
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-LOGIN_URL = 'login_user'
+LOGIN_URL = 'account_login'
+
+# allauth: email + password or emailed one-time code; username is auto-generated
+ACCOUNT_ADAPTER = 'organization.adapters.AccountAdapter'
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+ACCOUNT_SIGNUP_FORM_CLASS = 'organization.forms.AllauthSignupForm'
+ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # new users are approved by an admin instead
+ACCOUNT_LOGIN_BY_CODE_ENABLED = True
+ACCOUNT_LOGIN_BY_CODE_TIMEOUT = 300
+ACCOUNT_LOGOUT_ON_GET = False
+ACCOUNT_EMAIL_SUBJECT_PREFIX = ''
+
+MFA_SUPPORTED_TYPES = ["totp", "webauthn", "recovery_codes"]
+MFA_PASSKEY_LOGIN_ENABLED = True
+# fido2 <= 1.1.3 rejects http://localhost as an origin
+MFA_WEBAUTHN_ALLOW_INSECURE_ORIGIN = ENVIRONMENT == 'dev'
 
 # Set the LOGIN_REDIRECT_URL to the URL where you want to redirect the user after successful login
 LOGIN_REDIRECT_URL = '/'  # Change the URL to '/' for root URL redirection

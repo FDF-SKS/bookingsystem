@@ -1,27 +1,26 @@
-import csv
 from django.contrib import admin, messages
+from django.contrib.contenttypes.admin import GenericTabularInline
 from django.http import HttpResponse
-from django.conf import settings
+
+# Comments
+from django_comments_xtd.models import XtdComment
+from import_export import fields, resources
+from import_export.admin import ImportExportModelAdmin
+from import_export.widgets import ForeignKeyWidget
 
 # Unfold & Import/Export
-from unfold.admin import ModelAdmin, TabularInline
-from unfold.decorators import action, display
-from import_export.admin import ImportExportModelAdmin
-from import_export import resources, fields
-from import_export.widgets import ForeignKeyWidget
+from unfold.admin import ModelAdmin
 
 # Unfold Contrib for styled Import/Export forms
 from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
+from unfold.decorators import action, display
+
+from organization.models import Team, Volunteer
 
 # iCal utilities
 from utils.ical_utils import export_selected_to_ical
 
-# Comments
-from django_comments_xtd.models import XtdComment
-from django.contrib.contenttypes.admin import GenericTabularInline, GenericStackedInline
-
-from .models import TeknikItem, TeknikBooking, TeknikType
-from organization.models import Team, Volunteer
+from .models import TeknikBooking, TeknikItem, TeknikType
 
 # --- Resources ---
 

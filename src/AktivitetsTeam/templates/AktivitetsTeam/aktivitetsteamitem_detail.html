@@ -42,7 +42,7 @@
                         <h1 class="fw-bold text-dark mb-0">{{ object.name }}</h1>
                         {% if object.category %}
                             <span class="badge rounded-pill bg-secondary-subtle text-secondary px-3 py-2">
-                                <bs_icon class="bi {{ object.category.bs_icon }} me-1"></bs_icon>
+                                <i class="bi {{ object.category.bs_icon }} me-1"></i>
                                 {{ object.category.name }}
                             </span>
                         {% endif %}
@@ -54,7 +54,7 @@
 
                     {% if object.youtube_link %}
                         <div class="mt-5">
-                            <h4 class="fw-bold mb-3"><bs_icon class="bi bi-play-circle me-2"></bs_icon>Se aktiviteten i aktion</h4>
+                            <h4 class="fw-bold mb-3"><i class="bi bi-play-circle me-2"></i>Se aktiviteten i aktion</h4>
                             <div class="ratio ratio-16x9 rounded-4 overflow-hidden shadow">
                                 {% video object.youtube_link as my_video %}
                                     {% video my_video '100% x 100%' %}
@@ -65,19 +65,19 @@
 
                     {% if object.location %}
                         <div class="mt-5">
-                            <h4 class="fw-bold mb-3"><bs_icon class="bi bi-geo-alt me-2"></bs_icon>Find os her</h4>
+                            <h4 class="fw-bold mb-3"><i class="bi bi-geo-alt me-2"></i>Find os her</h4>
                             
                             <div id="detail-map" class="rounded-4 shadow-sm border mb-3" style="height: 400px !important; width: 100%; display: block;"></div>
                             
                             <div class="d-flex flex-wrap gap-2">
                                 <a href="https://www.google.com/maps/search/?api=1&query={{ object.coords_list.0|stringformat:"f" }},{{ object.coords_list.1|stringformat:"f" }}" 
                                 target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                                    <bs_icon class="bi bi-google me-1"></bs_icon>Åbn i Google Maps
+                                    <i class="bi bi-google me-1"></i>Åbn i Google Maps
                                 </a>
 
                                 <a href="https://www.openstreetmap.org/?mlat={{ object.coords_list.0|stringformat:"f" }}&mlon={{ object.coords_list.1|stringformat:"f" }}#map=17/{{ object.coords_list.0|stringformat:"f" }}/{{ object.coords_list.1|stringformat:"f" }}" 
                                 target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                                    <bs_icon class="bi bi-map me-1"></bs_icon>Se på OpenStreetMap
+                                    <i class="bi bi-map me-1"></i>Se på OpenStreetMap
                                 </a>
                             </div>
                         </div>
@@ -94,11 +94,11 @@
                         <h5 class="fw-bold mb-3">Klar til at booke?</h5>
                         <a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_create_with_item' object.id %}" 
                            class="btn btn-secondary w-100 py-3 rounded-pill fw-bold shadow-sm mb-3">
-                            <bs_icon class="bi bi-calendar-plus me-2"></bs_icon>Book denne aktivitet
+                            <i class="bi bi-calendar-plus me-2"></i>Book denne aktivitet
                         </a>
                         {% if user.is_staff %}
                             <a href="{{ object.get_update_url }}" class="btn btn-outline-secondary btn-sm w-100 rounded-pill">
-                                <bs_icon class="bi bi-pencil me-1"></bs_icon>Rediger som Admin
+                                <i class="bi bi-pencil me-1"></i>Rediger som Admin
                             </a>
                         {% endif %}
                     </div>
@@ -132,7 +132,7 @@
                     </div>
                     <div class="card-footer bg-white text-center py-3">
                         <small class="text-muted">
-                            <bs_icon class="bi bi-clock-history me-1"></bs_icon>
+                            <i class="bi bi-clock-history me-1"></i>
                             Sidst opdateret: {{ object.last_updated|date:"d. M Y" }}
                         </small>
                     </div>

@@ -7,6 +7,6 @@ class FotoConfig(AppConfig):
     verbose_name = 'Foto (Foto Booking)'
 
     def ready(self):
-        import Foto.signals
+        import Foto.signals  # noqa: F401
 
 

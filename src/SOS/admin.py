@@ -1,19 +1,20 @@
-import csv
-from django.contrib import admin, messages
-from django.http import HttpResponse
-from unfold.admin import ModelAdmin
-from unfold.decorators import display
-from import_export.admin import ImportExportModelAdmin
-from import_export import resources, fields
-from import_export.widgets import ForeignKeyWidget
-from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
-from django_comments_xtd.models import XtdComment
-from django.contrib.contenttypes.admin import GenericTabularInline
-from icalendar import Calendar, Event
 from datetime import datetime
 
-from .models import SOSItem, SOSBooking, SOSType
+from django.contrib import admin, messages
+from django.contrib.contenttypes.admin import GenericTabularInline
+from django.http import HttpResponse
+from django_comments_xtd.models import XtdComment
+from icalendar import Calendar, Event
+from import_export import fields, resources
+from import_export.admin import ImportExportModelAdmin
+from import_export.widgets import ForeignKeyWidget
+from unfold.admin import ModelAdmin
+from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
+from unfold.decorators import display
+
 from organization.models import Team, Volunteer
+
+from .models import SOSBooking, SOSItem, SOSType
 
 # --- Resources ---
 
@@ -98,8 +99,10 @@ class SOSBookingAdmin(SOSBaseAdmin):
         "Modtaget": "success", "Sendt": "info", "Afventer": "neutral"
     })
     def dispatch_status(self, obj):
-        if obj.received: return "Modtaget"
-        if obj.dispatched: return "Sendt"
+        if obj.received:
+            return "Modtaget"
+        if obj.dispatched:
+            return "Sendt"
         return "Afventer"
 
     @admin.action(description="Exporter valgte bookinger til iCal fil")

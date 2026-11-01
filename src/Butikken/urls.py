@@ -1,9 +1,7 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework import routers
 
-from . import api
-from . import views
-
+from . import api, views
 
 router = routers.DefaultRouter()
 router.register("Day", api.DayViewSet)
@@ -26,7 +24,6 @@ urlpatterns = (
     path("Butikken/ButikkenItem/delete/<int:pk>/", views.ButikkenItemDeleteView.as_view(), name="Butikken_ButikkenItem_delete"),
 
     path("Butikken/ButikkenBooking/", views.ButikkenBookingListView.as_view(), name="Butikken_ButikkenBooking_list"),
-    #path("Butikken/ButikkenBooking/createNew/", views.create_butikken_booking, name="Butikken_ButikkenBooking_create_new"),
     path("Butikken/ButikkenBooking/create/", views.ButikkenBookingCreateView.as_view(), name="Butikken_ButikkenBooking_create"),
     path("Butikken/ButikkenBooking/detail/<int:pk>/", views.ButikkenBookingDetailView.as_view(), name="Butikken_ButikkenBooking_detail"),
     path("Butikken/ButikkenBooking/update/<int:pk>/", views.ButikkenBookingUpdateView.as_view(), name="Butikken_ButikkenBooking_update"),
@@ -38,8 +35,6 @@ urlpatterns = (
     path("Butikken/ButikkenOrder/detail/<int:pk>/", views.ButikkenOrderDetailView.as_view(), name="Butikken_ButikkenOrder_detail"),
     path("Butikken/ButikkenOrder/update/<int:pk>/", views.ButikkenOrderUpdateView.as_view(), name="Butikken_ButikkenOrder_update"),
     path("Butikken/ButikkenOrder/delete/<int:pk>/", views.ButikkenOrderDeleteView.as_view(), name="Butikken_ButikkenOrder_delete"),
-    path("Butikken/ButikkenOrder/<int:pk>/add-item/", views.butikken_order_add_item, name="Butikken_ButikkenOrder_add_item"),
-    path("Butikken/ButikkenOrder/<int:order_pk>/remove-item/<int:pk>/", views.butikken_order_remove_item, name="Butikken_ButikkenOrder_remove_item"),
 
     path("Butikken/ButikkenItemType/", views.ButikkenItemTypeListView.as_view(), name="Butikken_ButikkenItemType_list"),
     path("Butikken/ButikkenItemType/create/", views.ButikkenItemTypeCreateView.as_view(), name="Butikken_ButikkenItemType_create"),

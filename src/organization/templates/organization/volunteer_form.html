@@ -25,7 +25,7 @@
                     
                     {% if form.errors %}
                         <div class="alert alert-danger border-0 small rounded-3 mb-4">
-                            <bs_icon class="bi bi-exclamation-circle me-2"></bs_icon> Der opstod en fejl. Tjek venligst felterne nedenfor.
+                            <i class="bi bi-exclamation-circle me-2"></i> Der opstod en fejl. Tjek venligst felterne nedenfor.
                         </div>
                     {% endif %}
 
@@ -34,7 +34,7 @@
 
                         <div class="d-flex align-items-center mb-4">
                             <div class="bg-secondary-subtle p-2 rounded-3 me-3 text-secondary">
-                                <bs_icon class="bi bi-person-badge fs-4"></bs_icon>
+                                <i class="bi bi-person-badge fs-4"></i>
                             </div>
                             <h5 class="fw-bold mb-0">Personlige oplysninger</h5>
                         </div>
@@ -69,7 +69,7 @@
 
                         <div class="d-flex align-items-center mb-4">
                             <div class="bg-secondary-subtle p-2 rounded-3 me-3 text-secondary">
-                                <bs_icon class="bi bi-image fs-4"></bs_icon>
+                                <i class="bi bi-image fs-4"></i>
                             </div>
                             <h5 class="fw-bold mb-0">Profilbillede</h5>
                         </div>
@@ -79,7 +79,7 @@
                                 <label class="form-label fw-semibold small text-muted">Upload profilbillede</label>
                                 {{ form.image }}
                                 <small class="text-muted d-block mt-2">
-                                    <bs_icon class="bi bi-info-circle me-1"></bs_icon>
+                                    <i class="bi bi-info-circle me-1"></i>
                                     Tilladte format: JPG, PNG (maks 5 MB)
                                 </small>
                                 {% if form.image.errors %}
@@ -96,7 +96,7 @@
 
                         <div class="d-flex align-items-center mb-4">
                             <div class="bg-primary-subtle p-2 rounded-3 me-3 text-primary">
-                                <bs_icon class="bi bi-shield-lock fs-4"></bs_icon>
+                                <i class="bi bi-shield-lock fs-4"></i>
                             </div>
                             <h5 class="fw-bold mb-0">Sikkerhed</h5>
                         </div>
@@ -115,7 +115,7 @@
 
                         <div class="d-flex justify-content-between align-items-center mt-5">
                             <a href="{% url 'index' %}" class="text-muted text-decoration-none small">
-                                <bs_icon class="bi bi-arrow-left me-1"></bs_icon> Afbryd
+                                <i class="bi bi-arrow-left me-1"></i> Afbryd
                             </a>
                             <button type="submit" class="btn btn-secondary px-5 py-2 rounded-pill fw-bold shadow-sm">
                                 Gem ændringer

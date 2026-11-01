@@ -24,21 +24,21 @@
         </div>
         <div class="d-flex flex-column align-items-end gap-2">
             {% if object.status == 'Afventer' %}
-                <span class="status-badge bg-warning text-dark">{% bs_icon "clock" %} Afventer</span>
+                <span class="status-badge bg-warning text-dark"><i class="bi bi-clock"></i> Afventer</span>
             {% elif object.status == 'Godkendt' %}
-                <span class="status-badge bg-success text-white">{% bs_icon "check-circle" %} Godkendt</span>
+                <span class="status-badge bg-success text-white"><i class="bi bi-check-circle"></i> Godkendt</span>
             {% elif object.status == 'Afvist' %}
-                <span class="status-badge bg-danger text-white">{% bs_icon "x-circle" %} Afvist</span>
+                <span class="status-badge bg-danger text-white"><i class="bi bi-x-circle"></i> Afvist</span>
             {% elif object.status == 'Pakket' %}
-                <span class="status-badge bg-info text-dark">{% bs_icon "box" %} Pakket</span>
+                <span class="status-badge bg-info text-dark"><i class="bi bi-box"></i> Pakket</span>
             {% elif object.status == 'Udleveret' %}
-                <span class="status-badge bg-secondary text-white">{% bs_icon "box-seam" %} Udleveret</span>
+                <span class="status-badge bg-secondary text-white"><i class="bi bi-box-seam"></i> Udleveret</span>
             {% endif %}
 
             <div class="mt-2">
                 {% if can_edit %}
-                    <a href="{% url 'Butikken_ButikkenOrder_update' object.pk %}" class="btn btn-outline-primary rounded-pill px-4">{% bs_icon "pencil" %} Rediger</a>
-                    <a href="{% url 'Butikken_ButikkenOrder_delete' object.pk %}" class="btn btn-danger rounded-pill px-4 ms-2">{% bs_icon "trash" %} Slet</a>
+                    <a href="{% url 'Butikken_ButikkenOrder_update' object.pk %}" class="btn btn-outline-primary rounded-pill px-4"><i class="bi bi-pencil"></i> Rediger</a>
+                    <a href="{% url 'Butikken_ButikkenOrder_delete' object.pk %}" class="btn btn-danger rounded-pill px-4 ms-2"><i class="bi bi-trash"></i> Slet</a>
                 {% endif %}
             </div>
         </div>
@@ -54,7 +54,7 @@
                             <div class="detail-label">Afhentning</div>
                             <div class="detail-value">
                                 {% if object.pickup_date %}
-                                    {% bs_icon "calendar-event" %} {{ object.pickup_date|date:"l \d. j. F" }}
+                                    <i class="bi bi-calendar-event"></i> {{ object.pickup_date|date:"l \d. j. F" }}
                                 {% else %}
                                     Ikke angivet
                                 {% endif %}
@@ -111,7 +111,7 @@
                         {% if object.team_contact and object.team_contact.image_thumbnail %}
                             <img src="{{ object.team_contact.image_thumbnail.url }}" alt="{{ object.team_contact.get_full_name }}" class="avatar-50 rounded-circle me-3" loading="lazy">
                         {% else %}
-                            <div class="avatar-50 bg-soft-primary rounded-circle me-3 d-flex align-items-center justify-content-center">{% bs_icon "person-circle" extra_classes="fs-3 text-primary" %}</div>
+                            <div class="avatar-50 bg-soft-primary rounded-circle me-3 d-flex align-items-center justify-content-center"><i class="bi bi-person-circle fs-3 text-primary"></i></div>
                         {% endif %}
                         <div>
                             {% if object.team_contact %}
@@ -144,7 +144,7 @@
             </div>
 
             <div class="mt-2 d-grid">
-                <a href="{% url 'Butikken_ButikkenOrder_list' %}" class="btn btn-link text-muted">{% bs_icon "arrow-left" %} Tilbage til listen</a>
+                <a href="{% url 'Butikken_ButikkenOrder_list' %}" class="btn btn-link text-muted"><i class="bi bi-arrow-left"></i> Tilbage til listen</a>
             </div>
         </div>
     </div>

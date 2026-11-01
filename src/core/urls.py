@@ -1,14 +1,15 @@
-from django.contrib import admin
-from django.urls import path, include
-from django.views.generic.base import RedirectView
 from django.conf import settings
-from . import views
-from django.shortcuts import render
+
 #from debug_toolbar.toolbar import debug_toolbar_urls
-from django.conf.urls import handler404, handler500, handler403
 from django.conf.urls.static import static
-from .tiptap_uploads import TipTapImageUploadView
+from django.contrib import admin
+from django.shortcuts import render
+from django.urls import include, path
+from django.views.generic.base import RedirectView
 from django_ses.views import SESEventWebhookView
+
+from . import views
+from .tiptap_uploads import TipTapImageUploadView
 
 handler404 = 'django.views.defaults.page_not_found'
 handler500 = 'django.views.defaults.server_error'
@@ -19,6 +20,7 @@ urlpatterns = [
     path('ses/notifications/', SESEventWebhookView.as_view(), name='ses_notifications'),
     path('tiptap/images/upload/', TipTapImageUploadView.as_view(), name='tiptap_image_upload'),
     path('', views.index, name='index'),  # Protect the view with login_required
+    path('accounts/', include('allauth.urls')),
     path('organization/', include('organization.urls')),
     path('butikken/', include('Butikken.urls')),
     path('aktivitetsteam/', include('AktivitetsTeam.urls')),

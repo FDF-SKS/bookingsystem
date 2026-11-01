@@ -18,7 +18,7 @@
         
         <div class="d-none d-md-block">
             <a href="{% url 'Butikken_ButikkenOrder_create' %}" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-4 py-2">
-                <bs_icon class="bi bi-plus-lg"></bs_icon>
+                <i class="bi bi-plus-lg"></i>
                 <span>Ny Bestilling</span>
             </a>
         </div>
@@ -43,9 +43,9 @@
                                 <span class="ms-1 badge rounded-pill bg-light text-dark border small">{{ object.bookings.count }} varer</span>
                             </div>
                             <div class="small text-muted d-flex align-items-center flex-wrap gap-2 mt-1">
-                                <span><bs_icon class="bi bi-person"></bs_icon> {{ object.team_contact }}</span>
-                                <span class="d-sm-none"><bs_icon class="bi bi-calendar3"></bs_icon> {{ object.pickup_date|date:"d/m" }}</span>
-                                <span><bs_icon class="bi bi-gear"></bs_icon> {{ object.team }}</span>
+                                <span><i class="bi bi-person"></i> {{ object.team_contact }}</span>
+                                <span class="d-sm-none"><i class="bi bi-calendar3"></i> {{ object.pickup_date|date:"d/m" }}</span>
+                                <span><i class="bi bi-gear"></i> {{ object.team }}</span>
                             </div>
                         </div>
                     </div>
@@ -54,27 +54,27 @@
                         <div class="status-box">
                             {% if object.status == 'Godkendt' %}
                                 <span class="badge bg-success rounded-pill px-3 py-2 d-flex align-items-center gap-1">
-                                    <bs_icon class="bi bi-check-lg"></bs_icon>
+                                    <i class="bi bi-check-lg"></i>
                                     <span class="d-none d-md-inline small text-uppercase">Godkendt</span>
                                 </span>
                             {% elif object.status == 'Afvist' %}
                                 <span class="badge bg-danger rounded-pill px-3 py-2 d-flex align-items-center gap-1">
-                                    <bs_icon class="bi bi-x-lg"></bs_icon>
+                                    <i class="bi bi-x-lg"></i>
                                     <span class="d-none d-md-inline small text-uppercase">Afvist</span>
                                 </span>
                             {% elif object.status == 'Udleveret' %}
                                 <span class="badge bg-secondary rounded-pill px-3 py-2 d-flex align-items-center gap-1">
-                                    <bs_icon class="bi bi-box-seam"></bs_icon>
+                                    <i class="bi bi-box-seam"></i>
                                     <span class="d-none d-md-inline small text-uppercase">Udleveret</span>
                                 </span>
                             {% elif object.status == 'Pakket' %}
                                 <span class="badge bg-info text-dark rounded-pill px-3 py-2 d-flex align-items-center gap-1">
-                                    <bs_icon class="bi bi-box2-heart"></bs_icon>
+                                    <i class="bi bi-box2-heart"></i>
                                     <span class="d-none d-md-inline small text-uppercase">Pakket</span>
                                 </span>
                             {% else %}
                                 <span class="badge bg-warning text-dark rounded-pill px-3 py-2 d-flex align-items-center gap-1 border">
-                                    <bs_icon class="bi bi-hourglass-split"></bs_icon>
+                                    <i class="bi bi-hourglass-split"></i>
                                     <span class="d-none d-md-inline small text-uppercase">Afventer</span>
                                 </span>
                             {% endif %}
@@ -82,7 +82,7 @@
 
                         <div class="d-flex gap-2 border-start ps-2 ps-md-3">
                             <a href="{% url 'Butikken_ButikkenOrder_update' object.pk %}" class="btn btn-light btn-circle text-muted" title="Rediger">
-                                <bs_icon class="bi bi-pencil"></bs_icon>
+                                <i class="bi bi-pencil"></i>
                             </a>
                         </div>
                     </div>
@@ -98,7 +98,7 @@
 
     <div class="d-md-none fixed-bottom bg-white border-top p-3 shadow-lg">
         <a href="{% url 'Butikken_ButikkenOrder_create' %}" class="btn btn-primary btn-lg w-100 d-flex align-items-center justify-content-center gap-2 py-3 rounded-pill shadow">
-            <bs_icon class="bi bi-plus-lg"></bs_icon>
+            <i class="bi bi-plus-lg"></i>
             <span class="fw-bold">Ny Bestilling</span>
         </a>
     </div>

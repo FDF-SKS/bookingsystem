@@ -1,0 +1,27 @@
+{
+  "venvPath": ".",
+  "venv": "venv",
+  "pythonVersion": "3.10",
+  "include": ["src"],
+  "exclude": [
+    "**/__pycache__",
+    "**/migrations",
+    "src/staticfiles",
+    "src/media"
+  ],
+  "typeCheckingMode": "basic",
+  "reportMissingImports": "none",
+  "reportMissingModuleSource": "none",
+  "reportAttributeAccessIssue": "none",
+  "reportIncompatibleMethodOverride": "none",
+  "reportIncompatibleVariableOverride": "none",
+  "reportGeneralTypeIssues": "none",
+  "reportArgumentType": "none",
+  "reportCallIssue": "none",
+  "reportAssignmentType": "none",
+  "reportOptionalMemberAccess": "none",
+  "reportOptionalOperand": "none",
+  "reportReturnType": "none",
+  "reportIndexIssue": "none",
+  "reportOperatorIssue": "none"
+}

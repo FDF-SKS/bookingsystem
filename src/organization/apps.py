@@ -6,6 +6,7 @@ class OrganizationConfig(AppConfig):
     name = 'organization'
     
     def ready(self):
-        import organization.signals
+        # Importing the module registers the signal receivers (side effect).
+        import organization.signals  # noqa: F401
 
 

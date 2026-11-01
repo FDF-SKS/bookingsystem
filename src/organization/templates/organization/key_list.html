@@ -44,7 +44,7 @@
                           <td>
                               {% if key.current_user %}
                                   <a href="{% url 'organization_Volunteer_detail' key.current_user.pk %}" class="text-decoration-none fw-medium d-flex align-items-center">
-                                      {% bs_icon "person-circle" extra_classes="me-1 text-secondary" %}
+                                      <i class="bi bi-person-circle me-1 text-secondary"></i>
                                       {{ key.current_user.get_full_name|default:key.current_user.username }}
                                   </a>
                               {% else %}
@@ -53,7 +53,7 @@
                           </td>
                           <td class="text-end pe-4">
                               <a href="{% url 'organization_Key_update' key.pk %}" class="btn btn-sm btn-light border">
-                                  {% bs_icon "pencil-square" %} Ret
+                                  <i class="bi bi-pencil-square"></i> Ret
                               </a>
                           </td>
                       </tr>

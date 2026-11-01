@@ -1,8 +1,7 @@
+
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
-from datetime import datetime, timedelta
-from organization.models import Team, Volunteer
 
 
 class DepotLocation(models.Model):
@@ -152,7 +151,6 @@ class DepotBooking(models.Model):
 
     def is_overbooked(self):
         """Check if this booking exceeds available quantity."""
-        available = self.item.available_quantity(self.start_date, self.end_date)
         # For current booking, add back its own quantity to check against other bookings
         current_reserved = sum(
             b.quantity for b in DepotBooking.objects.filter(

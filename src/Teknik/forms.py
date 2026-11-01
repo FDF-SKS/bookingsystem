@@ -1,9 +1,12 @@
-from django import forms
-from django.utils import timezone
-from django.forms.widgets import TextInput
 from datetime import time
+
+from django import forms
+from django.forms.widgets import TextInput
+from django.utils import timezone
+
+from organization.models import Event, Team, TeamMembership, Volunteer
+
 from . import models
-from organization.models import Team, TeamMembership, Volunteer, Event
 
 
 class TeknikBookingForm(forms.ModelForm):
@@ -72,7 +75,7 @@ class TeknikBookingForm(forms.ModelForm):
         return instance
 
     def __init__(self, *args, user=None, **kwargs):
-        super(TeknikBookingForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         
         # 1. Queryset filtering and ordering
         self.fields["team"].queryset = Team.objects.all().order_by("name")
@@ -119,7 +122,7 @@ class TeknikItemForm(forms.ModelForm):
         ]
 
     def __init__(self, *args, **kwargs):
-        super(TeknikItemForm, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
 
 
