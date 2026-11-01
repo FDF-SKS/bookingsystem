@@ -30,9 +30,9 @@ Der findes to skabeloner i repoet. Begge indeholder **kun dummy-værdier** og m�
 | `.env.example` | `.env` | Lokal udvikling (`ENVIRONMENT=dev`) |
 | `.env.staging.example` | `.env.staging` | Docker-staging (`ENVIRONMENT=staging`) |
 
-> ⚠️ `.env` og `.env.staging` er listet i `.gitignore`. De må aldrig committes, og de må ikke indeholde de samme nøgler som produktionen.
+> ⚠️ `.env` og `.env.staging` er listet i `.gitignore`. De må aldrig committes, og de må ikke genbruge produktionens nøgler eller database-adgangskode.
 
-Skal du bruge en anden værdi end dummy-værdierne, f.eks. en rigtig `DJANGO_SECRET_KEY`, kan du generere en med:
+Skal du bruge en anden værdi end dummy-værdierne, f.eks. en rigtig `DJANGO_SECRET_KEY`, kan du generere en med (samme kommando på alle platforme):
 ```bash
 python -c "import secrets; print(secrets.token_urlsafe(50))"
 ```
@@ -48,15 +48,24 @@ cd bookingsystem
 ```
 
 ### 2. Opret virtual environment
+Django kører på Python, så for at sikre at vi har de rigtige pakker installeret, laver vi et virtual environment. Her er kommandoerne **ikke** ens på de tre platforme.
 
 **macOS / Linux:**
 ```bash
-cd bookingsystem
+python3 -m venv venv
+source venv/bin/activate
 ```
-Django kører på Python, så for at sikre at vi har de rigtige pakker installeret, så laver vi et virtual environment. 
-```bash 
+
+**Windows (PowerShell):**
+```powershell
 python -m venv venv
-venv\Scripts\activate
+venv\Scripts\Activate.ps1
+```
+
+**Windows (cmd / Kommandoprompt):**
+```bat
+python -m venv venv
+venv\Scripts\activate.bat
 ```
 
 > Får du i PowerShell fejlen *"running scripts is disabled on this system"*, kør da én gang:
@@ -65,18 +74,13 @@ venv\Scripts\activate
 Når det virker, står der `(venv)` foran din prompt. Så skal alle `python`- og `pip`-kommandoer herunder køres i det aktiverede environment.
 
 ### 3. Installer afhængigheder
-
-**macOS / Linux:**
+Køres fra repository-roden – samme kommando på alle platforme:
 ```bash
 pip install -r src/requirements.txt
 ```
 
-**Windows (PowerShell eller cmd):**
-```powershell
-pip install -r src/requirements.txt
-```
-
 ### 4. Opret din `.env`-fil
+Selve kommandoen til at kopiere filen er forskellig fra Windows til macOS/Linux.
 
 **macOS / Linux:**
 ```bash
@@ -99,19 +103,9 @@ notepad .env
 Filen skal have `ENVIRONMENT=dev`, når du kører Django direkte på din maskine. Så bruges SQLite, emails printes i terminalen, og du behøver hverken Postgres eller Redis.
 
 ### 5. Kør database-migreringer
-
-Gå ind i `src`-mappen (samme kommando på alle platforme):
+Gå ind i `src`-mappen og kør migreringerne – samme kommando på alle platforme:
 ```bash
 cd src
-```
-
-**macOS / Linux:**
-```bash
-python manage.py migrate
-```
-
-**Windows (PowerShell eller cmd):**
-```powershell
 python manage.py migrate
 ```
 
@@ -121,14 +115,8 @@ python manage.py createsuperuser
 ```
 
 ### 6. Start udviklingsserveren
-
-**macOS / Linux:**
+Samme kommando på alle platforme (husk at du stadig står i `src`-mappen):
 ```bash
-python manage.py runserver
-```
-
-**Windows (PowerShell eller cmd):**
-```powershell
 python manage.py runserver
 ```
 
@@ -149,18 +137,8 @@ Nu skulle siden gerne være oppe på `http://127.0.0.1:8000`, og du kan logge in
 
 
 ## ✅ Tests
-
-Testene kører fra `src`-mappen:
-
-**macOS / Linux:**
+Kør fra `src`-mappen – samme kommando på alle platforme:
 ```bash
-cd src
-python manage.py test
-```
-
-**Windows (PowerShell eller cmd):**
-```powershell
-cd src
 python manage.py test
 ```
 
@@ -170,19 +148,7 @@ GitHub Actions-workflowet **Django Tests** (`.github/workflows/django.yml`) kør
 ## 🚀 Sådan kører du projektet
 
 ### 1. Lokal Udvikling
-Bedst til hurtige UI/UX ændringer og test af logik. Følg opsætningen ovenfor, og kør derefter:
-
-**macOS / Linux:**
-```bash
-cd src
-python manage.py runserver
-```
-
-**Windows (PowerShell eller cmd):**
-```powershell
-cd src
-python manage.py runserver
-```
+Bedst til hurtige UI/UX ændringer og test af logik. Følg opsætningen ovenfor (punkt 1-6) – den ender med, at serveren kører.
 
 Applikationen er nu tilgængelig på `http://localhost:8000`.
 
@@ -192,57 +158,43 @@ Applikationen er nu tilgængelig på `http://localhost:8000`.
 At teste på din maskine er fint nok. Vi bruger Docker til at teste hvordan det virker på noget der er sat op som produktionsserveren, og som minder mere om den.
 > OBS: For at komme videre skal du have Docker Desktop installeret og kørende. [Kom igang med Docker](https://www.docker.com/get-started/)
 
-Staging bruger en **separat** env-fil, så den ikke overskriver din lokale `.env`.
+Staging bruger en **separat** env-fil, så den ikke overskriver din lokale `.env`. Kopiér skabelonen (kommandoen er forskellig på Windows og macOS/Linux):
 
 **macOS / Linux:**
 ```bash
 cp .env.staging.example .env.staging
 chmod 600 .env.staging
-docker compose -f docker-compose.staging.yaml --env-file .env.staging up -d --build
-```
-
-**Windows (PowerShell):**
-```powershell
-Copy-Item .env.staging.example .env.staging
-docker compose -f docker-compose.staging.yaml --env-file .env.staging up -d --build
-```
-
-**Windows (cmd / Kommandoprompt):**
-```bat
-copy .env.staging.example .env.staging
-docker compose -f docker-compose.staging.yaml --env-file .env.staging up -d --build
-```
-
-Første gang du starter miljøet, skal du oprette en superbruger i containeren:
-
-**macOS / Linux:**
-```bash
-docker compose -f docker-compose.staging.yaml --env-file .env.staging exec web python manage.py createsuperuser
 ```
 
 **Windows (PowerShell eller cmd):**
 ```powershell
+Copy-Item .env.staging.example .env.staging
+```
+
+Herefter er resten ens på alle platforme:
+```bash
+docker compose -f docker-compose.staging.yaml --env-file .env.staging up -d --build
+```
+
+Første gang du starter miljøet, skal du oprette en superbruger i containeren:
+```bash
 docker compose -f docker-compose.staging.yaml --env-file .env.staging exec web python manage.py createsuperuser
 ```
 
-Staging-miljøet er tilgængeligt på `http://localhost:8001`. Email-nøglerne i `.env.staging.example` er bevidst ugyldige, så staging kan ikke sende rigtige emails.
+Staging-miljøet er tilgængeligt på `http://localhost:8001`. Email-nøglerne i `.env.staging.example` er bevidst ugyldige, så staging ikke kan sende rigtige emails.
+
+> 🧯 **Fejlfinding:** Får du `Database is uninitialized and superuser password is not specified`, mangler der en database-adgangskode i `.env.staging`. Postgres læser `POSTGRES_PASSWORD`/`POSTGRES_USER`/`POSTGRES_DB`, og de sættes i `docker-compose.staging.yaml` ud fra `DATABASE_PASSWORD`/`DATABASE_USERNAME`/`DATABASE_NAME`. Kontrollér at `DATABASE_PASSWORD` er udfyldt, og start igen. Er containeren allerede startet halvt op, kan du rydde staging-volumet (sletter kun staging-data) med:
+> ```bash
+> docker compose -f docker-compose.staging.yaml --env-file .env.staging down -v
+> ```
 
 ---
 
 ## 🚢 Deployment til Produktion (Hetzner)
 
 ### Trin A: Byg og push Docker-imaget fra din lokale maskine
-
-Imaget skal bygges til serverens arkitektur (`linux/amd64`). På en Apple Silicon-mac (M1/M2/M3) er dette ekstra vigtigt, ellers crasher containeren med `exec format error`.
-
-**macOS / Linux:**
+Imaget skal bygges til serverens arkitektur (`linux/amd64`). På en Apple Silicon-mac (M1/M2/M3) er dette ekstra vigtigt, ellers crasher containeren med `exec format error`. Kommandoen er den samme på alle platforme:
 ```bash
-docker login -u mglavind
-docker buildx build --platform linux/amd64 -f dockerfile -t mglavind/booking-app:latest --push .
-```
-
-**Windows (PowerShell eller cmd):**
-```powershell
 docker login -u mglavind
 docker buildx build --platform linux/amd64 -f dockerfile -t mglavind/booking-app:latest --push .
 ```
@@ -250,7 +202,6 @@ docker buildx build --platform linux/amd64 -f dockerfile -t mglavind/booking-app
 Har du ikke Docker Hub-adgang, kan du i stedet bygge lokalt uden `--push` og få imaget overført på anden vis.
 
 ### Trin B: Udrulning på serveren
-
 Udrulningen sker automatisk: `.github/workflows/hetzner.yml` logger på serveren via SSH ved hvert push til `main` og kører
 
 1. `docker compose pull web` – henter det nyeste image fra Docker Hub
@@ -259,20 +210,8 @@ Udrulningen sker automatisk: `.github/workflows/hetzner.yml` logger på serveren
 4. `python manage.py collectstatic --noinput` – indsamler statiske filer (essentielt for **Unfold** admin-temaet)
 5. `docker image prune -f` – rydder op i gamle images
 
-Vil du deploye manuelt, kan du gøre det samme på serveren:
-
-**macOS / Linux (via SSH):**
+Vil du deploye manuelt, kan du gøre det samme på serveren (samme kommandoer uanset om du SSH'er fra Windows eller macOS/Linux):
 ```bash
-ssh root@<server-ip>
-cd /root/booking-system
-docker compose pull web
-docker compose up -d
-docker compose exec -T web python manage.py migrate --noinput
-docker compose exec -T web python manage.py collectstatic --noinput
-```
-
-**Windows (PowerShell):**
-```powershell
 ssh root@<server-ip>
 cd /root/booking-system
 docker compose pull web
@@ -288,6 +227,7 @@ docker compose exec -T web python manage.py collectstatic --noinput
 ## 🛠️ Almindelige Vedligeholdelseskommandoer
 
 ### Logs & Fejlfinding
+Alle kommandoer er ens på alle platforme.
 
 **Følg live logs:**
 ```bash
@@ -307,6 +247,7 @@ docker compose restart
 ---
 
 ### Database Backup
+Selve kommandoen er ens – kun datoformatet i filnavnet er forskelligt.
 
 **macOS / Linux:**
 ```bash

@@ -7,6 +7,11 @@ services:
       - postgres_data_staging:/var/lib/postgresql/data
     env_file:
       - .env.staging
+    # Postgres læser POSTGRES_*, ikke DATABASE_* – derfor mappes de her.
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME} -d ${DATABASE_NAME}"]
       interval: 10s
