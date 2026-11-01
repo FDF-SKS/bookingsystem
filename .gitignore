@@ -134,6 +134,9 @@ celerybeat.pid
 # Environments
 .env
 .env*
+# Skabeloner med dummy-værdier må gerne ligge offentligt:
+!.env.example
+!.env.staging.example
 .venv
 env/
 venv/
@@ -173,3 +176,10 @@ cython_debug/
 #.idea/
 
 *.code-workspace
+
+.agents
+.embedder
+.ruff_cache
+.zed
+.aiderignore
+.aider*

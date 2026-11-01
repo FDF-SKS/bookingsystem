@@ -3,190 +3,285 @@ Dette er et forsøg på at lave et nyt booking system til kurserne indenfor FDF.
 
 
 ## Framework
-Web appen er bygget som en Django web app. Det er et framework hvor du som udvikler primært arbejder i python, og bruger python scripts server side til at håndtere databasen og servere html. Det gør at det programmeringssprog du skal sætte dig ind i primært er python, hvilket er meget udbredt inden for en række grene af programmering, og ikke blot web-udvikling. Dette skulle gøre "bar of entry" lavere for flere. 
+Web appen er bygget som en Django web app. Det er et framework hvor du som udvikler primært arbejder i python, og bruger python scripts server side til at håndtere databasen og servere html. Det gør at det programmeringssprog du skal sætte dig ind i primært er python, hvilket er meget udbredt inden for en række grene af programmering, og ikke blot web-udvikling. Dette skulle gøre "bar of entry" lavere for flere.
 
-Vil du læse mere om Django?: 
+Vil du læse mere om Django?:
 https://docs.djangoproject.com/en/5.2/
 
 
-Skal du bare have installeret Django og komme igang?: 
+Skal du bare have installeret Django og komme igang?:
 https://docs.djangoproject.com/en/5.2/intro/install/
 
 
-## Opsætning
-> OBS! Det antages at du allerede har Python samt Git gørende på din maskine
+## 🧩 Miljøvariabler (.env-filer)
 
-Først kloner du git repository
-```bash 
-git clone https://github.com/FDF-SKS/bookingsystem
+Projektet bruger tre forskellige opsætninger, og de styres af variablen `ENVIRONMENT`:
+
+| `ENVIRONMENT` | Database | Email | Redis | Webserver | Bruges til |
+|---------------|----------|-------|-------|-----------|------------|
+| `dev`         | SQLite (`src/db.sqlite3`) | printes i terminalen | ikke nødvendig (Celery kører inline) | `runserver` | Lokal udvikling på din egen maskine |
+| `staging`     | Postgres i container | Amazon SES | påkrævet | gunicorn (den lokale `docker-compose.staging.yaml` kører dog `runserver`) | Test af Docker-opsætning / staging-server |
+| `production`  | Postgres i container | Amazon SES | påkrævet | gunicorn | Den rigtige server |
+
+Der findes to skabeloner i repoet. Begge indeholder **kun dummy-værdier** og må gerne ligge offentligt på GitHub:
+
+| Fil | Kopiér til | Indhold |
+|-----|------------|---------|
+| `.env.example` | `.env` | Lokal udvikling (`ENVIRONMENT=dev`) |
+| `.env.staging.example` | `.env.staging` | Docker-staging (`ENVIRONMENT=staging`) |
+
+> ⚠️ `.env` og `.env.staging` er listet i `.gitignore`. De må aldrig committes, og de må ikke indeholde de samme nøgler som produktionen.
+
+Skal du bruge en anden værdi end dummy-værdierne, f.eks. en rigtig `DJANGO_SECRET_KEY`, kan du generere en med:
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(50))"
 ```
-Så hopper vi ind i det ny hentede repository
+
+
+## Opsætning (lokal udvikling)
+> OBS! Det antages at du allerede har Python samt Git kørende på din maskine.
+
+### 1. Klon repository
+```bash
+git clone https://github.com/FDF-SKS/bookingsystem
+cd bookingsystem
+```
+
+### 2. Opret virtual environment
+
+**macOS / Linux:**
 ```bash
 cd bookingsystem
 ```
 Django kører på Python, så for at sikre at vi har de rigtige pakker installeret, så laver vi et virtual environment. 
 ```bash 
 python -m venv venv
+venv\Scripts\activate.bat
 ```
 
-herefter skal der laves et virtuelt enviroment som vi kan køre python med diverse pakker afgrænset i
-**Mac/Linux:**
-```bash 
-source venv/bin/activate
+> Får du i PowerShell fejlen *"running scripts is disabled on this system"*, kør da én gang:
+> `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned`
+
+Når det virker, står der `(venv)` foran din prompt. Så skal alle `python`- og `pip`-kommandoer herunder køres i det aktiverede environment.
+
+### 3. Installer afhængigheder
+
+**macOS / Linux:**
+```bash
+pip install -r src/requirements.txt
 ```
-**Windows (PowerShell):**
+
+**Windows (PowerShell eller cmd):**
 ```powershell
-venv\Scripts\activate
+pip install -r src/requirements.txt
 ```
-herefter skal vi have sat enviroment variabler op. lav derfor en `.env` fil baseret på `.env.example` og tilpas værdierne:
 
-**Mac/Linux:**
+### 4. Opret din `.env`-fil
+
+**macOS / Linux:**
 ```bash
 cp .env.example .env
-nano .env  # eller brug din foretrukne editor
+nano .env          # eller brug din foretrukne editor
 ```
 
 **Windows (PowerShell):**
 ```powershell
 Copy-Item .env.example .env
-notepad .env  # eller åbn i VS Code med: code .env
+notepad .env       # eller åbn i VS Code med: code .env
 ```
 
-**Vigtige .env variable:**
+**Windows (cmd / Kommandoprompt):**
+```bat
+copy .env.example .env
+notepad .env
+```
 
-| Variable              | Log level  | Database | Beskrivelse |
-|-----------------------|------------|----------|----------|
-| `ENVIRONMENT=dev`     | Debug      | sqlite3    | Til Django direkte - giver fuld log output og kører uden Redis |
-| `ENVIRONMENT=staging` | Warning    | postgres13 | Til Django pakket ind i en Docker container|
+Filen skal have `ENVIRONMENT=dev`, når du kører Django direkte på din maskine. Så bruges SQLite, emails printes i terminalen, og du behøver hverken Postgres eller Redis.
 
+### 5. Kør database-migreringer
 
-
-Vi navigerer ind i mappen "src"
-
-```bash 
+Gå ind i `src`-mappen (samme kommando på alle platforme):
+```bash
 cd src
 ```
 
-Herefter installerer vi alle afhængigheder
-```bash 
-pip install -r requirements.txt
-```
-
-
-Nu er vores virtual enviroment klar til at køre vores Django side. Næste skridt er at få django til at køre de seneste database migreringer, så databasen er ajour.
-
-```bash 
+**macOS / Linux:**
+```bash
 python manage.py migrate
 ```
-Hvis det er første gang der migreres, skal vi oprætte en superbruger for at få adgang til Django admin delen. Brugernavn og password kan derefer bruges til at logge ind på booking siden
-```bash 
+
+**Windows (PowerShell eller cmd):**
+```powershell
+python manage.py migrate
+```
+
+Hvis det er første gang der migreres, skal du oprette en superbruger for at få adgang til Django admin. Email og password kan bagefter bruges til at logge ind på booking-siden:
+```bash
 python manage.py createsuperuser
 ```
-Herefter er der kun tilbage at starte serveren
-```bash 
+
+### 6. Start udviklingsserveren
+
+**macOS / Linux:**
+```bash
 python manage.py runserver
 ```
+
+**Windows (PowerShell eller cmd):**
+```powershell
+python manage.py runserver
+```
+
 Du skulle gerne få en meddelelse i terminalen der ligner den her:
-```bash 
-(venv) \Sti\til\dit\repository\booking-docker\src python manage.py runserver
+```bash
 Watching for file changes with StatReloader
 Performing system checks...
 
 System check identified no issues (0 silenced).
-February 12, 2026 - 20:38:09
 Django version 5.2.10, using settings 'core.settings'
 Starting development server at http://127.0.0.1:8000/
-Quit the server with CTRL-BREAK.
-
-WARNING: This is a development server. Do not use it in a production setting. Use a production WSGI or ASGI server instead.
-For more information on production servers see: https://docs.djangoproject.com/en/5.2/howto/deployment/
-
+Quit the server with CTRL-C.
 ```
-Nu skulle gerne være oppe og køre, og kunne logge ind med din superbruger på booking siden - den er desværre helt tom, så nu kan du gå igang med at fylde den med dummy data.
+
+Nu skulle siden gerne være oppe på `http://127.0.0.1:8000`, og du kan logge ind med din superbruger. Den er desværre helt tom, så nu kan du gå igang med at fylde den med dummy data.
+
+> 🔑 Login foregår med **email** – ikke brugernavn. Passkeys og engangskoder via email er også understøttet, og kan sættes op under kontoindstillingerne.
+
+
+## ✅ Tests
+
+Testene kører fra `src`-mappen:
+
+**macOS / Linux:**
+```bash
+cd src
+python manage.py test
+```
+
+**Windows (PowerShell eller cmd):**
+```powershell
+cd src
+python manage.py test
+```
+
+GitHub Actions-workflowet **Django Tests** (`.github/workflows/django.yml`) kører automatisk `manage.py check`, `makemigrations --check` og hele testsuiten ved hvert push og hver pull request. En PR kan ikke merges hvis testene fejler.
 
 
 ## 🚀 Sådan kører du projektet
 
 ### 1. Lokal Udvikling
-Bedst til hurtige UI/UX ændringer og test af logik.
+Bedst til hurtige UI/UX ændringer og test af logik. Følg opsætningen ovenfor, og kør derefter:
 
-**Naviger til src mappen:**
+**macOS / Linux:**
 ```bash
 cd src
-```
-
-**Installer dependencies:**
-```bash
-pip install -r requirements.txt
-```
-
-**Kør database migrationer:**
-```bash
-python manage.py migrate
-```
-
-**Start udviklingsserveren:**
-```bash
 python manage.py runserver
 ```
 
-Applikationen er nu tilgængelig på `http://localhost:8000`
+**Windows (PowerShell eller cmd):**
+```powershell
+cd src
+python manage.py runserver
+```
+
+Applikationen er nu tilgængelig på `http://localhost:8000`.
 
 ---
 
 ### 2. Staging (Docker)
-At teste på din maskine er fint nok. Vi bruger docker til at teste hvordan det virker på noget der er sat op som produktions serveren, og minder mere om den.
-> OBS: for at komme videre, skal du have sat Docker op. [Kom igang med Docker](https://www.docker.com/get-started/)
+At teste på din maskine er fint nok. Vi bruger Docker til at teste hvordan det virker på noget der er sat op som produktionsserveren, og som minder mere om den.
+> OBS: For at komme videre skal du have Docker Desktop installeret og kørende. [Kom igang med Docker](https://www.docker.com/get-started/)
 
-**Start staging miljøet:**
+Staging bruger en **separat** env-fil, så den ikke overskriver din lokale `.env`.
+
+**macOS / Linux:**
 ```bash
-docker compose -f docker-compose.yaml -f docker-compose.staging.yaml --env-file .env.staging up -d --build
+cp .env.staging.example .env.staging
+chmod 600 .env.staging
+docker compose -f docker-compose.staging.yaml --env-file .env.staging up -d --build
 ```
 
-**Kør database migrationer:**
-```bash
-docker compose exec web python manage.py createsuperuser
+**Windows (PowerShell):**
+```powershell
+Copy-Item .env.staging.example .env.staging
+docker compose -f docker-compose.staging.yaml --env-file .env.staging up -d --build
 ```
+
+**Windows (cmd / Kommandoprompt):**
+```bat
+copy .env.staging.example .env.staging
+docker compose -f docker-compose.staging.yaml --env-file .env.staging up -d --build
+```
+
+Første gang du starter miljøet, skal du oprette en superbruger i containeren:
+
+**macOS / Linux:**
+```bash
+docker compose -f docker-compose.staging.yaml --env-file .env.staging exec web python manage.py createsuperuser
+```
+
+**Windows (PowerShell eller cmd):**
+```powershell
+docker compose -f docker-compose.staging.yaml --env-file .env.staging exec web python manage.py createsuperuser
+```
+
+Staging-miljøet er tilgængeligt på `http://localhost:8001`. Email-nøglerne i `.env.staging.example` er bevidst ugyldige, så staging kan ikke sende rigtige emails.
 
 ---
 
 ## 🚢 Deployment til Produktion (Hetzner)
 
-### Trin A: Fra din lokale maskine
-Byg og push det nyeste Docker image til Docker Hub.
+### Trin A: Byg og push Docker-imaget fra din lokale maskine
 
-**Byg Docker image:**
+Imaget skal bygges til serverens arkitektur (`linux/amd64`). På en Apple Silicon-mac (M1/M2/M3) er dette ekstra vigtigt, ellers crasher containeren med `exec format error`.
+
+**macOS / Linux:**
 ```bash
-docker build -t mglavind/booking-app:latest .
+docker login -u mglavind
+docker buildx build --platform linux/amd64 -f dockerfile -t mglavind/booking-app:latest --push .
 ```
 
-**Push til Docker Hub:**
-```bash
-docker push mglavind/booking-app:latest
+**Windows (PowerShell eller cmd):**
+```powershell
+docker login -u mglavind
+docker buildx build --platform linux/amd64 -f dockerfile -t mglavind/booking-app:latest --push .
 ```
 
----
+Har du ikke Docker Hub-adgang, kan du i stedet bygge lokalt uden `--push` og få imaget overført på anden vis.
 
-### Trin B: På Hetzner serveren
-Kør automatiseringsskriptet for at hente det nye image og opdatere det live site.
+### Trin B: Udrulning på serveren
 
-**Kør deployment script:**
+Udrulningen sker automatisk: `.github/workflows/hetzner.yml` logger på serveren via SSH ved hvert push til `main` og kører
+
+1. `docker compose pull web` – henter det nyeste image fra Docker Hub
+2. `docker compose up -d` – genstarter containere uden nedetid
+3. `python manage.py migrate --noinput` – opdaterer databaseskemaet
+4. `python manage.py collectstatic --noinput` – indsamler statiske filer (essentielt for **Unfold** admin-temaet)
+5. `docker image prune -f` – rydder op i gamle images
+
+Vil du deploye manuelt, kan du gøre det samme på serveren:
+
+**macOS / Linux (via SSH):**
 ```bash
-./deploy.sh
+ssh root@<server-ip>
+cd /root/booking-system
+docker compose pull web
+docker compose up -d
+docker compose exec -T web python manage.py migrate --noinput
+docker compose exec -T web python manage.py collectstatic --noinput
 ```
 
----
+**Windows (PowerShell):**
+```powershell
+ssh root@<server-ip>
+cd /root/booking-system
+docker compose pull web
+docker compose up -d
+docker compose exec -T web python manage.py migrate --noinput
+docker compose exec -T web python manage.py collectstatic --noinput
+```
 
-## 📝 deploy.sh Scriptet
-
-`deploy.sh` scriptet på Hetzner serveren automatiserer følgende:
-
-1. **Henter** det nyeste Docker image fra Docker Hub
-2. **Genstarter** containers uden manuel konfiguration
-3. **Migrerer** database schema automatisk
-4. **Indsamler** statiske filer (essentielt for **Unfold** admin temaet)
-5. **Håndterer** tilladelser for `./static` og `./media` mapperne
-6. **Genindlæser** Nginx for at sikre nye assets serveres med det samme
+> 🔐 Huskeseddel: produktionens `.env` ligger **kun** på serveren. Den er ikke i repoet og må ikke kopieres til din lokale maskine eller til staging.
 
 ---
 
@@ -213,12 +308,17 @@ docker compose restart
 
 ### Database Backup
 
-**Opret backup af databasen:**
+**macOS / Linux:**
 ```bash
-docker compose exec db pg_dump -U mglavind production_db > backups/db_backup_$(date +%F).sql
+docker compose exec -T db sh -c 'pg_dump -U "$DATABASE_USERNAME" "$DATABASE_NAME"' > db_backup_$(date +%F).sql
 ```
 
-Dette opretter en backup fil med dagens dato i filnavnet (f.eks. `db_backup_2026-02-12.sql`)
+**Windows (PowerShell):**
+```powershell
+docker compose exec -T db sh -c 'pg_dump -U "$DATABASE_USERNAME" "$DATABASE_NAME"' > db_backup_$(Get-Date -Format yyyy-MM-dd).sql
+```
+
+Dette opretter en backup-fil med dagens dato i filnavnet (f.eks. `db_backup_2026-02-12.sql`).
 
 ---
 
@@ -226,7 +326,7 @@ Dette opretter en backup fil med dagens dato i filnavnet (f.eks. `db_backup_2026
 
 Emails sendes via Celery (`worker`-servicen) og Amazon SES (`django-ses`). Status følges under Admin > Emails.
 
-**Miljøvariabler (`.env` / `.env.staging`):**
+**Miljøvariabler (`.env.staging.example` viser formatet):**
 ```
 SITE_URL=https://booking.markusglavind.dk
 DEFAULT_FROM_EMAIL=<verificeret afsender i SES>
