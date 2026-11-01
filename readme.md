@@ -22,7 +22,7 @@ git clone https://github.com/FDF-SKS/bookingsystem
 ```
 Så hopper vi ind i det ny hentede repository
 ```bash
-cd booking-system
+cd bookingsystem
 ```
 Django kører på Python, så for at sikre at vi har de rigtige pakker installeret, så laver vi et virtual environment. 
 ```bash 
