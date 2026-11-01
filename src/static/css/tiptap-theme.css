@@ -1,0 +1,59 @@
+.django-tiptap {
+    --tiptap-height: 420px;
+    --tiptap-font: var(--bs-body-font-family, inherit);
+    --tiptap-fg: var(--bs-body-color, #212529);
+    --tiptap-bg: var(--bs-body-bg, #ffffff);
+    --tiptap-border: var(--bs-border-color, #dee2e6);
+    --tiptap-radius: 6px;
+    --tiptap-toolbar-bg: var(--bs-tertiary-bg, #f8f9fa);
+    --tiptap-btn-fg: var(--bs-body-color, #212529);
+    --tiptap-btn-hover-bg: var(--bs-secondary-bg, #e9ecef);
+    --tiptap-btn-active-bg: rgba(var(--bs-primary-rgb, 0, 50, 85), 0.14);
+    --tiptap-btn-active-fg: var(--bs-primary, #003255);
+    --tiptap-accent: var(--bs-primary, #003255);
+}
+
+html:not([data-bs-theme]) .django-tiptap {
+    --tiptap-fg: #1f2937;
+    --tiptap-bg: #ffffff;
+    --tiptap-border: #d1d5db;
+    --tiptap-toolbar-bg: #f9fafb;
+    --tiptap-btn-fg: #374151;
+    --tiptap-btn-hover-bg: #e5e7eb;
+    --tiptap-btn-active-bg: #fff0eb;
+    --tiptap-btn-active-fg: #bd3500;
+    --tiptap-accent: #ff733c;
+}
+
+html.dark .django-tiptap {
+    --tiptap-fg: #f3f4f6;
+    --tiptap-bg: #111827;
+    --tiptap-border: #374151;
+    --tiptap-toolbar-bg: #1f2937;
+    --tiptap-btn-fg: #e5e7eb;
+    --tiptap-btn-hover-bg: #374151;
+    --tiptap-btn-active-bg: #49352f;
+    --tiptap-btn-active-fg: #ffab8a;
+    --tiptap-accent: #ff733c;
+}
+
+.django-tiptap__content ul > li::marker {
+    content: "- ";
+}
+
+.django-tiptap__content ul {
+    list-style-type: disc;
+    padding-inline-start: 1.5rem;
+}
+
+.tjanse-description :is(h1, h2) {
+    font-size: 1.25rem;
+}
+
+.tjanse-description :is(h3, h4) {
+    font-size: 1.125rem;
+}
+
+.tjanse-description :is(h5, h6) {
+    font-size: 1rem;
+}

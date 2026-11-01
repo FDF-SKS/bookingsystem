@@ -44,10 +44,12 @@ ENV PYTHONUNBUFFERED=1
 USER django-user
 
 # Final Prep
-EXPOSE 8000 
+EXPOSE 8000
 
-# Make entry file executable
-RUN chmod +x /app/entrypoint.sh
+# Gør entrypoint kørbar og fjern evt. CRLF (Windows-checkout).
+# Uden CRLF-fjernelsen fejler exec med "no such file or directory", fordi
+# shebang'en bliver "#!/bin/bash\r".
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 # Use ENTRYPOINT so the script always runs, and CMD for default arguments
 ENTRYPOINT ["/app/entrypoint.sh"]

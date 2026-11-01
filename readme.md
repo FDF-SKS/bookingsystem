@@ -20,7 +20,7 @@ Projektet bruger tre forskellige opsætninger, og de styres af variablen `ENVIRO
 | `ENVIRONMENT` | Database | Email | Redis | Webserver | Bruges til |
 |---------------|----------|-------|-------|-----------|------------|
 | `dev`         | SQLite (`src/db.sqlite3`) | printes i terminalen | ikke nødvendig (Celery kører inline) | `runserver` | Lokal udvikling på din egen maskine |
-| `staging`     | Postgres i container | Amazon SES | påkrævet | gunicorn (den lokale `docker-compose.staging.yaml` kører dog `runserver`) | Test af Docker-opsætning / staging-server |
+| `staging`     | Postgres i container | Amazon SES | påkrævet | gunicorn | Test af Docker-opsætning / staging-server |
 | `production`  | Postgres i container | Amazon SES | påkrævet | gunicorn | Den rigtige server |
 
 Der findes to skabeloner i repoet. Begge indeholder **kun dummy-værdier** og må gerne ligge offentligt på GitHub:
@@ -186,6 +186,12 @@ Staging-miljøet er tilgængeligt på `http://localhost:8001`. Email-nøglerne i
 > 🧯 **Fejlfinding:** Får du `Database is uninitialized and superuser password is not specified`, mangler der en database-adgangskode i `.env.staging`. Postgres læser `POSTGRES_PASSWORD`/`POSTGRES_USER`/`POSTGRES_DB`, og de sættes i `docker-compose.staging.yaml` ud fra `DATABASE_PASSWORD`/`DATABASE_USERNAME`/`DATABASE_NAME`. Kontrollér at `DATABASE_PASSWORD` er udfyldt, og start igen. Er containeren allerede startet halvt op, kan du rydde staging-volumet (sletter kun staging-data) med:
 > ```bash
 > docker compose -f docker-compose.staging.yaml --env-file .env.staging down -v
+> ```
+
+> 🧯 **Fejlfinding (Windows):** Fejler `web` med `exec /app/entrypoint.sh: no such file or directory`, skyldes det næsten altid CRLF-linieskift i en Windows-checkout – shebang'en bliver `#!/bin/bash\r`. Repoet har en `.gitattributes`, der tvinger LF, og `dockerfile` fjerner desuden eventuelle `\r` ved build. Kør derfor en **rebuild** af imaget:
+> ```bash
+> docker compose -f docker-compose.staging.yaml --env-file .env.staging build --no-cache web
+> docker compose -f docker-compose.staging.yaml --env-file .env.staging up -d
 > ```
 
 ---
