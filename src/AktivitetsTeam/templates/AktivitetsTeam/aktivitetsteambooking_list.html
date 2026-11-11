@@ -47,7 +47,7 @@
                     {% for b in row.bookings %}
                         <div class="booking-box status-{{ b.status|lower }}" 
                              style="--level: {{ b.level }}; left: calc({{ b.left_val }} * {{ hour_width }}px); width: calc({{ b.width_val }} * {{ hour_width }}px);"
-                             data-bs-toggle="tooltip" data-bs-html="true" title="{{ b.hover_content|safe }}"
+                             data-bs-toggle="tooltip" title="{{ b.hover_content }}"
                              onclick="location.href='{% url 'AktivitetsTeam_AktivitetsTeamBooking_detail' pk=b.id %}'">
                             <span class="px-1">{{ b.team_name }}</span>
                         </div>
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 2. Variables
     const hourWidth = parseInt("{{ hour_width }}") || 40;
-    const timelineStart = new Date("{{ timeline_start_iso|safe }}");
+    const timelineStart = new Date("{{ timeline_start_iso|escapejs }}");
     const controls = document.getElementById('timeline-controls');
     const summary = document.getElementById('selection-summary');
     const confirmBtn = document.getElementById('confirm-selection');

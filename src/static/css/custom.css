@@ -653,3 +653,9 @@ a:hover {
     z-index: 2;
     background-color: var(--bs-body-bg);
 }
+
+/* Preserve line breaks in Bootstrap tooltips that contain multi-line plain text. */
+.tooltip-inner {
+    white-space: pre-line;
+    text-align: left;
+}

@@ -460,23 +460,9 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Get CSRF token from cookie (more reliable than DOM search)
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-    
-    const csrfToken = getCookie('csrftoken');
+    // Read the CSRF token from a meta tag instead of the cookie so the
+    // cookie can be marked HttpOnly.
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
     
     // ============ GROUP BY CHANGE ============
     document.getElementById('groupBySelect').addEventListener('change', function() {

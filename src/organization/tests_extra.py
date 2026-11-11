@@ -121,7 +121,7 @@ class SendTeamEmbedTests(TestCase):
         team = models.Team.objects.create(
             name="Hooked",
             short_name="H",
-            discord_webhook_url="https://discord.test/hook",
+            discord_webhook_url="https://discord.com/api/webhooks/hook",
             discord_topic_thread_id="42",
         )
         post.return_value = mock.Mock(status_code=204)
@@ -138,7 +138,7 @@ class SendTeamEmbedTests(TestCase):
         team = models.Team.objects.create(
             name="Stale",
             short_name="ST",
-            discord_webhook_url="https://discord.test/hook",
+            discord_webhook_url="https://discord.com/api/webhooks/hook",
             discord_topic_thread_id="42",
         )
         post.return_value = mock.Mock(status_code=404, text="gone")

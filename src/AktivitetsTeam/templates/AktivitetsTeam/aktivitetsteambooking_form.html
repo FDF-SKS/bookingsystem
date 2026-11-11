@@ -114,6 +114,7 @@
         </div>
 
         {{ object_dict|json_script:"object_json" }}
+        {{ existing_bookings|json_script:"existing-bookings" }}
     </form>
 </div>
 
@@ -121,7 +122,8 @@
     // 1. TIMELINE LOGIC
     document.addEventListener('DOMContentLoaded', function() {
         const timelineStart = new Date("{{ timeline_start_iso }}");
-        const existingBookings = JSON.parse('{{ existing_bookings_json|safe }}');
+        const existingBookingsEl = document.getElementById('existing-bookings');
+        const existingBookings = existingBookingsEl ? JSON.parse(existingBookingsEl.textContent || '[]') : [];
         const hourWidth = 40;
 
         const itemSelect = document.querySelector('[name="item"]');

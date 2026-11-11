@@ -87,7 +87,7 @@
                     <div class="bg-light p-3 rounded">
                         <div class="detail-label">Bemærkninger</div>
                         <div class="mt-2">
-                            {{ object.remarks|default:"<span class='text-muted italic'>Ingen bemærkninger tilføjet.</span>"|safe }}
+                            {% if object.remarks %}{{ object.remarks|linebreaksbr }}{% else %}<span class="text-muted italic">Ingen bemærkninger tilføjet.</span>{% endif %}
                         </div>
                     </div>
                 </div>

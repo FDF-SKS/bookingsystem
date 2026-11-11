@@ -21,7 +21,7 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        const tasks = {{ gantt_data_json|safe|default:"[]" }};
+        const tasks = [];
         
         // Grab the dates from Django (falling back to today if event not found)
         const eventStart = "{{ gantt_start|default:'' }}";

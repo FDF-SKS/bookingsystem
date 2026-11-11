@@ -460,7 +460,7 @@ class ButikkenOrderCreateView(LoginRequiredMixin, generic.CreateView):
             for it in ButikkenItem.objects.all()
         ]
         context['unit_map'] = {str(it.pk): (it.content_unit or '') for it in ButikkenItem.objects.all()}
-        context['initial_cart_json'] = json.dumps([])
+        context['initial_cart'] = []
         return context
 
 
@@ -521,7 +521,7 @@ class ButikkenOrderUpdateView(LoginRequiredMixin, generic.UpdateView):
         initial_cart = []
         for b in context['bookings']:
             initial_cart.append({'id': str(b.item.pk), 'name': b.item.name, 'qty': int(b.quantity), 'unit': b.unit})
-        context['initial_cart_json'] = json.dumps(initial_cart)
+        context['initial_cart'] = initial_cart
         return context
 
     def form_valid(self, form):

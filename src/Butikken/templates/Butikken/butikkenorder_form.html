@@ -26,7 +26,7 @@
     <form id="cart-booking-form" method="post" action="" class="needs-validation">
         {% csrf_token %}
         <!-- Initial cart JSON embedded as application/json to avoid HTML-attribute escaping issues -->
-        <script id="initial-cart" type="application/json">{{ initial_cart_json|safe }}</script>
+        {{ initial_cart|json_script:"initial-cart" }}
         <!-- Hidden input used for form submission; populated from the in-memory cartItems state -->
         <input type="hidden" name="cart_items_json" id="cart_items_json" value='[]'>
 

@@ -5,6 +5,7 @@ import logging
 from datetime import datetime
 from datetime import timezone as dt_timezone
 from typing import Any
+from urllib.parse import urlparse
 
 import requests
 from django.db import transaction
@@ -16,6 +17,10 @@ logger = logging.getLogger(__name__)
 THREAD_NAME = "Bookingsystem & Tjanser"
 REQUEST_TIMEOUT = 10
 DEFAULT_RETRY_AFTER = 5.0
+
+# Discord webhooks lever kun på disse værter. Alt andet afvises for at
+# forhindre SSRF via en ondsindet webhook-URL.
+DISCORD_WEBHOOK_HOSTS = {"discord.com", "discordapp.com"}
 
 STATUS_COLORS: dict[str, int] = {
     "Approved": 0x2ECC71,
@@ -70,9 +75,21 @@ def build_embed(
     return embed
 
 
+def _is_safe_webhook_url(url: str) -> bool:
+    """Kun HTTPS-webhooks på Discord's egne domæner er tilladt."""
+    parsed = urlparse(url)
+    return parsed.scheme == "https" and parsed.hostname in DISCORD_WEBHOOK_HOSTS
+
+
 def _post(url: str, payload: dict[str, Any], params: dict[str, str]) -> requests.Response:
     """Send til webhook og oversæt rate-limits og 5xx til exceptions."""
-    response = requests.post(url, json=payload, params=params, timeout=REQUEST_TIMEOUT)
+    response = requests.post(
+        url,
+        json=payload,
+        params=params,
+        timeout=REQUEST_TIMEOUT,
+        allow_redirects=False,
+    )
     if response.status_code == 429:
         try:
             retry_after = float(response.json().get("retry_after", DEFAULT_RETRY_AFTER))
@@ -132,6 +149,10 @@ def send_team_embed(team_id: int, embed: dict[str, Any], username: str | None = 
     ).first()
     if team is None or not team.discord_webhook_url:
         logger.info("Team %s har ingen Discord webhook; springer over", team_id)
+        return False
+
+    if not _is_safe_webhook_url(team.discord_webhook_url):
+        logger.error("Team %s har en ugyldig Discord webhook-URL", team_id)
         return False
 
     payload: dict[str, Any] = {"embeds": [embed]}

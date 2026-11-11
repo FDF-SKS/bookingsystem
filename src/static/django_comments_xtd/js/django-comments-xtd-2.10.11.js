@@ -1,6 +1,24 @@
 (function (React, ReactDOM, django, remarkable) {
   'use strict';
 
+  function safeRedirect(url) {
+    // Only navigate to same-origin paths to prevent `javascript:` and
+    // external URLs from being used as redirect targets.
+    if (url.indexOf('/') === 0 || url.indexOf(window.location.origin) === 0) {
+      window.location.href = url;
+    } else {
+      window.location.href = '/';
+    }
+  }
+
+  function safeFetch(url, options) {
+    // Only fetch same-origin paths to prevent SSRF-style requests.
+    if (url.indexOf('/') === 0 || url.indexOf(window.location.origin) === 0) {
+      return fetch(url, options);
+    }
+    return Promise.reject(new Error('Refusing to fetch non-same-origin URL'));
+  }
+
   function _arrayLikeToArray(r, a) {
     (null == a || a > r.length) && (a = r.length);
     for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e];
@@ -1020,7 +1038,7 @@
     var handle_reply_click = function handle_reply_click(event) {
       event.preventDefault();
       if (who_can_post === 'users' && !is_authenticated) {
-        return window.location.href = "".concat(login_url, "?next=").concat(reply_url.replace('0', data.id));
+        return safeRedirect("".concat(login_url, "?next=").concat(reply_url.replace('0', data.id)));
       }
       setLstate(_objectSpread2(_objectSpread2({}, lstate), {}, {
         is_reply_form_visible: !lstate.is_reply_form_visible
@@ -1087,7 +1105,7 @@
         return post_feedback('like');
       }
       var redirect = "".concat(login_url, "?next=").concat(like_url.replace('0', data.id));
-      return window.location.href = redirect;
+      return safeRedirect(redirect);
     };
     var action_dislike = function action_dislike(event) {
       event.preventDefault();
@@ -1095,7 +1113,7 @@
         return post_feedback('dislike');
       }
       var redirect = "".concat(login_url, "?next=").concat(dislike_url.replace('0', data.id));
-      return window.location.href = redirect;
+      return safeRedirect(redirect);
     };
     React.useEffect(function () {
       var qs_tooltip = '[data-bs-toggle="tooltip"]';
@@ -1203,13 +1221,9 @@
       }
       var _id = "only-users-can-post-".concat(html_id_suffix);
       var elem = document.getElementById(_id);
-      return elem ? /*#__PURE__*/React.createElement("div", {
-        dangerouslySetInnerHTML: {
-          __html: elem.innerHTML
-        }
-      }) : /*#__PURE__*/React.createElement("h5", {
+      return /*#__PURE__*/React.createElement("h5", {
         className: "mt-4 mb-5 text-center text-info"
-      }, django.gettext("Only registered users can post comments."));
+      }, elem ? elem.textContent.trim() : django.gettext("Only registered users can post comments."));
     }
     return /*#__PURE__*/React.createElement("h4", {
       className: "mt-4 mb-5 text-center text-secondary"
@@ -1248,7 +1262,7 @@
       cids = state.cids,
       tree = state.tree;
     var load_comments = function load_comments() {
-      var _promise = fetch(list_url);
+      var _promise = safeFetch(list_url);
       _promise.then(function (response) {
         return response.json();
       }).then(function (data) {
@@ -1261,7 +1275,7 @@
       });
     };
     var load_count = function load_count() {
-      var _promise = fetch(count_url);
+      var _promise = safeFetch(count_url);
       _promise.then(function (response) {
         return response.json();
       }).then(function (data) {

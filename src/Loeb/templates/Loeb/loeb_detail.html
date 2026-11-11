@@ -211,7 +211,6 @@
 <script>
 (function () {
     const markers = [];
-    const tasks = {{ tasks|safe }};
     const map = L.map('loeb-map').setView([56.113991, 9.665244], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,

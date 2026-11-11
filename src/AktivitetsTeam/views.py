@@ -1,11 +1,9 @@
-import json
 import logging
 from datetime import datetime, time, timedelta
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.serializers.json import DjangoJSONEncoder
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -131,7 +129,7 @@ class TimelinePreviewMixin:
 
         return {
             'timeline_start_iso': t_start.isoformat(),
-            'existing_bookings_json': json.dumps(bookings_data, cls=DjangoJSONEncoder),
+            'existing_bookings': bookings_data,
             'hour_width': 30,
         }
     
@@ -215,13 +213,12 @@ class AktivitetsTeamBookingListView(LoginRequiredMixin, generic.ListView):
                     'level': level,
                     'status': b.status.lower() if b.status else 'pending',
                     'hover_content': (
-                        f"<strong>{item.name}</strong><br>"
-                        f"<strong>Fra:</strong> {b.start_date.strftime('%d. %b')} kl {b.start_time.strftime('%H:%M')}<br>"
-                        f"<strong>Til:</strong> {b.end_date.strftime('%d. %b')} kl {b.end_time.strftime('%H:%M')}<br>"
-                        f"<strong>Team:</strong> {b.team.name if b.team else 'N/A'}<br>"
-                        f"<strong>Status:</strong> {b.status.capitalize()}<br>"
-                        f"<hr class='my-1'>"
-                        f"<em>{b.remarks or 'Ingen beskrivelse'}</em>"
+                        f"{item.name}\n"
+                        f"Fra: {b.start_date.strftime('%d. %b')} kl {b.start_time.strftime('%H:%M')}\n"
+                        f"Til: {b.end_date.strftime('%d. %b')} kl {b.end_time.strftime('%H:%M')}\n"
+                        f"Team: {b.team.name if b.team else 'N/A'}\n"
+                        f"Status: {b.status.capitalize()}\n"
+                        f"{b.remarks or 'Ingen beskrivelse'}"
                     )
                 })
             

@@ -8,6 +8,42 @@ from constance import config
 from django.shortcuts import render
 
 
+class ContentSecurityPolicyMiddleware:
+    """
+    Set a Content-Security-Policy header on every response.
+
+    The policy is intentionally permissive about inline scripts/styles
+    (``'unsafe-inline'``) because the templates and third-party SDKs (Bootstrap,
+    Leaflet, Sleekplan, etc.) rely on them. External script/style sources are
+    still restricted to the exact hosts below, which blocks arbitrary
+    third-party script injection.
+    """
+
+    CSP_VALUE = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' "
+        "https://cdn.jsdelivr.net https://unpkg.com https://client.sleekplan.com; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
+        "img-src 'self' data: https://cdn.jsdelivr.net https://unpkg.com "
+        "https://*.tile.openstreetmap.org; "
+        "font-src 'self' data: https://cdn.jsdelivr.net https://unpkg.com; "
+        "connect-src 'self' https://client.sleekplan.com https://*.sleekplan.com; "
+        "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com "
+        "https://player.vimeo.com https://w.soundcloud.com; "
+        "object-src 'none'; "
+        "base-uri 'self'; "
+        "form-action 'self'"
+    )
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        response['Content-Security-Policy'] = self.CSP_VALUE
+        return response
+
+
 class AppFeatureGateMiddleware:
     """
     Middleware that enforces feature toggles by blocking access to disabled apps.

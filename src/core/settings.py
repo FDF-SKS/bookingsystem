@@ -156,6 +156,7 @@ SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'core.middleware.ContentSecurityPolicyMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -255,6 +256,7 @@ TEMPLATES = [
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
+                'django.template.context_processors.csrf',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.app_feature_toggles',
@@ -265,6 +267,19 @@ TEMPLATES = [
 
 # In settings.py
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Enable HTTP Strict Transport Security in production only. It must stay off in
+# dev/staging because those environments are also served over plain HTTP
+# (e.g. runserver on localhost), and an HSTS header there would force browsers
+# to use HTTPS for local development addresses.
+if ENVIRONMENT == 'production':
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    # Only send the session and CSRF cookies over HTTPS.
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SECURE = True
 
 # Logger den præcise årsag når CSRF-kontrollen fejler. Kun til serverloggen –
 # klienten får fortsat Djangos standard-403-side (se core/views.py).
