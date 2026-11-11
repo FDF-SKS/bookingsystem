@@ -145,3 +145,34 @@ class EmailAuthenticationTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertIn('_auth_user_id', self.client.session)
+
+
+class ProfileSecurityLinkTests(TestCase):
+    def test_own_profile_links_to_security_settings(self):
+        user = User.objects.create_user(
+            username='profile-user', email='profile@example.com', password='pw-12345-xyz',
+            first_name='Profile', last_name='User',
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse('organization_Volunteer_detail', args=[user.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'To-faktor-godkendelse')
+        self.assertContains(response, 'Administrer')
+
+    def test_other_users_profile_does_not_show_security_settings(self):
+        owner = User.objects.create_user(
+            username='profile-owner', email='owner@example.com', password='pw-12345-xyz',
+            first_name='Owner', last_name='User',
+        )
+        viewer = User.objects.create_user(
+            username='profile-viewer', email='viewer@example.com', password='pw-12345-xyz',
+            first_name='Viewer', last_name='User',
+        )
+        self.client.force_login(viewer)
+
+        response = self.client.get(reverse('organization_Volunteer_detail', args=[owner.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'To-faktor-godkendelse')

@@ -1,5 +1,12 @@
-/* Import Work Sans from Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap');
+/* Self-hosted Work Sans (Latin subset, variable weight axis 300–700) */
+@font-face {
+    font-family: 'Work Sans';
+    font-style: normal;
+    font-weight: 300 700;
+    font-display: swap;
+    src: url('../fonts/work-sans-latin.woff2') format('woff2');
+    unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 :root {
     /* Brand Colors */
@@ -63,6 +70,7 @@
     /* Slightly darker and cooler warm-grey background */
     --bs-body-bg: #23272b; /* less warm, slightly darker */
     --bs-body-color: #e9ecef;
+    --bs-muted: #9aa5ad; /* lighter muted so it keeps WCAG AA contrast on the dark bg */
 
     /* Swap primary/secondary in dark mode: orange becomes primary (headings, navbar, icons), navy becomes secondary */
     --bs-primary: #FF733C;
@@ -128,6 +136,7 @@ body {
 }
 
 .btn-secondary {
+    --bs-btn-color: #003255; /* navy text on the orange secondary background */
     --bs-btn-bg: var(--bs-secondary);
     --bs-btn-border-color: var(--bs-secondary);
     --bs-btn-hover-bg: #e65c2e; /* Darkened Secondary */
@@ -180,6 +189,9 @@ body {
 /* Text Utilities */
 .text-tertiary { color: var(--bs-tertiary) !important; }
 .text-grey { color: var(--bs-grey) !important; }
+/* Light-mode secondary (orange) is too light to use as text on white; use a
+   darker, readable orange instead. */
+.text-secondary { color: #c2410c !important; }
 
 /* Fix for Outline Buttons */
 .btn-outline-primary {
@@ -658,4 +670,40 @@ a:hover {
 .tooltip-inner {
     white-space: pre-line;
     text-align: left;
+}
+
+/* Dark-mode fixes for fixed-color Bootstrap utilities used across templates. */
+
+/* White surfaces become dark card surfaces so light body text stays readable. */
+[data-bs-theme="dark"] .bg-white {
+    background-color: var(--bs-card-bg) !important;
+    color: var(--bs-body-color) !important;
+    border-color: var(--bs-card-border) !important;
+}
+
+/* Body text that was hardcoded as "dark" follows the theme's body color. */
+[data-bs-theme="dark"] .text-dark {
+    color: var(--bs-body-color) !important;
+}
+
+/* Keep dark text on colored/status badges where a light background is intentional. */
+[data-bs-theme="dark"] .bg-warning.text-dark,
+[data-bs-theme="dark"] .bg-info.text-dark,
+[data-bs-theme="dark"] .badge.bg-warning.text-dark,
+[data-bs-theme="dark"] .badge.bg-info.text-dark {
+    color: #212529 !important;
+}
+
+/* Secondary (navy) is a background color in dark mode, not readable as text. */
+[data-bs-theme="dark"] .text-secondary {
+    color: var(--bs-tertiary) !important;
+}
+
+/* Dark mode swaps primary/secondary, so the button text color must swap too:
+   primary is now orange (needs navy text), secondary is now navy (needs white). */
+[data-bs-theme="dark"] .btn-primary {
+    --bs-btn-color: #003255;
+}
+[data-bs-theme="dark"] .btn-secondary {
+    --bs-btn-color: #ffffff;
 }

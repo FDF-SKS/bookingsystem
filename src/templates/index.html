@@ -9,9 +9,9 @@
         <p class="text-muted mb-3">Din kommende bookinger og aftaler</p>
     </div>
 
-    <div class="row g-3" style="display: flex; flex-wrap: wrap;">
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3">
         {% if config.APP_ENABLE_CONTACTS %}
-        <div class="col-12 col-sm-6 col-md-4" style="flex: 0 0 calc(20% - 0.6rem);">
+        <div class="col">
             <a href="{% url 'organization_Volunteer_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
                 <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
                     <div class="icon-box bg-primary text-white rounded-4 mb-2 mx-auto">
@@ -25,7 +25,7 @@
         {% endif %}
         
         {% if config.APP_ENABLE_BUTIKKEN %}
-        <div class="col-12 col-sm-6 col-md-4" style="flex: 0 0 calc(20% - 0.6rem);">
+        <div class="col">
             <a href="{% url 'Butikken_ButikkenOrder_create' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
                 <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
                     <div class="icon-box bg-info text-white rounded-4 mb-2 mx-auto">
@@ -39,7 +39,7 @@
         {% endif %}
 
         {% if config.APP_ENABLE_AKTIVITETSTEAM %}
-        <div class="col-12 col-sm-6 col-md-4" style="flex: 0 0 calc(20% - 0.6rem);">
+        <div class="col">
             <a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_create' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
                 <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
                     <div class="icon-box bg-success text-white rounded-4 mb-2 mx-auto">
@@ -53,7 +53,7 @@
         {% endif %}
 
         {% if config.APP_ENABLE_SJAK %}
-        <div class="col-12 col-sm-6 col-md-4" style="flex: 0 0 calc(20% - 0.6rem);">
+        <div class="col">
             <a href="{% url 'Sjak_SjakBooking_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
                 <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
                     <div class="icon-box bg-primary text-white rounded-4 mb-2 mx-auto">
@@ -67,7 +67,7 @@
         {% endif %}
 
         {% if config.APP_ENABLE_LOEB %}
-        <div class="col-12 col-sm-6 col-md-4" style="flex: 0 0 calc(20% - 0.6rem);">
+        <div class="col">
             {% if request.user.is_staff %}
                 <a href="{% url 'Loeb_Loeb_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
                     <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
@@ -93,7 +93,7 @@
         {% endif %}
 
         {% if config.APP_ENABLE_SOS %}
-        <div class="col-12 col-sm-6 col-md-4" style="flex: 0 0 calc(20% - 0.6rem);">
+        <div class="col">
             <a href="{% url 'SOS_SOSBooking_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
                 <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
                     <div class="icon-box bg-danger text-white rounded-4 mb-2 mx-auto">
@@ -107,7 +107,7 @@
         {% endif %}
 
         {% if config.APP_ENABLE_TEKNIK %}
-        <div class="col-12 col-sm-6 col-md-4" style="flex: 0 0 calc(20% - 0.6rem);">
+        <div class="col">
             <a href="{% url 'Teknik_TeknikBooking_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
                 <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
                     <div class="icon-box bg-warning text-white rounded-4 mb-2 mx-auto">
@@ -121,7 +121,7 @@
         {% endif %}
 
         {% if config.APP_ENABLE_FOTO %}
-        <div class="col-12 col-sm-6 col-md-4" style="flex: 0 0 calc(20% - 0.6rem);">
+        <div class="col">
             <a href="{% url 'Foto_FotoBooking_create' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
                 <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
                     <div class="icon-box bg-secondary text-white rounded-4 mb-2 mx-auto">
@@ -135,7 +135,7 @@
         {% endif %}
 
         {% if config.APP_ENABLE_LEGEAFTALER %}
-        <div class="col-12 col-sm-6 col-md-4" style="flex: 0 0 calc(20% - 0.6rem);">
+        <div class="col">
             <a href="{% url 'organization_VolunteerAppointment_create' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
                 <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
                     <div class="icon-box bg-danger text-white rounded-4 mb-2 mx-auto">
@@ -149,7 +149,7 @@
         {% endif %}
 
         {% if config.APP_ENABLE_DEPOT %}
-        <div class="col-12 col-sm-6 col-md-4" style="flex: 0 0 calc(20% - 0.6rem);">
+        <div class="col">
             <a href="{% url 'Depot_DepotItem_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
                 <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
                     <div class="icon-box bg-info text-white rounded-4 mb-2 mx-auto">

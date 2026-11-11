@@ -209,10 +209,15 @@ Staging-miljøet er tilgængeligt på `http://localhost:8001`. Email-nøglerne i
 ## 🚢 Deployment til Produktion (Hetzner)
 
 ### Trin A: Byg og push Docker-imaget fra din lokale maskine
-Imaget skal bygges til serverens arkitektur (`linux/amd64`). På en Apple Silicon-mac (M1/M2/M3) er dette ekstra vigtigt, ellers crasher containeren med `exec format error`. Kommandoen er den samme på alle platforme:
+Imaget skal bygges til serverens arkitektur. Serveren er en Hetzner ARM-maskine (`linux/arm64`). På en Apple Silicon-mac (M1/M2/M3) er `linux/arm64` default; på en Intel-mac skal `--platform linux/arm64` angives eksplicit. Kommandoen er:
 ```bash
 docker login -u mglavind
-docker buildx build --platform linux/amd64 -f dockerfile -t mglavind/booking-app:latest --push .
+docker buildx build --platform linux/arm64 -f dockerfile -t mglavind/booking-app:latest --push .
+```
+
+Vil du bygge ét image, der virker på både ARM og Intel, kan du bruge multi-arch (kræver buildx med emulation til amd64):
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 -f dockerfile -t mglavind/booking-app:latest --push .
 ```
 
 Har du ikke Docker Hub-adgang, kan du i stedet bygge lokalt uden `--push` og få imaget overført på anden vis.
