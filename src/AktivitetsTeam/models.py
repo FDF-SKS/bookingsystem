@@ -1,3 +1,5 @@
+from datetime import time
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
@@ -124,9 +126,9 @@ class AktivitetsTeamBooking(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending')
     remarks = models.TextField(blank=True, max_length=2000)  # Set an appropriate max length
     start_date = models.DateField(default=timezone.now)
-    start_time = models.TimeField(default=timezone.now)
+    start_time = models.TimeField(default=time(8, 0))
     end_date = models.DateField(default=timezone.now)
-    end_time = models.TimeField(default=timezone.now)
+    end_time = models.TimeField(default=time(17, 0))
     created = models.DateTimeField(auto_now_add=True, editable=False)
     last_updated = models.DateTimeField(auto_now=True, editable=False)
     remarks_internal = models.TextField(blank=True, max_length=500)  # Set an appropriate max length
@@ -196,19 +198,6 @@ class AktivitetsTeamBooking(models.Model):
             )
             if start_datetime >= end_datetime:
                 raise ValidationError(_("Start time must be before end time."))
-    
-    def save(self, *args, **kwargs):
-        if self.start_date and self.start_time:
-            self.start = timezone.make_aware(
-                timezone.datetime.combine(self.start_date, self.start_time),
-                timezone.get_default_timezone()
-            )
-        if self.end_date and self.end_time:
-            self.end = timezone.make_aware(
-                timezone.datetime.combine(self.end_date, self.end_time),
-                timezone.get_default_timezone()
-            )
-        super().save(*args, **kwargs)
     
     def approve_bookings(self, request, queryset):
         queryset.update(status="Approved")

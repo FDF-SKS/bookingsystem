@@ -19,10 +19,13 @@ def html_to_text(html):
     return re.sub(r'\n{3,}', '\n\n', '\n'.join(lines)).strip()
 
 
-def send_email(subject, template, context, recipients, attachments=None):
+def send_email(subject, template, context, recipients, attachments=None, *, sensitive=False):
     """Render template once, log one row per recipient, and queue delivery.
 
     attachments: iterable of {"filename", "mimetype", "content"} with raw bytes/str content.
+    sensitive: when True the rendered body (which may contain a reset link or
+        one-time code) is handed to the delivery task but never persisted on
+        the log row, so secrets do not sit in the database in plaintext.
     Returns the created EmailMessageLog rows.
     """
     from .tasks import deliver_email
@@ -47,6 +50,7 @@ def send_email(subject, template, context, recipients, attachments=None):
             'content': base64.b64encode(content).decode('ascii'),
         })
 
+    store_body = not sensitive
     logs = []
     seen = set()
     for address in recipients:
@@ -60,12 +64,16 @@ def send_email(subject, template, context, recipients, attachments=None):
             recipient=address,
             subject=subject,
             template=template,
-            body_html='' if suppressed else html,
-            body_text='' if suppressed else text,
-            attachments=[] if suppressed else encoded,
+            body_html='' if suppressed or not store_body else html,
+            body_text='' if suppressed or not store_body else text,
+            attachments=[] if suppressed or not store_body else encoded,
             status=EmailMessageLog.Status.SUPPRESSED if suppressed else EmailMessageLog.Status.QUEUED,
         )
         logs.append(log)
         if not suppressed:
-            transaction.on_commit(lambda pk=log.pk: deliver_email.delay(pk))
+            # The body is passed explicitly so sensitive mails can be delivered
+            # (and retried) without ever being written to the log row.
+            transaction.on_commit(
+                lambda pk=log.pk, h=html, t=text, a=encoded: deliver_email.delay(pk, h, t, a)
+            )
     return logs

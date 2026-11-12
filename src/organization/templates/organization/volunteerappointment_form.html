@@ -5,7 +5,7 @@
 
 {% block content %}
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<link href="{% static 'vendor/tom-select/tom-select.bootstrap5.min.css' %}" rel="stylesheet">
 <style>
     /* Small adjustments for Tom Select styling inside bootstrap_field wrappers */
     .input-group > .ts-wrapper { flex: 1 1 auto; width: 1%; }
@@ -89,7 +89,7 @@
     </div>
 </div>
 
-            <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+            <script src="{% static 'vendor/tom-select/tom-select.complete.min.js' %}"></script>
             <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const receiverSelect = document.querySelector('select[name="receiver"]');

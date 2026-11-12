@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<link href="{% static 'vendor/tom-select/tom-select.bootstrap5.min.css' %}" rel="stylesheet">
 <style>
     /* Image Preview Styling in Form */
     .form-image-preview {
@@ -137,7 +137,7 @@
     </form>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script src="{% static 'vendor/tom-select/tom-select.complete.min.js' %}"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const itemSelect = document.querySelector('select[name="item"]');

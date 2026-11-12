@@ -100,7 +100,7 @@
                                class="btn btn-sm btn-outline-secondary">
                                 <i class="bi bi-download"></i> Hent QR-billede
                             </a>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText('{{ qr_url }}'); this.textContent='Kopieret!'; setTimeout(() => this.textContent='Kopiér link', 1500);">
+                            <button type="button" id="copy-qr-link" class="btn btn-sm btn-outline-secondary" data-copy-url="{{ qr_url }}">
                                 Kopiér link
                             </button>
                         </div>
@@ -117,4 +117,17 @@
         </div>
     </div>
 </div>
+{% if qr_url %}
+<script>
+    (function () {
+        var copyButton = document.getElementById('copy-qr-link');
+        if (!copyButton) return;
+        copyButton.addEventListener('click', function () {
+            navigator.clipboard.writeText(copyButton.dataset.copyUrl);
+            copyButton.textContent = 'Kopieret!';
+            setTimeout(function () { copyButton.textContent = 'Kopiér link'; }, 1500);
+        });
+    })();
+</script>
+{% endif %}
 {% endblock %}

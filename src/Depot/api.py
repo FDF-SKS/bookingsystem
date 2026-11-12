@@ -1,13 +1,14 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
-from .models import DepotBooking, DepotItem
-from .serializers import DepotBookingSerializer, DepotItemSerializer
 from organization.permissions import (
     IsStaffOrReadOnly,
     IsStaffOrTeamMember,
     TeamScopedMixin,
 )
+
+from .models import DepotBooking, DepotItem
+from .serializers import DepotBookingSerializer, DepotItemSerializer
 
 
 class DepotItemViewSet(viewsets.ModelViewSet):

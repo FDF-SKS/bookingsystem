@@ -1,7 +1,25 @@
 
+from datetime import date, datetime, time
+
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+
+
+def _naive(dt):
+    """Normalise aware datetimes so overlap comparisons are like-for-like."""
+    if isinstance(dt, datetime) and timezone.is_aware(dt):
+        return timezone.make_naive(dt, timezone.get_current_timezone())
+    return dt
+
+
+def _as_datetime(value, *, end=False):
+    """Coerce dates to datetimes so callers may pass either type."""
+    if isinstance(value, datetime):
+        return _naive(value)
+    if isinstance(value, date):
+        return datetime.combine(value, time.max if end else time.min)
+    return value
 
 
 class DepotLocation(models.Model):
@@ -80,19 +98,28 @@ class DepotItem(models.Model):
             start_datetime = timezone.now()
         if end_datetime is None:
             end_datetime = timezone.now()
+        start_datetime = _as_datetime(start_datetime, end=False)
+        end_datetime = _as_datetime(end_datetime, end=True)
         
-        start_date = start_datetime.date() if hasattr(start_datetime, 'date') else start_datetime
-        end_date = end_datetime.date() if hasattr(end_datetime, 'date') else end_datetime
+        start_date = start_datetime.date()
+        end_date = end_datetime.date()
         
-        # Get all approved and pending bookings that overlap with the time range
-        overlapping_bookings = DepotBooking.objects.filter(
+        # Broad date filter narrows the candidates; the exact overlap check uses
+        # the full date+time window so same-day bookings only clash when their
+        # times actually overlap.
+        candidates = DepotBooking.objects.filter(
             item=self,
             status__in=['Approved', 'Pending'],
             start_date__lte=end_date,
             end_date__gte=start_date
         )
         
-        reserved_quantity = sum(booking.quantity for booking in overlapping_bookings)
+        reserved_quantity = sum(
+            booking.quantity
+            for booking in candidates
+            if datetime.combine(booking.start_date, booking.start_time) < end_datetime
+            and datetime.combine(booking.end_date, booking.end_time) > start_datetime
+        )
         available = self.quantity - reserved_quantity
         
         return max(0, available)
@@ -119,9 +146,9 @@ class DepotBooking(models.Model):
     # Fields
     quantity = models.IntegerField(default=1, help_text="Quantity requested")
     start_date = models.DateField(verbose_name='Start date')
-    start_time = models.TimeField(verbose_name='Start time', default='08:00')
+    start_time = models.TimeField(verbose_name='Start time', default=time(8, 0))
     end_date = models.DateField(verbose_name='End date')
-    end_time = models.TimeField(verbose_name='End time', default='17:00')
+    end_time = models.TimeField(verbose_name='End time', default=time(17, 0))
     
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending', db_index=True)
     remarks = models.TextField(blank=True, help_text="Booking remarks")
@@ -151,14 +178,20 @@ class DepotBooking(models.Model):
 
     def is_overbooked(self):
         """Check if this booking exceeds available quantity."""
-        # For current booking, add back its own quantity to check against other bookings
+        start = _naive(datetime.combine(self.start_date, self.start_time))
+        end = _naive(datetime.combine(self.end_date, self.end_time))
+
+        candidates = DepotBooking.objects.filter(
+            item=self.item,
+            status__in=['Approved', 'Pending'],
+            start_date__lte=self.end_date,
+            end_date__gte=self.start_date
+        ).exclude(pk=self.pk)
+
         current_reserved = sum(
-            b.quantity for b in DepotBooking.objects.filter(
-                item=self.item,
-                status__in=['Approved', 'Pending'],
-                start_date__lte=self.end_date,
-                end_date__gte=self.start_date
-            ).exclude(pk=self.pk)
+            b.quantity for b in candidates
+            if datetime.combine(b.start_date, b.start_time) < end
+            and datetime.combine(b.end_date, b.end_time) > start
         )
         return self.quantity > (self.item.quantity - current_reserved)
 

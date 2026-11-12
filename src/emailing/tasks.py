@@ -32,12 +32,21 @@ def _is_transient(exc):
 
 
 @shared_task(bind=True, max_retries=MAX_RETRIES, acks_late=True)
-def deliver_email(self, log_id):
+def deliver_email(self, log_id, body_html=None, body_text=None, attachments=None):
     Status = EmailMessageLog.Status
     try:
         log = EmailMessageLog.objects.get(pk=log_id)
     except EmailMessageLog.DoesNotExist:
         return
+
+    # Use explicitly supplied content when provided; otherwise fall back to the
+    # body stored on the log row (older queued rows / direct calls).
+    if body_html is None:
+        body_html = log.body_html
+    if body_text is None:
+        body_text = log.body_text
+    if attachments is None:
+        attachments = log.attachments
 
     # Only queued/sending rows are claimable; a redelivered task for a sent row is a no-op.
     claimed = EmailMessageLog.objects.filter(
@@ -52,13 +61,13 @@ def deliver_email(self, log_id):
 
     message = EmailMultiAlternatives(
         subject=log.subject,
-        body=log.body_text,
+        body=body_text,
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[log.recipient],
         connection=get_connection(),
     )
-    message.attach_alternative(log.body_html, 'text/html')
-    for att in log.attachments:
+    message.attach_alternative(body_html, 'text/html')
+    for att in attachments:
         message.attach(att['filename'], base64.b64decode(att['content']), att['mimetype'])
 
     try:

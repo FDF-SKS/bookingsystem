@@ -128,10 +128,37 @@ class Volunteer(AbstractUser):
         return team_id in self.team_ids
     
     def save(self, *args, **kwargs):
-        # Generate thumbnail when image is uploaded
+        old_image_name = old_thumb_name = None
+        if self.pk:
+            old = type(self).objects.filter(pk=self.pk).only(
+                'image', 'image_thumbnail'
+            ).first()
+            if old:
+                old_image_name = old.image.name if old.image else None
+                old_thumb_name = old.image_thumbnail.name if old.image_thumbnail else None
+
+        current_image_name = self.image.name if self.image else None
+        image_changed = old_image_name != current_image_name
+
+        if image_changed:
+            # The stored thumbnail belongs to the previous image.
+            self.image_thumbnail = None
+
+        # Generate a thumbnail when a new image is uploaded.
         if self.image and not self.image_thumbnail:
             self._create_thumbnail()
+
         super().save(*args, **kwargs)
+
+        # Remove files belonging to a replaced/removed image so repeated
+        # profile-image changes cannot grow media storage without bound.
+        if image_changed:
+            image_storage = type(self)._meta.get_field('image').storage
+            thumb_storage = type(self)._meta.get_field('image_thumbnail').storage
+            if old_image_name:
+                image_storage.delete(old_image_name)
+            if old_thumb_name:
+                thumb_storage.delete(old_thumb_name)
     
     def _create_thumbnail(self):
         """Generate a thumbnail from the uploaded image (300x300px, optimized)"""

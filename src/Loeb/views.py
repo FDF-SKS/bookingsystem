@@ -372,7 +372,16 @@ def station_qr(request, qr_code):
     station = get_object_or_404(models.PhysicalStation, qr_code=qr_code)
     hold_id = request.session.get('loeb_hold_id')
 
-    if not hold_id:
+    hold = None
+    if hold_id:
+        hold = models.Hold.objects.filter(
+            pk=hold_id, is_active=True, loeb__is_active=True
+        ).first()
+        if hold is None:
+            request.session.pop('loeb_hold_id', None)
+            request.session.pop('loeb_id', None)
+
+    if hold is None:
         return render(request, 'Loeb/station_qr.html', {
             'station': station,
             'hold': None,
@@ -380,7 +389,6 @@ def station_qr(request, qr_code):
             'message': 'Bare ærgeligt - ingen post her',
         })
 
-    hold = get_object_or_404(models.Hold, pk=hold_id)
     task = models.Task.objects.filter(station=station, loeb=hold.loeb).order_by('order', 'title').first()
 
     if not task:
@@ -418,12 +426,14 @@ def station_qr(request, qr_code):
 
 
 def hold_login(request, loeb_pk):
-    loeb = get_object_or_404(models.Loeb, pk=loeb_pk)
+    loeb = get_object_or_404(models.Loeb, pk=loeb_pk, is_active=True)
     error = None
 
     if request.method == 'POST':
         pin_code = (request.POST.get('pin_code') or '').strip()
-        hold = models.Hold.objects.filter(loeb=loeb, pin_code=pin_code).first()
+        hold = models.Hold.objects.filter(
+            loeb=loeb, pin_code=pin_code, is_active=True
+        ).first()
 
         if hold:
             request.session['loeb_hold_id'] = hold.pk
@@ -439,13 +449,19 @@ def hold_login(request, loeb_pk):
 
 
 def hold_dashboard(request, loeb_pk):
-    loeb = get_object_or_404(models.Loeb, pk=loeb_pk)
+    loeb = get_object_or_404(models.Loeb, pk=loeb_pk, is_active=True)
     hold_id = request.session.get('loeb_hold_id')
 
     if not hold_id:
         return HttpResponseRedirect(reverse('Loeb_Hold_login', args=[loeb.pk]))
 
-    hold = get_object_or_404(models.Hold, pk=hold_id, loeb=loeb)
+    hold = models.Hold.objects.filter(pk=hold_id, loeb=loeb, is_active=True).first()
+    if hold is None:
+        # The hold (or its run) was deactivated after login; revoke the session.
+        request.session.pop('loeb_hold_id', None)
+        request.session.pop('loeb_id', None)
+        return HttpResponseRedirect(reverse('Loeb_Hold_login', args=[loeb.pk]))
+
     tasks = list(loeb.tasks.all().order_by('order', 'title'))
     task_rows = []
 

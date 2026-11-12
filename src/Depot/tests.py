@@ -68,6 +68,48 @@ class DepotItemTestCase(DepotTestMixin, TestCase):
         self.create_booking(quantity=25, status="Approved")
         self.assertEqual(self.item.available_quantity(self.start_date, self.end_date), 0)
 
+    def test_same_day_non_overlapping_bookings_do_not_reserve(self):
+        self.item.quantity = 1
+        self.item.save(update_fields=["quantity"])
+        DepotBooking.objects.create(
+            item=self.item,
+            team=self.team,
+            team_contact=self.volunteer,
+            quantity=1,
+            start_date=dt.date(2026, 1, 1),
+            start_time=dt.time(8, 0),
+            end_date=dt.date(2026, 1, 1),
+            end_time=dt.time(10, 0),
+            status="Approved",
+        )
+
+        available = self.item.available_quantity(
+            dt.datetime(2026, 1, 1, 14, 0),
+            dt.datetime(2026, 1, 1, 16, 0),
+        )
+        self.assertEqual(available, 1)
+
+    def test_same_day_overlapping_bookings_reserve(self):
+        self.item.quantity = 1
+        self.item.save(update_fields=["quantity"])
+        DepotBooking.objects.create(
+            item=self.item,
+            team=self.team,
+            team_contact=self.volunteer,
+            quantity=1,
+            start_date=dt.date(2026, 1, 1),
+            start_time=dt.time(8, 0),
+            end_date=dt.date(2026, 1, 1),
+            end_time=dt.time(10, 0),
+            status="Approved",
+        )
+
+        available = self.item.available_quantity(
+            dt.datetime(2026, 1, 1, 9, 0),
+            dt.datetime(2026, 1, 1, 11, 0),
+        )
+        self.assertEqual(available, 0)
+
 
 class DepotBookingTestCase(DepotTestMixin, TestCase):
     """Test cases for DepotBooking."""

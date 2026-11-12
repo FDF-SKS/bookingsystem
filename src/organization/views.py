@@ -20,9 +20,13 @@ from emailing.forms import BrandedPasswordResetForm
 
 from . import forms, models
 from .models import Team, TeamMembership
-from .permissions import StaffRequiredMixin
+from .permissions import StaffRequiredMixin, TeamQuerysetMixin
 
 User = get_user_model()
+
+# Hard cap on the width of the tjanse overview grid. Events with a longer
+# range are truncated to this many days to bound per-request work.
+MAX_OVERVIEW_DAYS = 60
 
 
 
@@ -249,6 +253,17 @@ class KeyDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
 
 
 
+class AppointmentQuerysetMixin:
+    """Restrict appointments to ones where the user is the requester or receiver."""
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.is_staff:
+            return qs
+        return qs.filter(Q(requester=user) | Q(receiver=user))
+
+
 class VolunteerAppointmentListView(LoginRequiredMixin, generic.ListView):
     model = models.VolunteerAppointment
     context_object_name = 'appointments'
@@ -278,7 +293,7 @@ class VolunteerAppointmentCreateView(LoginRequiredMixin, generic.CreateView):
         form.instance.status = 'pending'
         return super().form_valid(form)
 
-class VolunteerAppointmentDetailView(LoginRequiredMixin, generic.DetailView):
+class VolunteerAppointmentDetailView(AppointmentQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     model = models.VolunteerAppointment
     
     def get_context_data(self, **kwargs):
@@ -305,7 +320,7 @@ class VolunteerAppointmentDetailView(LoginRequiredMixin, generic.DetailView):
         
         return context
 
-class VolunteerAppointmentUpdateView(LoginRequiredMixin, generic.UpdateView):
+class VolunteerAppointmentUpdateView(AppointmentQuerysetMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.VolunteerAppointment
     form_class = forms.AppointmentForm
     # Fallback redirect if get_absolute_url isn't used
@@ -316,7 +331,7 @@ class VolunteerAppointmentUpdateView(LoginRequiredMixin, generic.UpdateView):
         kwargs['user'] = self.request.user
         return kwargs
 
-class VolunteerAppointmentDeleteView(LoginRequiredMixin, generic.DeleteView):
+class VolunteerAppointmentDeleteView(AppointmentQuerysetMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.VolunteerAppointment
     success_url = reverse_lazy("organization_VolunteerAppointment_list")
 
@@ -369,7 +384,7 @@ def appointment_comment_add(request, pk):
     return redirect('organization_VolunteerAppointment_detail', pk=pk)
 
 
-class TjanseOwnershipDetailView(LoginRequiredMixin, generic.DetailView):
+class TjanseOwnershipDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     """Single tjanse assignment: description, swap request and reassignment history."""
     model = models.TjanseOwnership
     context_object_name = 'ownership'
@@ -430,20 +445,29 @@ class TjanseOverviewView(LoginRequiredMixin, generic.TemplateView):
         context = super().get_context_data(**kwargs)
         events = models.Event.objects.filter(is_active=True).order_by('start_date', 'name')
         event_id = self.request.GET.get('event')
-        selected_event = events.filter(pk=event_id).first() if event_id else events.first()
+        selected_event = None
+        if event_id:
+            try:
+                selected_event = events.filter(pk=int(event_id)).first()
+            except (TypeError, ValueError):
+                selected_event = None
+        else:
+            selected_event = events.first()
 
         days = []
         rows = []
         if selected_event:
+            total_days = (selected_event.end_date - selected_event.start_date).days + 1
+            day_count = max(0, min(total_days, MAX_OVERVIEW_DAYS))
             days = [
                 selected_event.start_date + timedelta(days=offset)
-                for offset in range((selected_event.end_date - selected_event.start_date).days + 1)
+                for offset in range(day_count)
             ]
             ownerships = models.TjanseOwnership.objects.filter(
                 event=selected_event,
-                due_date__gte=selected_event.start_date,
-                due_date__lte=selected_event.end_date,
-            ).select_related('team', 'tjanse').order_by('team__name')
+                due_date__gte=days[0],
+                due_date__lte=days[-1],
+            ).select_related('team', 'tjanse').order_by('team__name') if days else models.TjanseOwnership.objects.none()
             ownership_map = {}
             for ownership in ownerships:
                 ownership_map.setdefault((ownership.tjanse_id, ownership.due_date), []).append(ownership)

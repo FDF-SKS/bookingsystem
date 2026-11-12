@@ -6,7 +6,7 @@
 {% block title %}Butikken - Bestilling til Butikken{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<link href="{% static 'vendor/tom-select/tom-select.bootstrap5.min.css' %}" rel="stylesheet">
 {# Butikken component styles moved to src/static/css/custom.css #}
 {% endblock %}
 
@@ -142,7 +142,7 @@
     </form>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script src="{% static 'vendor/tom-select/tom-select.complete.min.js' %}"></script>
 {{ unit_map|json_script:"unit-data" }}
 {{ items_data|json_script:"items-data" }}
 
@@ -247,41 +247,97 @@
             cartTableBody.innerHTML = '';
             cartMobileList.innerHTML = '';
 
-                cartItems.forEach(item => {
+            cartItems.forEach(item => {
                 // Desktop Table Row
                 const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                    <td class="fw-bold text-body">${item.name}</td>
-                    <td>
-                        <input type="number" step="0.01" class="form-control form-control-sm qty-input" value="${item.qty}" min="0.01" onchange="updateQty('${item.id}', this.value)">
-                    </td>
-                    <td class="text-muted">${item.unit}</td>
-                    <td class="text-end">
-                        <button type="button" class="btn btn-link text-danger p-0" onclick="removeCartItem('${item.id}')">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                `;
+
+                const nameCell = document.createElement('td');
+                nameCell.className = 'fw-bold text-body';
+                nameCell.textContent = item.name;
+                tr.appendChild(nameCell);
+
+                const qtyCell = document.createElement('td');
+                const qtyInput = document.createElement('input');
+                qtyInput.type = 'number';
+                qtyInput.step = '0.01';
+                qtyInput.min = '0.01';
+                qtyInput.className = 'form-control form-control-sm qty-input';
+                qtyInput.value = item.qty;
+                qtyInput.addEventListener('change', () => window.updateQty(item.id, qtyInput.value));
+                qtyCell.appendChild(qtyInput);
+                tr.appendChild(qtyCell);
+
+                const unitCell = document.createElement('td');
+                unitCell.className = 'text-muted';
+                unitCell.textContent = item.unit;
+                tr.appendChild(unitCell);
+
+                const actionCell = document.createElement('td');
+                actionCell.className = 'text-end';
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.className = 'btn btn-link text-danger p-0';
+                const removeIcon = document.createElement('i');
+                removeIcon.className = 'bi bi-trash';
+                removeButton.appendChild(removeIcon);
+                removeButton.addEventListener('click', () => window.removeCartItem(item.id));
+                actionCell.appendChild(removeButton);
+                tr.appendChild(actionCell);
+
                 cartTableBody.appendChild(tr);
 
                 // Mobile Card Item
                 const card = document.createElement('div');
-                card.className = "card card-custom p-3 mb-3";
-                card.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="fw-bold text-body">${item.name}</span>
-                        <button type="button" class="btn btn-link text-danger p-0" onclick="removeCartItem('${item.id}')">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </div>
-                    <div class="d-flex align-items-center justify-content-between text-muted small">
-                        <span>Mængde:</span>
-                        <div class="d-flex align-items-center gap-2">
-                            <input type="number" step="0.01" class="form-control form-control-sm qty-input" value="${item.qty}" min="0.01" onchange="updateQty('${item.id}', this.value)">
-                            <span>Enhed: <strong>${item.unit}</strong></span>
-                        </div>
-                    </div>
-                `;
+                card.className = 'card card-custom p-3 mb-3';
+
+                const header = document.createElement('div');
+                header.className = 'd-flex justify-content-between align-items-center mb-2';
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'fw-bold text-body';
+                nameSpan.textContent = item.name;
+                header.appendChild(nameSpan);
+
+                const removeButtonMobile = document.createElement('button');
+                removeButtonMobile.type = 'button';
+                removeButtonMobile.className = 'btn btn-link text-danger p-0';
+                const removeIconMobile = document.createElement('i');
+                removeIconMobile.className = 'bi bi-trash';
+                removeButtonMobile.appendChild(removeIconMobile);
+                removeButtonMobile.addEventListener('click', () => window.removeCartItem(item.id));
+                header.appendChild(removeButtonMobile);
+
+                card.appendChild(header);
+
+                const bodyRow = document.createElement('div');
+                bodyRow.className = 'd-flex align-items-center justify-content-between text-muted small';
+
+                const qtyLabel = document.createElement('span');
+                qtyLabel.textContent = 'Mængde:';
+                bodyRow.appendChild(qtyLabel);
+
+                const qtyGroup = document.createElement('div');
+                qtyGroup.className = 'd-flex align-items-center gap-2';
+
+                const qtyInputMobile = document.createElement('input');
+                qtyInputMobile.type = 'number';
+                qtyInputMobile.step = '0.01';
+                qtyInputMobile.min = '0.01';
+                qtyInputMobile.className = 'form-control form-control-sm qty-input';
+                qtyInputMobile.value = item.qty;
+                qtyInputMobile.addEventListener('change', () => window.updateQty(item.id, qtyInputMobile.value));
+                qtyGroup.appendChild(qtyInputMobile);
+
+                const unitSpan = document.createElement('span');
+                unitSpan.append('Enhed: ');
+                const unitStrong = document.createElement('strong');
+                unitStrong.textContent = item.unit;
+                unitSpan.appendChild(unitStrong);
+                qtyGroup.appendChild(unitSpan);
+
+                bodyRow.appendChild(qtyGroup);
+                card.appendChild(bodyRow);
+
                 cartMobileList.appendChild(card);
             });
 

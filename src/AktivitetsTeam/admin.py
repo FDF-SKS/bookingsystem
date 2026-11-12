@@ -16,8 +16,7 @@ from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.admin import SimpleListFilter
 from django.http import HttpResponse
-from django.utils.html import format_html
-from django.utils.safestring import mark_safe
+from django.utils.html import format_html, format_html_join
 from import_export import resources
 from import_export.admin import ImportExportModelAdmin
 from unfold.admin import ModelAdmin, TabularInline
@@ -245,8 +244,9 @@ class AktivitetsTeamItemAdmin(AktivitetsTeamBaseAdmin):
     def image_preview(self, obj):
         """Vis forhåndsvisning af billede."""
         if obj.image:
-            return mark_safe(
-                f'<img src="{obj.image.url}" style="max-height: 200px; border-radius: 8px;" />'
+            return format_html(
+                '<img src="{}" style="max-height: 200px; border-radius: 8px;" />',
+                obj.image.url,
             )
         return "Intet billede"
 
@@ -343,12 +343,13 @@ class AktivitetsTeamBookingAdmin(AktivitetsTeamBaseAdmin):
         assigned = obj.assigned_aktivitetsteam.all()
         if not assigned.exists():
             return "Ingen frivillige tilknyttet endnu"
-        
-        html = "<ul style='margin: 10px 0;'>"
-        for volunteer in assigned:
-            html += f"<li>{volunteer.get_full_name()}</li>"
-        html += "</ul>"
-        return mark_safe(html)
+
+        items = format_html_join(
+            "",
+            "<li>{}</li>",
+            ((volunteer.get_full_name(),) for volunteer in assigned),
+        )
+        return format_html("<ul style='margin: 10px 0;'>{}</ul>", items)
 
     display_assigned.short_description = "Tilknyttede Frivillige"
 

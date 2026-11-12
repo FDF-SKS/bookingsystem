@@ -24,7 +24,10 @@ from organization.models import (
     Key,
     Team,
     TeamMembership,
+    Tjanse,
+    TjanseOwnership,
     Volunteer,
+    VolunteerAppointment,
 )
 from Sjak.models import SjakBooking, SjakItem, SjakItemType
 from SOS.forms import SOSBookingForm
@@ -77,6 +80,41 @@ class ViewAuthorizationTests(TestCase):
 
         # organization
         cls.key = Key.objects.create(name="Nøgle", number="1")
+
+        cls.other_user = Volunteer.objects.create_user(
+            username="other",
+            email="other@example.com",
+            password="pw-12345-xyz",
+        )
+        cls.third_user = Volunteer.objects.create_user(
+            username="third",
+            email="third@example.com",
+            password="pw-12345-xyz",
+        )
+        cls.other_appointment = VolunteerAppointment.objects.create(
+            requester=cls.other_user,
+            receiver=cls.third_user,
+            description="Skal ikke ses",
+        )
+        cls.event = Event.objects.create(
+            name="Event",
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 1, 2),
+            is_active=False,
+            deadline_sjak=date(2025, 12, 1),
+            deadline_teknik=date(2025, 12, 1),
+            deadline_mad=date(2025, 12, 1),
+            deadline_aktivitetsteam=date(2025, 12, 1),
+            deadline_foto=date(2025, 12, 1),
+            deadline_lokaler=date(2025, 12, 1),
+            deadline_sos=date(2025, 12, 1),
+        )
+        cls.tjanse = Tjanse.objects.create(title="Opvask")
+        cls.team_b_ownership = TjanseOwnership.objects.create(
+            tjanse=cls.tjanse,
+            event=cls.event,
+            team=cls.team_b,
+        )
 
         # SOS
         cls.sos_item = SOSItem.objects.create(name="SOS ting", description="x")
@@ -491,3 +529,170 @@ class ViewAuthorizationTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, "9999")
+
+    # -- Object-level IDOR: appointments and tjanse ownership -------------
+
+    def test_non_owner_cannot_read_appointment(self):
+        response = self.client.get(
+            reverse(
+                "organization_VolunteerAppointment_detail",
+                args=[self.other_appointment.pk],
+            )
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_non_owner_cannot_update_appointment(self):
+        response = self.client.get(
+            reverse(
+                "organization_VolunteerAppointment_update",
+                args=[self.other_appointment.pk],
+            )
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_non_owner_cannot_delete_appointment(self):
+        response = self.client.post(
+            reverse(
+                "organization_VolunteerAppointment_delete",
+                args=[self.other_appointment.pk],
+            )
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertTrue(
+            VolunteerAppointment.objects.filter(
+                pk=self.other_appointment.pk
+            ).exists()
+        )
+
+    def test_owner_can_read_own_appointment(self):
+        appointment = VolunteerAppointment.objects.create(
+            requester=self.user,
+            receiver=self.other_user,
+            description="Min aftale",
+        )
+        response = self.client.get(
+            reverse(
+                "organization_VolunteerAppointment_detail", args=[appointment.pk]
+            )
+        )
+        self.assertEqual(response.status_code, 200)
+
+    def test_non_member_cannot_read_other_team_tjanse_ownership(self):
+        response = self.client.get(
+            reverse(
+                "organization_TjanseOwnership_detail",
+                args=[self.team_b_ownership.pk],
+            )
+        )
+        self.assertEqual(response.status_code, 404)
+
+    # -- Global event controls are staff-only ------------------------------
+
+    def test_non_staff_cannot_update_event(self):
+        response = self.client.post(
+            reverse("organization_Event_update", args=[self.event.pk]),
+            {
+                "name": "Hijacked",
+                "start_date": "2026-01-01",
+                "end_date": "2026-01-02",
+                "is_active": "on",
+                "deadline_sjak": "2025-12-01",
+                "deadline_teknik": "2025-12-01",
+                "deadline_mad": "2025-12-01",
+                "deadline_aktivitetsteam": "2025-12-01",
+                "deadline_foto": "2025-12-01",
+                "deadline_lokaler": "2025-12-01",
+                "deadline_sos": "2025-12-01",
+            },
+        )
+        self.assertEqual(response.status_code, 403)
+        self.event.refresh_from_db()
+        self.assertEqual(self.event.name, "Event")
+        self.assertFalse(self.event.is_active)
+
+    def test_non_staff_cannot_delete_event(self):
+        response = self.client.post(
+            reverse("organization_Event_delete", args=[self.event.pk])
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(Event.objects.filter(pk=self.event.pk).exists())
+
+    # -- Deactivated runs/holds revoke participant access -------------------
+
+    def test_inactive_loeb_cannot_be_accessed_by_participants(self):
+        self.team_b_loeb.is_active = False
+        self.team_b_loeb.save(update_fields=["is_active"])
+        response = self.client.get(
+            reverse("Loeb_Hold_login", args=[self.team_b_loeb.pk])
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_inactive_hold_pin_is_rejected(self):
+        self.team_b_hold.is_active = False
+        self.team_b_hold.save(update_fields=["is_active"])
+        response = self.client.post(
+            reverse("Loeb_Hold_login", args=[self.team_b_loeb.pk]),
+            {"pin_code": "9999"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("loeb_hold_id", self.client.session)
+
+    def test_deactivated_hold_loses_dashboard_access(self):
+        session = self.client.session
+        session["loeb_hold_id"] = self.team_b_hold.pk
+        session["loeb_id"] = self.team_b_loeb.pk
+        session.save()
+
+        self.team_b_hold.is_active = False
+        self.team_b_hold.save(update_fields=["is_active"])
+
+        response = self.client.get(
+            reverse("Loeb_Hold_dashboard", args=[self.team_b_loeb.pk])
+        )
+        self.assertRedirects(
+            response, reverse("Loeb_Hold_login", args=[self.team_b_loeb.pk])
+        )
+        self.assertNotIn("loeb_hold_id", self.client.session)
+
+    def test_deactivated_hold_loses_station_qr_access(self):
+        station = PhysicalStation.objects.create(name="Station", qr_code="qr-1")
+        task = Task.objects.create(
+            loeb=self.team_b_loeb, station=station, title="QR opgave"
+        )
+        session = self.client.session
+        session["loeb_hold_id"] = self.team_b_hold.pk
+        session["loeb_id"] = self.team_b_loeb.pk
+        session.save()
+
+        self.team_b_hold.is_active = False
+        self.team_b_hold.save(update_fields=["is_active"])
+
+        response = self.client.get(reverse("Loeb_Station_qr", args=["qr-1"]))
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
+            TaskSubmission.objects.filter(hold=self.team_b_hold, task=task).exists()
+        )
+
+    def test_tjanse_overview_caps_rendered_days(self):
+        from organization.views import MAX_OVERVIEW_DAYS
+
+        long_event = Event.objects.create(
+            name="Langt event",
+            start_date=date(2026, 1, 1),
+            end_date=date(2026, 12, 31),
+            is_active=True,
+            deadline_sjak=date(2025, 12, 1),
+            deadline_teknik=date(2025, 12, 1),
+            deadline_mad=date(2025, 12, 1),
+            deadline_aktivitetsteam=date(2025, 12, 1),
+            deadline_foto=date(2025, 12, 1),
+            deadline_lokaler=date(2025, 12, 1),
+            deadline_sos=date(2025, 12, 1),
+        )
+
+        response = self.client.get(
+            reverse("organization_Tjanse_overview"), {"event": long_event.pk}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context["days"]), MAX_OVERVIEW_DAYS)

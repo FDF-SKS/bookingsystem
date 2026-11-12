@@ -172,8 +172,11 @@
                 referrerPolicy: 'origin'
             }).addTo(map);
 
+            var popupContent = document.createElement('b');
+            popupContent.textContent = "{{ object.item|escapejs }}";
+
             L.marker([lat, lng]).addTo(map)
-                .bindPopup('<b>{{ object.item|escapejs }}</b>')
+                .bindPopup(popupContent)
                 .openPopup();
 
             setTimeout(function() {

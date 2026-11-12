@@ -190,12 +190,22 @@
                 div.style.cssText = `left: ${offset * hourWidth}px; width: ${width * hourWidth}px; top: 40px; height: 44px; position: absolute;`;
                 
                 // NEW STRUCTURE: Uses the 'booking-content' wrapper for vertical centering
-                div.innerHTML = `
-                    <div class="booking-content" style="pointer-events:none;">
-                        <div class="booking-label">${statusText}</div>
-                        <div style="font-size: 0.75rem;">${b.team}</div>
-                    </div>`;
-                    
+                const content = document.createElement('div');
+                content.className = 'booking-content';
+                content.style.pointerEvents = 'none';
+
+                const label = document.createElement('div');
+                label.className = 'booking-label';
+                label.textContent = statusText;
+                content.appendChild(label);
+
+                const teamLine = document.createElement('div');
+                teamLine.style.fontSize = '0.75rem';
+                teamLine.textContent = b.team;
+                content.appendChild(teamLine);
+
+                div.appendChild(content);
+
                 div.title = `${b.team}: ${isApproved ? 'Godkendt' : 'Afventer'}`;
                 existingLayer.appendChild(div);
             });

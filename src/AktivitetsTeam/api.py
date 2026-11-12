@@ -1,11 +1,12 @@
 from rest_framework import viewsets
 
-from . import models, serializers
 from organization.permissions import (
     IsStaffOrReadOnly,
     IsStaffOrTeamMember,
     TeamScopedMixin,
 )
+
+from . import models, serializers
 
 
 class AktivitetsTeamItemViewSet(viewsets.ModelViewSet):

@@ -3,11 +3,16 @@ from datetime import time
 from django import forms
 from django.forms import TextInput
 from django.utils import timezone
+from PIL import Image, UnidentifiedImageError
 
 from organization.models import Event, Team, TeamMembership, Volunteer
 from organization.permissions import restrict_team_field
 from Sjak.models import SjakItem, SjakItemLocation, SjakItemType
-from utils.image_utils import process_image
+from utils.image_utils import (
+    MAX_IMAGE_PIXELS,
+    MAX_UPLOAD_BYTES,
+    process_image,
+)
 
 from . import models
 
@@ -156,6 +161,26 @@ class SjakItemForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["item_type"].queryset = SjakItemType.objects.all().order_by("name")
         self.fields["location"].queryset = SjakItemLocation.objects.all().order_by("name")
+
+    def clean_image(self):
+        image = self.cleaned_data.get("image")
+        if not image:
+            return image
+        if getattr(image, "size", 0) > MAX_UPLOAD_BYTES:
+            raise forms.ValidationError("Billedet må højst fylde 10 MB.")
+        try:
+            if hasattr(image, "seek"):
+                image.seek(0)
+            with Image.open(image) as img:
+                width, height = img.size
+        except (Image.DecompressionBombError, UnidentifiedImageError, OSError, ValueError) as exc:
+            raise forms.ValidationError("Upload et gyldigt billede.") from exc
+        finally:
+            if hasattr(image, "seek"):
+                image.seek(0)
+        if width * height > MAX_IMAGE_PIXELS:
+            raise forms.ValidationError("Billedets dimensioner er for store.")
+        return image
 
     def save(self, commit=True):
         instance = super().save(commit=False)

@@ -1,5 +1,10 @@
 """Tests for the Content-Security-Policy header middleware."""
+from pathlib import Path
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import reverse
 
 
 class ContentSecurityPolicyTests(TestCase):
@@ -25,3 +30,41 @@ class ContentSecurityPolicyTests(TestCase):
         self.assertIn('https://client.sleekplan.com', csp)
         self.assertIn('https://*.tile.openstreetmap.org', csp)
         self.assertIn('https://www.youtube.com', csp)
+
+
+class ThirdPartyScriptTests(TestCase):
+    """Executable third-party assets must be pinned and self-hosted."""
+
+    def _template_files(self):
+        base = Path(settings.BASE_DIR)
+        files = list((base / "templates").rglob("*.html"))
+        for templates_dir in base.glob("*/templates"):
+            files.extend(templates_dir.rglob("*.html"))
+        return files
+
+    def test_no_unpinned_cdn_script_versions(self):
+        offenders = [
+            str(path.relative_to(settings.BASE_DIR))
+            for path in self._template_files()
+            if "@latest" in path.read_text(encoding="utf-8")
+        ]
+        self.assertEqual(offenders, [])
+
+    def test_sleekplan_sdk_only_loaded_for_anonymous_pages(self):
+        anonymous = self.client.get(reverse("account_login"))
+        self.assertContains(anonymous, "client.sleekplan.com")
+
+        user = get_user_model().objects.create_user(
+            username="script-user",
+            email="script@example.com",
+            password="pw-12345-xyz",
+            first_name="Script",
+            last_name="User",
+        )
+        self.client.force_login(user)
+
+        authenticated = self.client.get(
+            reverse("organization_Volunteer_detail", args=[user.pk])
+        )
+        self.assertEqual(authenticated.status_code, 200)
+        self.assertNotContains(authenticated, "client.sleekplan.com")

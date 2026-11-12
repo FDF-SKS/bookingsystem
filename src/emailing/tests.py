@@ -61,6 +61,27 @@ class SendEmailTests(TestCase):
         self.assertEqual(log.attempts, 1)
         self.assertIn('https://x.test/reset/', log.body_text)
 
+    def test_sensitive_email_body_is_not_persisted(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            send_email('Hej', TEMPLATE, CTX, ['a@example.com'], sensitive=True)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn('https://x.test/reset/', mail.outbox[0].body)
+        log = EmailMessageLog.objects.get()
+        self.assertEqual(log.status, Status.SENT)
+        self.assertEqual((log.body_html, log.body_text, log.attachments), ('', '', []))
+
+    def test_sensitive_email_body_not_persisted_on_failure(self):
+        err = ClientError({'Error': {'Code': 'MessageRejected', 'Message': 'no'}}, 'SendRawEmail')
+        with (
+            mock.patch('django.core.mail.EmailMultiAlternatives.send', side_effect=err),
+            self.captureOnCommitCallbacks(execute=True),
+        ):
+            send_email('Hej', TEMPLATE, CTX, ['a@example.com'], sensitive=True)
+        log = EmailMessageLog.objects.get()
+        self.assertEqual(log.status, Status.FAILED)
+        self.assertEqual((log.body_html, log.body_text), ('', ''))
+        self.assertNotIn('https://x.test/reset/', log.body_text)
+
     def test_cleanup_wipes_old_failed_bodies_and_deletes_old_rows(self):
         from datetime import timedelta
 
@@ -106,6 +127,25 @@ class SendEmailTests(TestCase):
     def test_html_to_text_keeps_links_and_drops_style(self):
         text = html_to_text('<head><style>a{}</style></head><p>Hej <a href="https://x.test">her</a></p>')
         self.assertEqual(text, 'Hej her (https://x.test)')
+
+
+class BrandedPasswordResetFormTests(TestCase):
+    def test_reset_mail_is_sent_as_sensitive(self):
+        from .forms import BrandedPasswordResetForm
+
+        form = BrandedPasswordResetForm()
+        with (
+            mock.patch('emailing.forms.send_email') as send_email_mock,
+            mock.patch('emailing.forms.render_to_string', return_value='subject'),
+        ):
+            form.send_mail(
+                'organization/password_reset_subject.txt',
+                'emailing/password_reset.html',
+                {'uid': 'abc', 'token': 'tok', 'user': mock.Mock()},
+                None,
+                'a@example.com',
+            )
+        self.assertTrue(send_email_mock.call_args.kwargs.get('sensitive'))
 
 
 @override_settings(AWS_SES_VERIFY_EVENT_SIGNATURES=False)

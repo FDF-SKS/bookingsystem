@@ -6,7 +6,7 @@
 {% block title %}Butikken - Ny bestilling{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+<link href="{% static 'vendor/tom-select/tom-select.bootstrap5.min.css' %}" rel="stylesheet">
 {# TomSelect integration moved to src/static/css/custom.css #}
 {% endblock %}
 
@@ -104,7 +104,7 @@
     </form>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+<script src="{% static 'vendor/tom-select/tom-select.complete.min.js' %}"></script>
 {{ unit_map|json_script:"unit-data" }}
 
 <script>

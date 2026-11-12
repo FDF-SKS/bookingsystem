@@ -20,4 +20,5 @@ class BrandedPasswordResetForm(PasswordResetForm):
             email_template_name,
             {'user': context['user'], 'reset_url': f'{settings.SITE_URL}{reset_path}'},
             [to_email],
+            sensitive=True,
         )

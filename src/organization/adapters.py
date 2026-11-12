@@ -31,4 +31,5 @@ class AccountAdapter(DefaultAccountAdapter):
             'emailing/account_message.html',
             {'body': body, 'user': context.get('user')},
             [email],
+            sensitive=True,
         )
