@@ -10,8 +10,10 @@ class SOSBookingSerializer(serializers.ModelSerializer):
         fields = [
             "quantity",
             "created",
-            "end",
-            "start",
+            "start_date",
+            "start_time",
+            "end_date",
+            "end_time",
             "last_updated",
             "status",
             "team",

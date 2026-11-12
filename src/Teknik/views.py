@@ -8,6 +8,7 @@ from django.utils.decorators import method_decorator
 from django.views import generic
 
 from organization.models import Event
+from organization.permissions import StaffRequiredMixin, TeamQuerysetMixin
 
 from . import forms, models
 
@@ -31,7 +32,7 @@ def reject_booking(request, pk):
     return redirect(next_url)
 
 
-class TeknikBookingListView(LoginRequiredMixin, generic.ListView):
+class TeknikBookingListView(TeamQuerysetMixin, LoginRequiredMixin, generic.ListView):
     model = models.TeknikBooking
     form_class = forms.TeknikBookingForm
     context_object_name = 'object_list'
@@ -45,7 +46,7 @@ class TeknikBookingListView(LoginRequiredMixin, generic.ListView):
         """Return bookings but defer the `location` field to avoid map_location
         conversion errors when stored values are malformed in the DB.
         """
-        return models.TeknikBooking.objects.select_related(
+        return super().get_queryset().select_related(
             'team', 'team_contact', 'item'
         ).defer('location').order_by('item', 'start_date')
 
@@ -100,7 +101,7 @@ class TeknikBookingCreateView(LoginRequiredMixin, generic.CreateView):
             context['items'] = items
         return context
 
-class TeknikBookingDetailView(LoginRequiredMixin, generic.DetailView):
+class TeknikBookingDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     model = models.TeknikBooking
     form_class = forms.TeknikBookingForm
 
@@ -126,7 +127,7 @@ class TeknikBookingDetailView(LoginRequiredMixin, generic.DetailView):
         return context
 
 
-class TeknikBookingUpdateView(LoginRequiredMixin, generic.UpdateView):
+class TeknikBookingUpdateView(TeamQuerysetMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.TeknikBooking
     form_class = forms.TeknikBookingForm
     pk_url_kwarg = "pk"
@@ -172,7 +173,7 @@ class TeknikBookingUpdateView(LoginRequiredMixin, generic.UpdateView):
         context['object_dict'] = instance.to_dict()  # Ensure your model has a to_dict method
         return context
 
-class TeknikBookingDeleteView(LoginRequiredMixin, generic.DeleteView):
+class TeknikBookingDeleteView(TeamQuerysetMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.TeknikBooking
     success_url = reverse_lazy("Teknik_TeknikBooking_list")
 
@@ -191,7 +192,7 @@ class TeknikItemListView(LoginRequiredMixin, generic.ListView):
         return queryset
 
 
-class TeknikItemCreateView(LoginRequiredMixin, generic.CreateView):
+class TeknikItemCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.TeknikItem
     form_class = forms.TeknikItemForm
 
@@ -201,13 +202,13 @@ class TeknikItemDetailView(LoginRequiredMixin, generic.DetailView):
     form_class = forms.TeknikItemForm
 
 
-class TeknikItemUpdateView(LoginRequiredMixin, generic.UpdateView):
+class TeknikItemUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.TeknikItem
     form_class = forms.TeknikItemForm
     pk_url_kwarg = "pk"
 
 
-class TeknikItemDeleteView(LoginRequiredMixin, generic.DeleteView):
+class TeknikItemDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.TeknikItem
     success_url = reverse_lazy("Teknik_TeknikItem_list")
 
@@ -217,7 +218,7 @@ class TeknikTypeListView(LoginRequiredMixin, generic.ListView):
     form_class = forms.TeknikTypeForm
 
 
-class TeknikTypeCreateView(LoginRequiredMixin, generic.CreateView):
+class TeknikTypeCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.TeknikType
     form_class = forms.TeknikTypeForm
 
@@ -227,13 +228,13 @@ class TeknikTypeDetailView(LoginRequiredMixin, generic.DetailView):
     form_class = forms.TeknikTypeForm
 
 
-class TeknikTypeUpdateView(LoginRequiredMixin, generic.UpdateView):
+class TeknikTypeUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.TeknikType
     form_class = forms.TeknikTypeForm
     pk_url_kwarg = "pk"
 
 
-class TeknikTypeDeleteView(LoginRequiredMixin, generic.DeleteView):
+class TeknikTypeDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.TeknikType
     success_url = reverse_lazy("Teknik_TeknikType_list")
 

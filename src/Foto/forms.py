@@ -5,6 +5,7 @@ from django.forms.widgets import TextInput
 from django.utils import timezone
 
 from organization.models import Event, Team, TeamMembership, Volunteer
+from organization.permissions import restrict_team_field
 
 from . import models
 
@@ -79,6 +80,7 @@ class FotoBookingForm(forms.ModelForm):
         # 1. Queryset filtering and ordering
         self.fields["team"].queryset = Team.objects.all().order_by("name")
         self.fields["item"].queryset = models.FotoItem.objects.all().order_by("name")
+        restrict_team_field(user, self.fields["team"])
         
         # 2. User-specific defaults and contact filtering
         if user:

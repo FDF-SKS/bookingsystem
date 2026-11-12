@@ -8,6 +8,7 @@ from django.utils.decorators import method_decorator
 from django.views import generic
 
 from organization.models import Event
+from organization.permissions import StaffRequiredMixin, TeamQuerysetMixin
 
 from . import forms, models
 
@@ -23,7 +24,7 @@ class FotoItemListView(LoginRequiredMixin,generic.ListView):
 
 
 
-class FotoItemCreateView(LoginRequiredMixin,generic.CreateView):
+class FotoItemCreateView(LoginRequiredMixin, StaffRequiredMixin, generic.CreateView):
     model = models.FotoItem
     form_class = forms.FotoItemForm
 
@@ -47,12 +48,12 @@ class FotoItemCreateView(LoginRequiredMixin,generic.CreateView):
 
 
 
-class FotoItemDetailView(generic.DetailView):
+class FotoItemDetailView(LoginRequiredMixin, generic.DetailView):
     model = models.FotoItem
     form_class = forms.FotoItemForm
 
 
-class FotoItemUpdateView(generic.UpdateView):
+class FotoItemUpdateView(StaffRequiredMixin, generic.UpdateView):
     model = models.FotoItem
     form_class = forms.FotoItemForm
     pk_url_kwarg = "pk"
@@ -66,7 +67,7 @@ class FotoItemUpdateView(generic.UpdateView):
         return super().dispatch(request, *args, **kwargs)
 
 
-class FotoItemDeleteView(generic.DeleteView):
+class FotoItemDeleteView(LoginRequiredMixin, StaffRequiredMixin, generic.DeleteView):
     model = models.FotoItem
     success_url = reverse_lazy("Foto_FotoItem_list")
 
@@ -89,7 +90,7 @@ def reject_booking(request, pk):
     return redirect(next_url)
 
 
-class FotoBookingListView(LoginRequiredMixin, generic.ListView):
+class FotoBookingListView(LoginRequiredMixin, TeamQuerysetMixin, generic.ListView):
     model = models.FotoBooking
     form_class = forms.FotoBookingForm
 
@@ -127,7 +128,7 @@ class FotoBookingCreateView(LoginRequiredMixin, generic.CreateView):
         return redirect('Foto_FotoBooking_detail', pk=self.object.pk)
 
 
-class FotoBookingDetailView(LoginRequiredMixin, generic.DetailView):
+class FotoBookingDetailView(LoginRequiredMixin, TeamQuerysetMixin, generic.DetailView):
     model = models.FotoBooking
     form_class = forms.FotoBookingForm
     
@@ -147,7 +148,7 @@ class FotoBookingDetailView(LoginRequiredMixin, generic.DetailView):
         return context
 
 
-class FotoBookingUpdateView(LoginRequiredMixin, generic.UpdateView):
+class FotoBookingUpdateView(LoginRequiredMixin, TeamQuerysetMixin, generic.UpdateView):
     model = models.FotoBooking
     form_class = forms.FotoBookingForm
     pk_url_kwarg = "pk"
@@ -166,7 +167,7 @@ class FotoBookingUpdateView(LoginRequiredMixin, generic.UpdateView):
         return redirect('Foto_FotoBooking_detail', pk=self.object.pk)
 
 
-class FotoBookingDeleteView(LoginRequiredMixin, generic.DeleteView):
+class FotoBookingDeleteView(LoginRequiredMixin, TeamQuerysetMixin, generic.DeleteView):
     model = models.FotoBooking
     success_url = reverse_lazy("Foto_FotoBooking_list")
 

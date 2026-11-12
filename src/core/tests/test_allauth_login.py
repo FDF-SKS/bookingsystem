@@ -41,6 +41,22 @@ class AllauthLoginTests(TestCase):
             [('anna.new@example.com', True)],
         )
 
+    def test_old_verified_alias_removed_on_email_change(self):
+        # A verified secondary alias must not linger as a login identity.
+        EmailAddress.objects.create(
+            user=self.user, email='old-alias@example.com', verified=True, primary=False
+        )
+
+        self.user.email = 'Anna.Changed@Example.com'
+        self.user.save()
+
+        aliases = EmailAddress.objects.filter(user=self.user)
+        self.assertEqual(aliases.count(), 1)
+        address = aliases.get()
+        self.assertEqual(address.email, 'anna.changed@example.com')
+        self.assertTrue(address.primary)
+        self.assertTrue(address.verified)
+
     def test_legacy_urls_redirect(self):
         self.assertRedirects(
             self.client.get(reverse('login_user')), reverse('account_login'), fetch_redirect_response=False

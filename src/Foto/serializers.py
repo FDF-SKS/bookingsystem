@@ -17,8 +17,10 @@ class FotoBookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.FotoBooking
         fields = [
-            "start",
-            "end",
+            "start_date",
+            "start_time",
+            "end_date",
+            "end_time",
             "remarks",
             "created",
             "location",

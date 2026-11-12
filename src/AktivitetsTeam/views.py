@@ -11,6 +11,7 @@ from django.utils.decorators import method_decorator
 from django.views import generic
 
 from organization.models import Event
+from organization.permissions import StaffRequiredMixin, TeamQuerysetMixin
 
 from . import forms, models
 
@@ -41,7 +42,7 @@ class AktivitetsTeamItemListView(LoginRequiredMixin, generic.ListView):
         return context
 
 
-class AktivitetsTeamItemCreateView(LoginRequiredMixin, generic.CreateView):
+class AktivitetsTeamItemCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.AktivitetsTeamItem
     form_class = forms.AktivitetsTeamItemForm
 
@@ -51,13 +52,13 @@ class AktivitetsTeamItemDetailView(LoginRequiredMixin, generic.DetailView):
     form_class = forms.AktivitetsTeamItemForm
 
 
-class AktivitetsTeamItemUpdateView(LoginRequiredMixin, generic.UpdateView):
+class AktivitetsTeamItemUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.AktivitetsTeamItem
     form_class = forms.AktivitetsTeamItemForm
     pk_url_kwarg = "pk"
 
 
-class AktivitetsTeamItemDeleteView(LoginRequiredMixin, generic.DeleteView):
+class AktivitetsTeamItemDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.AktivitetsTeamItem
     success_url = reverse_lazy("AktivitetsTeam_AktivitetsTeamItem_list")
 
@@ -81,6 +82,7 @@ def reject_booking(request, pk):
     return redirect(next_url)
 
 
+@login_required
 def gantt_chart_view(request):
     bookings = models.AktivitetsTeamBooking.objects.all()
     tasks = [
@@ -301,7 +303,7 @@ class AktivitetsTeamBookingCreateView(LoginRequiredMixin, TimelinePreviewMixin, 
 
 
 
-class AktivitetsTeamBookingUpdateView(LoginRequiredMixin, TimelinePreviewMixin, generic.UpdateView):
+class AktivitetsTeamBookingUpdateView(TeamQuerysetMixin, LoginRequiredMixin, TimelinePreviewMixin, generic.UpdateView):
     model = models.AktivitetsTeamBooking
     form_class = forms.AktivitetsTeamBookingForm
     pk_url_kwarg = "pk"
@@ -344,7 +346,7 @@ class AktivitetsTeamBookingUpdateView(LoginRequiredMixin, TimelinePreviewMixin, 
 
 
 
-class AktivitetsTeamBookingDetailView(LoginRequiredMixin, generic.DetailView):
+class AktivitetsTeamBookingDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     model = models.AktivitetsTeamBooking
     form_class = forms.AktivitetsTeamBookingForm
 
@@ -371,7 +373,7 @@ class AktivitetsTeamBookingDetailView(LoginRequiredMixin, generic.DetailView):
 
 
 
-class AktivitetsTeamBookingDeleteView(LoginRequiredMixin, generic.DeleteView):
+class AktivitetsTeamBookingDeleteView(TeamQuerysetMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.AktivitetsTeamBooking
     success_url = reverse_lazy("AktivitetsTeam_AktivitetsTeamBooking_list")
 

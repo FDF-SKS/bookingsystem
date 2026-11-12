@@ -532,8 +532,15 @@ a:hover {
 /* Booking item hover (index) - light default and dark override */
 .booking-item:hover { background-color: #f5f5f5; }
 
-/* Dark mode specific hover adjustments to match dashboard card surface */
-[data-bs-theme="dark"] .list-group-item:hover { background-color: var(--dashboard-card-bg) !important; }
+/* Dark mode: give list items a visible card surface instead of blending into
+   the page background. Explicit bg-* utilities (e.g. bg-light empty state)
+   still win because they carry !important. */
+[data-bs-theme="dark"] .list-group-item {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+[data-bs-theme="dark"] .list-group-item:hover {
+    background-color: rgba(255, 255, 255, 0.10) !important;
+}
 [data-bs-theme="dark"] .booking-item:hover { background-color: var(--dashboard-card-bg) !important; }
 
 /* Small circular buttons */

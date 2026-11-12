@@ -1,4 +1,6 @@
 
+from datetime import time
+
 from django.db import models
 from django.urls import reverse
 
@@ -120,9 +122,9 @@ class SjakBooking(models.Model):
 
     # Fields
     start_date = models.DateField(verbose_name='Start dato')
-    start_time = models.TimeField(verbose_name='Start tidspunkt', default='12:01')
+    start_time = models.TimeField(verbose_name='Start tidspunkt', default=time(12, 1))
     end_date = models.DateField(verbose_name='Slut dato')
-    end_time = models.TimeField(verbose_name='Slut tidspunkt', default='12:01')
+    end_time = models.TimeField(verbose_name='Slut tidspunkt', default=time(12, 1))
     
     quantity = models.DecimalField(max_digits=10, decimal_places=2)
     created = models.DateTimeField(auto_now_add=True, editable=False)

@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from AktivitetsTeam.models import AktivitetsTeamItem
 from organization.models import Event, Team, TeamMembership, Volunteer
+from organization.permissions import restrict_team_field
 
 from . import models
 
@@ -82,6 +83,7 @@ class AktivitetsTeamBookingForm(forms.ModelForm):
         self.fields["item"].queryset = AktivitetsTeamItem.objects.filter(is_active=True).order_by("name")
         self.fields["team_contact"].queryset = Volunteer.objects.all().order_by("first_name")
         self.fields["team"].queryset = Team.objects.all().order_by("name")
+        restrict_team_field(user, self.fields["team"])
 
         # 2. Handle the "Specific Team" (ID 8) logic safely
         try:

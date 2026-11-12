@@ -7,8 +7,31 @@ from django.urls import reverse, reverse_lazy
 from django.views import generic
 
 from organization.models import TeamMembership
+from organization.permissions import StaffRequiredMixin, TeamQuerysetMixin, team_ids_for
 
 from . import forms, models
+
+
+class LoebChildScopedMixin:
+    """Scope a Loeb child (Task/Hold) to Loebs owned by the user's teams."""
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.is_staff:
+            return qs
+        return qs.filter(loeb__team_id__in=team_ids_for(user))
+
+
+class TaskSubmissionScopedMixin:
+    """Scope task submissions via the team of their hold's Loeb."""
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        user = self.request.user
+        if user.is_staff:
+            return qs
+        return qs.filter(hold__loeb__team_id__in=team_ids_for(user))
 
 
 @login_required
@@ -60,7 +83,7 @@ class LoebCreateView(LoginRequiredMixin, generic.CreateView):
         return reverse_lazy('Loeb_Loeb_list')
 
 
-class LoebDetailView(LoginRequiredMixin, generic.DetailView):
+class LoebDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     model = models.Loeb
     form_class = forms.LoebForm
     template_name = 'Loeb/loeb_detail.html'
@@ -153,7 +176,7 @@ class LoebPreviewView(LoginRequiredMixin, generic.DetailView):
         return context
 
 
-class LoebUpdateView(LoginRequiredMixin, generic.UpdateView):
+class LoebUpdateView(TeamQuerysetMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.Loeb
     form_class = forms.LoebForm
     pk_url_kwarg = 'pk'
@@ -168,7 +191,7 @@ class LoebUpdateView(LoginRequiredMixin, generic.UpdateView):
         return reverse_lazy('Loeb_Loeb_list')
 
 
-class LoebDeleteView(LoginRequiredMixin, generic.DeleteView):
+class LoebDeleteView(TeamQuerysetMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.Loeb
     success_url = reverse_lazy('Loeb_Loeb_list')
 
@@ -178,7 +201,7 @@ class PhysicalStationListView(LoginRequiredMixin, generic.ListView):
     context_object_name = 'physical_station_list'
 
 
-class PhysicalStationCreateView(LoginRequiredMixin, generic.CreateView):
+class PhysicalStationCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.PhysicalStation
     form_class = forms.PhysicalStationForm
 
@@ -188,13 +211,13 @@ class PhysicalStationDetailView(LoginRequiredMixin, generic.DetailView):
     form_class = forms.PhysicalStationForm
 
 
-class PhysicalStationUpdateView(LoginRequiredMixin, generic.UpdateView):
+class PhysicalStationUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.PhysicalStation
     form_class = forms.PhysicalStationForm
     pk_url_kwarg = 'pk'
 
 
-class PhysicalStationDeleteView(LoginRequiredMixin, generic.DeleteView):
+class PhysicalStationDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.PhysicalStation
     success_url = reverse_lazy('Loeb_PhysicalStation_list')
 
@@ -231,7 +254,7 @@ class TaskCreateView(LoginRequiredMixin, generic.CreateView):
         return reverse_lazy('Loeb_Task_list')
 
 
-class TaskDetailView(LoginRequiredMixin, generic.DetailView):
+class TaskDetailView(LoebChildScopedMixin, LoginRequiredMixin, generic.DetailView):
     model = models.Task
     form_class = forms.TaskForm
     template_name = 'Loeb/task_detail.html'
@@ -256,7 +279,7 @@ class TaskDetailView(LoginRequiredMixin, generic.DetailView):
         return context
 
 
-class TaskUpdateView(LoginRequiredMixin, generic.UpdateView):
+class TaskUpdateView(LoebChildScopedMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.Task
     form_class = forms.TaskForm
     pk_url_kwarg = 'pk'
@@ -273,7 +296,7 @@ class TaskUpdateView(LoginRequiredMixin, generic.UpdateView):
         return reverse_lazy('Loeb_Task_list')
 
 
-class TaskDeleteView(LoginRequiredMixin, generic.DeleteView):
+class TaskDeleteView(LoebChildScopedMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.Task
     success_url = reverse_lazy('Loeb_Task_list')
 
@@ -294,6 +317,11 @@ class HoldCreateView(LoginRequiredMixin, generic.CreateView):
     form_class = forms.HoldForm
     template_name = 'Loeb/hold_form.html'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def get_initial(self):
         initial = super().get_initial().copy()
         loeb_id = self.request.GET.get('loeb')
@@ -307,17 +335,22 @@ class HoldCreateView(LoginRequiredMixin, generic.CreateView):
         return reverse_lazy('Loeb_Hold_list')
 
 
-class HoldDetailView(LoginRequiredMixin, generic.DetailView):
+class HoldDetailView(LoebChildScopedMixin, LoginRequiredMixin, generic.DetailView):
     model = models.Hold
     form_class = forms.HoldForm
     template_name = 'Loeb/hold_detail.html'
 
 
-class HoldUpdateView(LoginRequiredMixin, generic.UpdateView):
+class HoldUpdateView(LoebChildScopedMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.Hold
     form_class = forms.HoldForm
     pk_url_kwarg = 'pk'
     template_name = 'Loeb/hold_form.html'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
     def get_success_url(self):
         if self.object and self.object.loeb_id:
@@ -325,7 +358,7 @@ class HoldUpdateView(LoginRequiredMixin, generic.UpdateView):
         return reverse_lazy('Loeb_Hold_list')
 
 
-class HoldDeleteView(LoginRequiredMixin, generic.DeleteView):
+class HoldDeleteView(LoebChildScopedMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.Hold
     template_name = 'Loeb/hold_confirm_delete.html'
 
@@ -399,11 +432,9 @@ def hold_login(request, loeb_pk):
 
         error = 'Ugyldig pin-kode. Prøv igen.'
 
-    preview_hold = loeb.holds.order_by('name').first()
     return render(request, 'Loeb/hold_login.html', {
         'loeb': loeb,
         'error': error,
-        'preview_hold': preview_hold,
     })
 
 
@@ -451,7 +482,7 @@ def hold_logout(request, loeb_pk):
     return HttpResponseRedirect(reverse('Loeb_Hold_login', args=[loeb_pk]))
 
 
-class TaskSubmissionListView(LoginRequiredMixin, generic.ListView):
+class TaskSubmissionListView(TaskSubmissionScopedMixin, LoginRequiredMixin, generic.ListView):
     model = models.TaskSubmission
     context_object_name = 'task_submission_list'
 
@@ -460,18 +491,28 @@ class TaskSubmissionCreateView(LoginRequiredMixin, generic.CreateView):
     model = models.TaskSubmission
     form_class = forms.TaskSubmissionForm
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
-class TaskSubmissionDetailView(LoginRequiredMixin, generic.DetailView):
+
+class TaskSubmissionDetailView(TaskSubmissionScopedMixin, LoginRequiredMixin, generic.DetailView):
     model = models.TaskSubmission
     form_class = forms.TaskSubmissionForm
 
 
-class TaskSubmissionUpdateView(LoginRequiredMixin, generic.UpdateView):
+class TaskSubmissionUpdateView(TaskSubmissionScopedMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.TaskSubmission
     form_class = forms.TaskSubmissionForm
     pk_url_kwarg = 'pk'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
-class TaskSubmissionDeleteView(LoginRequiredMixin, generic.DeleteView):
+
+class TaskSubmissionDeleteView(TaskSubmissionScopedMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.TaskSubmission
     success_url = reverse_lazy('Loeb_TaskSubmission_list')

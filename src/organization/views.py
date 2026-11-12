@@ -20,6 +20,7 @@ from emailing.forms import BrandedPasswordResetForm
 
 from . import forms, models
 from .models import Team, TeamMembership
+from .permissions import StaffRequiredMixin
 
 User = get_user_model()
 
@@ -55,7 +56,7 @@ class EventMembershipListView(LoginRequiredMixin, generic.ListView):
     form_class = forms.EventMembershipForm
 
 
-class EventMembershipCreateView(LoginRequiredMixin, generic.CreateView):
+class EventMembershipCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.EventMembership
     form_class = forms.EventMembershipForm
 
@@ -65,13 +66,13 @@ class EventMembershipDetailView(LoginRequiredMixin, generic.DetailView):
     form_class = forms.EventMembershipForm
 
 
-class EventMembershipUpdateView(LoginRequiredMixin, generic.UpdateView):
+class EventMembershipUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.EventMembership
     form_class = forms.EventMembershipForm
     pk_url_kwarg = "pk"
 
 
-class EventMembershipDeleteView(LoginRequiredMixin, generic.DeleteView):
+class EventMembershipDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.EventMembership
     success_url = reverse_lazy("organization_EventMembership_list")
 
@@ -81,7 +82,7 @@ class EventListView(LoginRequiredMixin, generic.ListView):
     form_class = forms.EventForm
 
 
-class EventCreateView(LoginRequiredMixin, generic.CreateView):
+class EventCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.Event
     form_class = forms.EventForm
 
@@ -91,13 +92,13 @@ class EventDetailView(LoginRequiredMixin, generic.DetailView):
     form_class = forms.EventForm
 
 
-class EventUpdateView(LoginRequiredMixin, generic.UpdateView):
+class EventUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.Event
     form_class = forms.EventForm
     pk_url_kwarg = "pk"
 
 
-class EventDeleteView(LoginRequiredMixin, generic.DeleteView):
+class EventDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.Event
     success_url = reverse_lazy("organization_Event_list")
 
@@ -107,7 +108,7 @@ class TeamListView(LoginRequiredMixin, generic.ListView):
     form_class = forms.TeamForm
 
 
-class TeamCreateView(LoginRequiredMixin, generic.CreateView):
+class TeamCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.Team
     form_class = forms.TeamForm
 
@@ -117,13 +118,13 @@ class TeamDetailView(LoginRequiredMixin, generic.DetailView):
     form_class = forms.TeamForm
 
 
-class TeamUpdateView(LoginRequiredMixin, generic.UpdateView):
+class TeamUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.Team
     form_class = forms.TeamForm
     pk_url_kwarg = "pk"
 
 
-class TeamDeleteView(LoginRequiredMixin, generic.DeleteView):
+class TeamDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.Team
     success_url = reverse_lazy("organization_Team_list")
 
@@ -133,7 +134,7 @@ class TeamMembershipListView(LoginRequiredMixin, generic.ListView):
     form_class = forms.TeamMembershipForm
 
 
-class TeamMembershipCreateView(LoginRequiredMixin, generic.CreateView):
+class TeamMembershipCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.TeamMembership
     form_class = forms.TeamMembershipForm
 
@@ -143,13 +144,13 @@ class TeamMembershipDetailView(LoginRequiredMixin, generic.DetailView):
     form_class = forms.TeamMembershipForm
 
 
-class TeamMembershipUpdateView(LoginRequiredMixin, generic.UpdateView):
+class TeamMembershipUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.TeamMembership
     form_class = forms.TeamMembershipForm
     pk_url_kwarg = "pk"
 
 
-class TeamMembershipDeleteView(LoginRequiredMixin, generic.DeleteView):
+class TeamMembershipDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.TeamMembership
     success_url = reverse_lazy("organization_TeamMembership_list")
 
@@ -168,7 +169,7 @@ class VolunteerListView(LoginRequiredMixin, generic.ListView):
         ).order_by('first_name')
 
 
-class VolunteerCreateView(LoginRequiredMixin, generic.CreateView):
+class VolunteerCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.Volunteer
     form_class = forms.VolunteerForm
 
@@ -200,11 +201,11 @@ class VolunteerUpdateView(UserPassesTestMixin, generic.UpdateView):
         return super().form_valid(form)
 
 
-class VolunteerDeleteView(generic.DeleteView):
+class VolunteerDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.Volunteer
     success_url = reverse_lazy("organization_Volunteer_list")
 
-class KeyListView(generic.ListView):
+class KeyListView(LoginRequiredMixin, generic.ListView):
     model = models.Key
     form_class = forms.KeyForm
     context_object_name = "key_list"
@@ -242,7 +243,7 @@ class KeyUpdateView(LoginRequiredMixin, generic.UpdateView):
             return redirect(request.META.get('HTTP_REFERER', reverse_lazy('organization_Key_list')))
         return super().dispatch(request, *args, **kwargs)
 
-class KeyDeleteView(LoginRequiredMixin, generic.DeleteView):
+class KeyDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.Key
     success_url = reverse_lazy("organization_Key_list")
 

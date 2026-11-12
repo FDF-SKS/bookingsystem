@@ -14,6 +14,7 @@ from django.views import generic
 from django.views.decorators.http import require_POST
 
 from organization.models import Event, Volunteer
+from organization.permissions import StaffRequiredMixin, TeamQuerysetMixin
 
 from . import forms, models
 
@@ -315,7 +316,7 @@ class SjakBookingCreateView(LoginRequiredMixin, generic.CreateView):
 
 
 
-class SjakBookingDetailView(LoginRequiredMixin, generic.DetailView):
+class SjakBookingDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     model = models.SjakBooking
     form_class = forms.SjakBookingForm
 
@@ -356,7 +357,7 @@ def reject_booking(request, pk):
     next_url = request.GET.get('next', 'Sjak_SjakBooking_list')
     return redirect(next_url)
 
-class SjakBookingUpdateView(LoginRequiredMixin, generic.UpdateView):
+class SjakBookingUpdateView(TeamQuerysetMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.SjakBooking
     form_class = forms.SjakBookingForm
     pk_url_kwarg = "pk"
@@ -393,7 +394,7 @@ class SjakBookingUpdateView(LoginRequiredMixin, generic.UpdateView):
         return form
 
 
-class SjakBookingDeleteView(LoginRequiredMixin, generic.DeleteView):
+class SjakBookingDeleteView(TeamQuerysetMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.SjakBooking
     success_url = reverse_lazy("Sjak_SjakBooking_list")
 
@@ -403,7 +404,7 @@ class SjakBookingDeleteView(LoginRequiredMixin, generic.DeleteView):
     
 
 
-class SjakItemListView(generic.ListView):
+class SjakItemListView(LoginRequiredMixin, generic.ListView):
     model = models.SjakItem
     form_class = forms.SjakItemForm
     context_object_name = 'object_list'
@@ -415,7 +416,7 @@ class SjakItemListView(generic.ListView):
     
 
 
-class SjakItemCreateView(generic.CreateView):
+class SjakItemCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.SjakItem
     form_class = forms.SjakItemForm
 
@@ -424,14 +425,14 @@ class SjakItemCreateView(generic.CreateView):
         return super().form_valid(form)
 
 
-class SjakItemDetailView(generic.DetailView):
+class SjakItemDetailView(LoginRequiredMixin, generic.DetailView):
     model = models.SjakItem
     form_class = forms.SjakItemForm
 
 
 
 
-class SjakItemUpdateView(generic.UpdateView):
+class SjakItemUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.SjakItem
     form_class = forms.SjakItemForm
     pk_url_kwarg = "pk"
@@ -441,7 +442,7 @@ class SjakItemUpdateView(generic.UpdateView):
         return super().form_valid(form)
 
 
-class SjakItemDeleteView(generic.DeleteView):
+class SjakItemDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.SjakItem
     success_url = reverse_lazy("Sjak_SjakItem_list")
 
@@ -449,28 +450,28 @@ class SjakItemDeleteView(generic.DeleteView):
 
 
 
-class SjakItemTypeListView(generic.ListView):
+class SjakItemTypeListView(LoginRequiredMixin, generic.ListView):
     model = models.SjakItemType
     form_class = forms.SjakItemTypeForm
 
 
-class SjakItemTypeCreateView(generic.CreateView):
+class SjakItemTypeCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.SjakItemType
     form_class = forms.SjakItemTypeForm
 
 
-class SjakItemTypeDetailView(generic.DetailView):
+class SjakItemTypeDetailView(LoginRequiredMixin, generic.DetailView):
     model = models.SjakItemType
     form_class = forms.SjakItemTypeForm
 
 
-class SjakItemTypeUpdateView(generic.UpdateView):
+class SjakItemTypeUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.SjakItemType
     form_class = forms.SjakItemTypeForm
     pk_url_kwarg = "pk"
 
 
-class SjakItemTypeDeleteView(generic.DeleteView):
+class SjakItemTypeDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.SjakItemType
     success_url = reverse_lazy("Sjak_SjakItemType_list")
 

@@ -23,7 +23,7 @@ class LoebForm(forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
 
-        if user and user.is_authenticated:
+        if user and user.is_authenticated and not user.is_staff:
             memberships = TeamMembership.objects.filter(member=user).select_related('team')
             team_ids = list(memberships.values_list('team_id', flat=True))
 
@@ -93,7 +93,7 @@ class TaskForm(forms.ModelForm):
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        if user and user.is_authenticated:
+        if user and user.is_authenticated and not user.is_staff:
             from organization.models import TeamMembership
             team_ids = list(TeamMembership.objects.filter(member=user).values_list('team_id', flat=True))
             if team_ids:
@@ -116,6 +116,16 @@ class HoldForm(forms.ModelForm):
             'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user and user.is_authenticated and not user.is_staff:
+            team_ids = list(TeamMembership.objects.filter(member=user).values_list('team_id', flat=True))
+            if team_ids:
+                self.fields['loeb'].queryset = self.fields['loeb'].queryset.filter(team_id__in=team_ids).order_by('name')
+            else:
+                self.fields['loeb'].queryset = self.fields['loeb'].queryset.none()
+                self.fields['loeb'].empty_label = 'Du har ikke adgang til et løb'
+
 
 class TaskSubmissionForm(forms.ModelForm):
     class Meta:
@@ -128,3 +138,10 @@ class TaskSubmissionForm(forms.ModelForm):
             'submitted_answer': forms.Textarea(attrs={'class': 'form-control', 'rows': 4}),
             'points_awarded': forms.NumberInput(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user and user.is_authenticated and not user.is_staff:
+            team_ids = list(TeamMembership.objects.filter(member=user).values_list('team_id', flat=True))
+            self.fields['hold'].queryset = self.fields['hold'].queryset.filter(loeb__team_id__in=team_ids)
+            self.fields['task'].queryset = self.fields['task'].queryset.filter(loeb__team_id__in=team_ids)

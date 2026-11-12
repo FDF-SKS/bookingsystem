@@ -97,11 +97,10 @@ class MealBookingSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.MealBooking
         fields = [
+            "id",
             "last_updated",
-            "monday_breakfast",
-            "monday_lunch",
             "created",
-            "monday_dinner",
+            "status",
             "team_contact",
             "team",
         ]

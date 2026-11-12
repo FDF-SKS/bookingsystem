@@ -119,6 +119,13 @@ class Volunteer(AbstractUser):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+    @property
+    def team_ids(self):
+        return set(self.teammembership_set.values_list('team_id', flat=True))
+
+    def is_team_member(self, team_id):
+        return team_id in self.team_ids
     
     def save(self, *args, **kwargs):
         # Generate thumbnail when image is uploaded

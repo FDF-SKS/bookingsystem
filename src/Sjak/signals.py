@@ -6,6 +6,7 @@ from django.dispatch import receiver
 
 from organization.tasks import notify_booking_change
 from Sjak.models import SjakBooking
+from utils.formatting import short_date, short_time
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ def notify_discord_on_sjakbooking_change(sender, instance, created, **kwargs):
             "sjak/Sjak/SjakBooking/detail",
             [
                 ("Antal", str(instance.quantity)),
-                ("Dato", f"{instance.start_date.strftime('%d/%m')} {instance.start_time.strftime('%H:%M')}"),
+                ("Dato", f"{short_date(instance.start_date)} {short_time(instance.start_time)}".strip()),
                 ("Tildelt", assigned),
             ],
         )

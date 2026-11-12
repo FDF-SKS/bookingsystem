@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from Butikken.models import ButikkenItem, ButikkenItemType, Day, Meal, Recipe
 from organization.models import Event, Team, TeamMembership, Volunteer
+from organization.permissions import restrict_team_field
 
 from . import models
 from .models import MealBooking, MealOption, MealPlan, TeamMealPlan
@@ -43,6 +44,8 @@ class MealBookingForm(forms.ModelForm):
                 self.fields["team_contact"].initial = user
             else:
                 print(f"Warning: User {user} has no team membership.")
+
+        restrict_team_field(user, self.fields["team"], self.fields["team_contact"])
 
 class MealForm(forms.ModelForm):
     class Meta:
@@ -207,6 +210,9 @@ class ButikkenBookingForm(forms.ModelForm):
             next_event = Event.objects.filter(start_date__gt=now).order_by('start_date').first()
             return next_event
         
+        # Restrict team selection to the user's own teams for non-staff users
+        restrict_team_field(user, self.fields["team"], self.fields["team_contact"])
+        
         # Check if the form is being initialized with an instance
         if self.instance and self.instance.pk:
             # Use the existing value from the instance
@@ -272,6 +278,8 @@ class ButikkenOrderForm(forms.ModelForm):
         except Exception:
             # Be defensive: if Event lookup fails, leave the field empty
             pass
+
+        restrict_team_field(user, self.fields["team"], self.fields["team_contact"])
 
 
 class ButikkenItemTypeForm(forms.ModelForm):
@@ -340,12 +348,14 @@ class TeamMealPlanForm(forms.ModelForm):
         
         if user:
             # Get the team of the current user
-            user_team = models.Team.objects.filter(teammembership__member=user).first()
+            user_team = Team.objects.filter(teammembership__member=user).first()
             if user_team:
                 # Filter team_contact to only include volunteers related to the same team
-                self.fields['team_contact'].queryset = models.Volunteer.objects.filter(teammembership__team=user_team)
+                self.fields['team_contact'].queryset = Volunteer.objects.filter(teammembership__team=user_team)
                 # Set the default value of team_contact to the current user
                 self.fields['team_contact'].initial = user
+
+        restrict_team_field(user, self.fields["team"], self.fields["team_contact"])
 
 class BulkMealForm(forms.ModelForm):
     class Meta:
@@ -368,7 +378,7 @@ class BulkMealForm(forms.ModelForm):
 
         # 2. Safeguard team_contact (Limit to the specific team)
         if self.instance and hasattr(self.instance, 'team') and self.instance.team:
-            self.fields['team_contact'].queryset = models.Volunteer.objects.filter(
+            self.fields['team_contact'].queryset = Volunteer.objects.filter(
                 teammembership__team=self.instance.team
             )
 

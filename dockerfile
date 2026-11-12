@@ -20,6 +20,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Stage 2: Production stage
 FROM python:3.13-slim
 
+# Pull the patched zlib from the distro security repo (CVE-2026-76844).
+# Keeping this explicit makes the image deterministic instead of relying on the
+# base image tag being refreshed.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends --only-upgrade zlib1g && \
+    rm -rf /var/lib/apt/lists/*
+
 RUN useradd -m django-user && \
    mkdir /app && \
    chown -R django-user /app

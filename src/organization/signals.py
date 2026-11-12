@@ -154,7 +154,28 @@ def sync_allauth_email_address(sender, instance, created, **kwargs):
     if getattr(instance, '_skip_email_sync', False) or not instance.email:
         return
     email = instance.email.lower()
-    EmailAddress.objects.filter(user=instance, primary=True).exclude(email__iexact=email).delete()
-    EmailAddress.objects.get_or_create(
-        user=instance, email=email, defaults={'verified': True, 'primary': True}
-    )
+
+    # Drop every alias that no longer matches the account's current email. An
+    # old, verified alias left behind would remain a usable login identity
+    # after the user changes their email address.
+    EmailAddress.objects.filter(user=instance).exclude(email__iexact=email).delete()
+
+    address = EmailAddress.objects.filter(user=instance, email__iexact=email).first()
+    if address is None:
+        EmailAddress.objects.create(
+            user=instance, email=email, verified=True, primary=True
+        )
+        return
+
+    update_fields = []
+    if address.email != email:
+        address.email = email
+        update_fields.append('email')
+    if not address.verified:
+        address.verified = True
+        update_fields.append('verified')
+    if not address.primary:
+        address.primary = True
+        update_fields.append('primary')
+    if update_fields:
+        address.save(update_fields=update_fields)

@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.utils import timezone
@@ -7,11 +8,12 @@ from django.utils.decorators import method_decorator
 from django.views import generic
 
 from organization.models import Event  # Import the Event model
+from organization.permissions import StaffRequiredMixin, TeamQuerysetMixin
 
 from . import forms, models
 
 
-class SOSBookingListView(generic.ListView):
+class SOSBookingListView(TeamQuerysetMixin, generic.ListView):
     model = models.SOSBooking
     form_class = forms.SOSBookingForm
 
@@ -38,7 +40,7 @@ class SOSBookingCreateView(generic.CreateView):
         return kwargs
 
 
-class SOSBookingDetailView(generic.DetailView):
+class SOSBookingDetailView(TeamQuerysetMixin, generic.DetailView):
     model = models.SOSBooking
     form_class = forms.SOSBookingForm
 
@@ -47,7 +49,7 @@ class SOSBookingDetailView(generic.DetailView):
         return super().dispatch(*args, **kwargs)
 
 
-class SOSBookingUpdateView(generic.UpdateView):
+class SOSBookingUpdateView(TeamQuerysetMixin, generic.UpdateView):
     model = models.SOSBooking
     form_class = forms.SOSBookingForm
     pk_url_kwarg = "pk"
@@ -74,7 +76,8 @@ class SOSBookingUpdateView(generic.UpdateView):
         form.instance = self.get_object()  # Pre-populate the form with object's values
         return form
 
-class SOSBookingDeleteView(generic.DeleteView):
+
+class SOSBookingDeleteView(TeamQuerysetMixin, generic.DeleteView):
     model = models.SOSBooking
     success_url = reverse_lazy("SOS_SOSBooking_list")
 
@@ -83,7 +86,7 @@ class SOSBookingDeleteView(generic.DeleteView):
         return super().dispatch(*args, **kwargs)
 
 
-class SOSItemListView(generic.ListView):
+class SOSItemListView(LoginRequiredMixin, generic.ListView):
     model = models.SOSItem
     form_class = forms.SOSItemForm
     context_object_name = 'object_list'
@@ -93,50 +96,48 @@ class SOSItemListView(generic.ListView):
         return queryset
 
 
-class SOSItemCreateView(generic.CreateView):
+class SOSItemCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.SOSItem
     form_class = forms.SOSItemForm
 
 
-class SOSItemDetailView(generic.DetailView):
+class SOSItemDetailView(LoginRequiredMixin, generic.DetailView):
     model = models.SOSItem
     form_class = forms.SOSItemForm
 
 
-class SOSItemUpdateView(generic.UpdateView):
+class SOSItemUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.SOSItem
     form_class = forms.SOSItemForm
     pk_url_kwarg = "pk"
 
 
-class SOSItemDeleteView(generic.DeleteView):
+class SOSItemDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.SOSItem
     success_url = reverse_lazy("SOS_SOSItem_list")
 
 
-class SOSTypeListView(generic.ListView):
+class SOSTypeListView(LoginRequiredMixin, generic.ListView):
     model = models.SOSType
     form_class = forms.SOSTypeForm
 
 
-class SOSTypeCreateView(generic.CreateView):
+class SOSTypeCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.SOSType
     form_class = forms.SOSTypeForm
 
 
-class SOSTypeDetailView(generic.DetailView):
+class SOSTypeDetailView(LoginRequiredMixin, generic.DetailView):
     model = models.SOSType
     form_class = forms.SOSTypeForm
 
 
-class SOSTypeUpdateView(generic.UpdateView):
+class SOSTypeUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.SOSType
     form_class = forms.SOSTypeForm
     pk_url_kwarg = "pk"
 
 
-class SOSTypeDeleteView(generic.DeleteView):
+class SOSTypeDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.SOSType
     success_url = reverse_lazy("SOS_SOSType_list")
-
-

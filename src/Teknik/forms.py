@@ -5,6 +5,7 @@ from django.forms.widgets import TextInput
 from django.utils import timezone
 
 from organization.models import Event, Team, TeamMembership, Volunteer
+from organization.permissions import restrict_team_field
 
 from . import models
 
@@ -93,6 +94,8 @@ class TeknikBookingForm(forms.ModelForm):
                 pass
             
             self.fields["team_contact"].initial = user
+
+        restrict_team_field(user, self.fields["team"], self.fields["team_contact"])
 
         # 3. Handle Event Dates / Initials
         instance = kwargs.get('instance')

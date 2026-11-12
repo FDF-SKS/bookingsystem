@@ -12,6 +12,7 @@ from unfold.admin import ModelAdmin
 from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
 from unfold.decorators import action, display
 
+from utils.formatting import short_date, short_time
 from utils.ical_utils import export_selected_to_ical
 
 from .forms import SjakBookingForm
@@ -249,7 +250,10 @@ class SjakBookingAdmin(SjakBaseAdmin):
     @display(description="Tidsramme")
     def formatted_times(self, obj):
         """Vis datointervallet i kompakt format."""
-        return f"{obj.start_date.strftime('%d/%m')} {obj.start_time.strftime('%H:%M')} - {obj.end_date.strftime('%d/%m')} {obj.end_time.strftime('%H:%M')}"
+        return (
+            f"{short_date(obj.start_date)} {short_time(obj.start_time)} - "
+            f"{short_date(obj.end_date)} {short_time(obj.end_time)}"
+        )
 
     def image_preview(self, obj):
         """Vis forhåndsvisning af bookingbillede hvis tilgængeligt."""

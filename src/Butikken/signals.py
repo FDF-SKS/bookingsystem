@@ -6,6 +6,7 @@ from django.dispatch import receiver
 
 from Butikken.models import ButikkenBooking
 from organization.tasks import notify_booking_change
+from utils.formatting import short_date, short_time
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,7 @@ def notify_discord_on_butikkenbooking_change(sender, instance, created, **kwargs
             instance, created, "Butikken", "🛒 Butikken Notifikationer",
             "butikken/Butikken/ButikkenBooking/detail",
             [
-                ("Dato", f"{instance.start_date.strftime('%d/%m')} {instance.start_time.strftime('%H:%M')}"),
+                ("Dato", f"{short_date(instance.start_date)} {short_time(instance.start_time)}".strip()),
                 ("Antal", f"{instance.quantity} {instance.unit}"),
             ],
         )

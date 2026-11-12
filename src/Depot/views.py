@@ -8,6 +8,12 @@ from django.views.generic import (
     UpdateView,
 )
 
+from organization.permissions import (
+    StaffRequiredMixin,
+    TeamQuerysetMixin,
+    restrict_team_field,
+)
+
 from .forms import DepotBookingForm, DepotItemForm
 from .models import DepotBooking, DepotItem
 
@@ -46,7 +52,7 @@ class DepotItemDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class DepotItemCreateView(LoginRequiredMixin, CreateView):
+class DepotItemCreateView(StaffRequiredMixin, LoginRequiredMixin, CreateView):
     """Create a new depot item."""
     model = DepotItem
     form_class = DepotItemForm
@@ -54,7 +60,7 @@ class DepotItemCreateView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy('Depot_DepotItem_list')
 
 
-class DepotItemUpdateView(LoginRequiredMixin, UpdateView):
+class DepotItemUpdateView(StaffRequiredMixin, LoginRequiredMixin, UpdateView):
     """Update a depot item."""
     model = DepotItem
     form_class = DepotItemForm
@@ -62,14 +68,14 @@ class DepotItemUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('Depot_DepotItem_list')
 
 
-class DepotItemDeleteView(LoginRequiredMixin, DeleteView):
+class DepotItemDeleteView(StaffRequiredMixin, LoginRequiredMixin, DeleteView):
     """Delete a depot item."""
     model = DepotItem
     template_name = 'Depot/depot_item_confirm_delete.html'
     success_url = reverse_lazy('Depot_DepotItem_list')
 
 
-class DepotBookingListView(LoginRequiredMixin, ListView):
+class DepotBookingListView(TeamQuerysetMixin, LoginRequiredMixin, ListView):
     """List all depot bookings with filtering."""
     model = DepotBooking
     template_name = 'Depot/depot_booking_list.html'
@@ -77,7 +83,7 @@ class DepotBookingListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        queryset = DepotBooking.objects.select_related('item', 'team', 'team_contact')
+        queryset = super().get_queryset().select_related('item', 'team', 'team_contact')
         
         # Filter by status
         status = self.request.GET.get('status')
@@ -105,7 +111,7 @@ class DepotBookingListView(LoginRequiredMixin, ListView):
         return context
 
 
-class DepotBookingDetailView(LoginRequiredMixin, DetailView):
+class DepotBookingDetailView(TeamQuerysetMixin, LoginRequiredMixin, DetailView):
     """View details of a specific booking."""
     model = DepotBooking
     template_name = 'Depot/depot_booking_detail.html'
@@ -119,16 +125,26 @@ class DepotBookingCreateView(LoginRequiredMixin, CreateView):
     template_name = 'Depot/depot_booking_form.html'
     success_url = reverse_lazy('Depot_DepotBooking_list')
 
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        restrict_team_field(self.request.user, form.fields['team'], form.fields['team_contact'])
+        return form
 
-class DepotBookingUpdateView(LoginRequiredMixin, UpdateView):
+
+class DepotBookingUpdateView(TeamQuerysetMixin, LoginRequiredMixin, UpdateView):
     """Update a depot booking."""
     model = DepotBooking
     form_class = DepotBookingForm
     template_name = 'Depot/depot_booking_form.html'
     success_url = reverse_lazy('Depot_DepotBooking_list')
 
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        restrict_team_field(self.request.user, form.fields['team'], form.fields['team_contact'])
+        return form
 
-class DepotBookingDeleteView(LoginRequiredMixin, DeleteView):
+
+class DepotBookingDeleteView(TeamQuerysetMixin, LoginRequiredMixin, DeleteView):
     """Delete a depot booking."""
     model = DepotBooking
     template_name = 'Depot/depot_booking_confirm_delete.html'

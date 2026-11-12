@@ -12,7 +12,7 @@ class SjakItemSerializer(serializers.ModelSerializer):
             "description",
             "created",
             "last_updated",
-            "type",
+            "item_type",
         ]
 
 class SjakBookingSerializer(serializers.ModelSerializer):
@@ -25,8 +25,10 @@ class SjakBookingSerializer(serializers.ModelSerializer):
             "created",
             "status",
             "quantity",
-            "start",
-            "end",
+            "start_date",
+            "start_time",
+            "end_date",
+            "end_time",
             "item",
             "team_contact",
             "team",

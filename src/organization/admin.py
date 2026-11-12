@@ -3,6 +3,7 @@ from datetime import date, timedelta
 
 from django.contrib import admin, messages
 from django.contrib.auth.models import Group
+from django.core.exceptions import PermissionDenied
 from django.db.models import Count, Q
 from django.shortcuts import redirect, render
 from django.urls import path
@@ -439,6 +440,11 @@ class TjanseOwnershipAdmin(SimpleHistoryAdmin, ModelAdmin):
         return super().changeform_view(request, object_id, form_url, extra_context)
 
     def overview_view(self, request):
+        if not self.has_view_or_change_permission(request):
+            raise PermissionDenied
+        if request.method == "POST" and not self.has_change_permission(request):
+            raise PermissionDenied
+
         events = Event.objects.order_by("-start_date", "name")
         event_id = request.POST.get("event") or request.GET.get("event")
         selected_event = events.filter(pk=event_id).first() if event_id else events.first()
@@ -526,6 +532,9 @@ class TjanseOwnershipAdmin(SimpleHistoryAdmin, ModelAdmin):
         return render(request, "admin/organization/tjanseownership/overview.html", context)
 
     def status_overview_view(self, request):
+        if not self.has_view_or_change_permission(request):
+            raise PermissionDenied
+
         events = Event.objects.order_by("-start_date", "name")
         event_id = request.GET.get("event")
         selected_event = events.filter(pk=event_id).first() if event_id else events.first()

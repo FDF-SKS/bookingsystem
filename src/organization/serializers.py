@@ -46,7 +46,7 @@ class EventMembershipSerializer(serializers.ModelSerializer):
             "last_updated",
             "created",
             "event",
-            "member",
+            "volunteer",
         ]
 
 class VolunteerSerializer(serializers.ModelSerializer):

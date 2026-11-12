@@ -5,6 +5,7 @@ from django.forms import TextInput
 from django.utils import timezone
 
 from organization.models import Event, Team, TeamMembership, Volunteer
+from organization.permissions import restrict_team_field
 from Sjak.models import SjakItem, SjakItemLocation, SjakItemType
 from utils.image_utils import process_image
 
@@ -74,6 +75,7 @@ class SjakBookingForm(forms.ModelForm):
         self.fields["item"].queryset = SjakItem.objects.all().order_by("name")
         self.fields["team"].queryset = Team.objects.all().order_by("name")
         self.fields["team_contact"].queryset = Volunteer.objects.all().order_by("first_name")
+        restrict_team_field(user, self.fields["team"])
         self.fields["item"].empty_label = "Begynd at skrive for at filtrere listen..."
 
         # 2. Handle User-specific logic

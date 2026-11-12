@@ -8,6 +8,15 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Require SSH host fingerprint
+        env:
+          HOST_FINGERPRINT: ${{ secrets.HETZNER_HOST_FINGERPRINT }}
+        run: |
+          if [ -z "$HOST_FINGERPRINT" ]; then
+            echo "::error::Set the HETZNER_HOST_FINGERPRINT repository secret (SHA256 host key fingerprint)."
+            exit 1
+          fi
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         with:
@@ -17,6 +26,8 @@ jobs:
           key: |
             ${{ secrets.HETZNER_SSH_KEY }}
           port: 22
+          # Verify the server's host key so the connection cannot be MITM'd.
+          fingerprint: ${{ secrets.HETZNER_HOST_FINGERPRINT }}
           debug: true
           script: |
             # Navigate to the project folder we created manually

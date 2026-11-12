@@ -5,6 +5,7 @@ from django.forms import TextInput
 from django.utils import timezone
 
 from organization.models import Event, Team, TeamMembership, Volunteer
+from organization.permissions import restrict_team_field
 from SOS.models import SOSItem
 
 from . import models
@@ -104,6 +105,8 @@ class SOSBookingForm(forms.ModelForm):
             else:
                 # We log it and let the form load with empty/default fields
                 print(f"User {user} has no TeamMembership yet. Skipping initial team logic.")
+
+        restrict_team_field(user, self.fields["team"], self.fields["team_contact"])
         
         def get_next_event():
             now = timezone.now()

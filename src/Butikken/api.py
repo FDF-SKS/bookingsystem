@@ -1,89 +1,104 @@
-from rest_framework import permissions, viewsets
+from rest_framework import viewsets
+from rest_framework.exceptions import PermissionDenied
+
+from organization.permissions import (
+    IsStaffOrReadOnly,
+    IsStaffOrTeamMember,
+    TeamScopedMixin,
+    team_ids_for,
+)
 
 from . import models, serializers
 
 
 class ButikkenItemViewSet(viewsets.ModelViewSet):
-    """ViewSet for the ButikkenItem class"""
-
     queryset = models.ButikkenItem.objects.all()
     serializer_class = serializers.ButikkenItemSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsStaffOrReadOnly]
 
 
-class ButikkenBookingViewSet(viewsets.ModelViewSet):
-    """ViewSet for the ButikkenBooking class"""
-
+class ButikkenBookingViewSet(TeamScopedMixin, viewsets.ModelViewSet):
     queryset = models.ButikkenBooking.objects.all()
     serializer_class = serializers.ButikkenBookingSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsStaffOrTeamMember]
+
+    def _guard_order(self, serializer, team):
+        """A booking may only reference an order owned by the same team."""
+        user = self.request.user
+        if user.is_staff:
+            return
+        order = serializer.validated_data.get("order")
+        if order is None:
+            return
+        if order.team_id not in team_ids_for(user) or (
+            team is not None and order.team_id != team.id
+        ):
+            raise PermissionDenied("Ordren tilhører et andet team.")
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        team = serializer.validated_data.get("team")
+        if not user.is_staff and (team is None or team.id not in team_ids_for(user)):
+            raise PermissionDenied("Du kan kun oprette for dit eget team.")
+        self._guard_order(serializer, team)
+        serializer.save()
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        if (
+            not user.is_staff
+            and "team" in serializer.validated_data
+            and serializer.instance.team_id != serializer.validated_data["team"].id
+        ):
+            raise PermissionDenied("Du kan ikke flytte en post til et andet team.")
+        team = serializer.validated_data.get("team") or serializer.instance.team
+        self._guard_order(serializer, team)
+        serializer.save()
 
 
 class ButikkenItemTypeViewSet(viewsets.ModelViewSet):
-    """ViewSet for the ButikkenItemType class"""
-
     queryset = models.ButikkenItemType.objects.all()
     serializer_class = serializers.ButikkenItemTypeSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
+    permission_classes = [IsStaffOrReadOnly]
 
 
 class MealViewSet(viewsets.ModelViewSet):
-    """ViewSet for the Meal class"""
-
     queryset = models.Meal.objects.all()
     serializer_class = serializers.MealSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsStaffOrReadOnly]
 
 
 class OptionViewSet(viewsets.ModelViewSet):
-    """ViewSet for the Option class"""
-
     queryset = models.Option.objects.all()
     serializer_class = serializers.OptionSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsStaffOrReadOnly]
+
 
 class DayViewSet(viewsets.ModelViewSet):
-    """ViewSet for the Day class"""
-
     queryset = models.Day.objects.all()
     serializer_class = serializers.DaySerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsStaffOrReadOnly]
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    """ViewSet for the Recipe class"""
-
     queryset = models.Recipe.objects.all()
     serializer_class = serializers.RecipeSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsStaffOrReadOnly]
 
-class MealBookingViewSet(viewsets.ModelViewSet):
-    """ViewSet for the MealBooking class"""
 
+class MealBookingViewSet(TeamScopedMixin, viewsets.ModelViewSet):
     queryset = models.MealBooking.objects.all()
     serializer_class = serializers.MealBookingSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsStaffOrTeamMember]
 
-class TeamMealPlanViewSet(viewsets.ModelViewSet):
-    """ViewSet for the TeamMealPlan class"""
 
+class TeamMealPlanViewSet(TeamScopedMixin, viewsets.ModelViewSet):
     queryset = models.TeamMealPlan.objects.all()
     serializer_class = serializers.TeamMealPlanSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsStaffOrTeamMember]
 
 
-class ButikkenOrderViewSet(viewsets.ModelViewSet):
-    """ViewSet for the ButikkenOrder (cart) class"""
+class ButikkenOrderViewSet(TeamScopedMixin, viewsets.ModelViewSet):
     queryset = models.ButikkenOrder.objects.all()
     serializer_class = serializers.ButikkenOrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_queryset(self):
-        qs = models.ButikkenOrder.objects.all()
-        user = self.request.user
-        if user.is_staff:
-            return qs
-        team_ids = user.teammembership_set.values_list('team', flat=True)
-        return qs.filter(team_id__in=team_ids)
-
+    permission_classes = [IsStaffOrTeamMember]

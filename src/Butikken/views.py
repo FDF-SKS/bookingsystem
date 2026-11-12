@@ -17,6 +17,7 @@ from django.utils.decorators import method_decorator
 from django.views import generic
 
 from organization.models import Event
+from organization.permissions import StaffRequiredMixin, TeamQuerysetMixin
 
 from . import forms, models
 from .forms import BulkMealForm, TeamMealPlanForm
@@ -35,7 +36,7 @@ class ButikkenItemListView(LoginRequiredMixin, generic.ListView):
         return queryset
 
 
-class ButikkenItemCreateView(LoginRequiredMixin, generic.CreateView):
+class ButikkenItemCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.ButikkenItem
     form_class = forms.ButikkenItemForm
 
@@ -45,13 +46,13 @@ class ButikkenItemDetailView(LoginRequiredMixin, generic.DetailView):
     form_class = forms.ButikkenItemForm
 
 
-class ButikkenItemUpdateView(LoginRequiredMixin, generic.UpdateView):
+class ButikkenItemUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.ButikkenItem
     form_class = forms.ButikkenItemForm
     pk_url_kwarg = "pk"
 
 
-class ButikkenItemDeleteView(LoginRequiredMixin, generic.DeleteView):
+class ButikkenItemDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.ButikkenItem
     success_url = reverse_lazy("Butikken_ButikkenItem_list")
 
@@ -143,7 +144,7 @@ class ButikkenBookingCreateView(LoginRequiredMixin, generic.CreateView):
         return context
 
 
-class ButikkenBookingUpdateView(LoginRequiredMixin, generic.UpdateView):
+class ButikkenBookingUpdateView(TeamQuerysetMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.ButikkenBooking
     form_class = forms.ButikkenBookingForm
     pk_url_kwarg = "pk"
@@ -172,7 +173,7 @@ class ButikkenBookingUpdateView(LoginRequiredMixin, generic.UpdateView):
         return context
 
 
-class ButikkenBookingDetailView(LoginRequiredMixin, generic.DetailView):
+class ButikkenBookingDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     model = models.ButikkenBooking
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
@@ -194,7 +195,7 @@ class ButikkenBookingDetailView(LoginRequiredMixin, generic.DetailView):
 
 
 
-class ButikkenBookingDeleteView(LoginRequiredMixin, generic.DeleteView):
+class ButikkenBookingDeleteView(TeamQuerysetMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.ButikkenBooking
     success_url = reverse_lazy("Butikken_ButikkenBooking_list")
     @method_decorator(login_required)
@@ -207,7 +208,7 @@ class ButikkenItemTypeListView(LoginRequiredMixin, generic.ListView):
     form_class = forms.ButikkenItemTypeForm
 
 
-class ButikkenItemTypeCreateView(LoginRequiredMixin, generic.CreateView):
+class ButikkenItemTypeCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.ButikkenItemType
     form_class = forms.ButikkenItemTypeForm
 
@@ -217,13 +218,13 @@ class ButikkenItemTypeDetailView(LoginRequiredMixin, generic.DetailView):
     form_class = forms.ButikkenItemTypeForm
 
 
-class ButikkenItemTypeUpdateView(LoginRequiredMixin, generic.UpdateView):
+class ButikkenItemTypeUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.ButikkenItemType
     form_class = forms.ButikkenItemTypeForm
     pk_url_kwarg = "pk"
 
 
-class ButikkenItemTypeDeleteView(LoginRequiredMixin, generic.DeleteView):
+class ButikkenItemTypeDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.ButikkenItemType
     success_url = reverse_lazy("Butikken_ButikkenItemType_list")
 
@@ -236,7 +237,7 @@ class OptionListView(LoginRequiredMixin, generic.ListView):
     form_class = forms.OptionForm
 
 
-class OptionCreateView(LoginRequiredMixin, generic.CreateView):
+class OptionCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.Option
     form_class = forms.OptionForm
 
@@ -246,13 +247,13 @@ class OptionDetailView(LoginRequiredMixin, generic.DetailView):
     form_class = forms.OptionForm
 
 
-class OptionUpdateView(LoginRequiredMixin, generic.UpdateView):
+class OptionUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.Option
     form_class = forms.OptionForm
     pk_url_kwarg = "pk"
 
 
-class OptionDeleteView(LoginRequiredMixin, generic.DeleteView):
+class OptionDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.Option
     success_url = reverse_lazy("Butikken_Option_list")
 
@@ -266,7 +267,7 @@ class MealListView(LoginRequiredMixin, generic.ListView):
     form_class = forms.MealForm
 
 
-class MealCreateView(LoginRequiredMixin, generic.CreateView):
+class MealCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.Meal
     form_class = forms.MealForm
 
@@ -276,13 +277,13 @@ class MealDetailView(LoginRequiredMixin, generic.DetailView):
     form_class = forms.MealForm
 
 
-class MealUpdateView(LoginRequiredMixin, generic.UpdateView):
+class MealUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.Meal
     form_class = forms.MealForm
     pk_url_kwarg = "pk"
 
 
-class MealDeleteView(LoginRequiredMixin, generic.DeleteView):
+class MealDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.Meal
     success_url = reverse_lazy("Butikken_Meal_list")
 
@@ -290,7 +291,7 @@ class MealDeleteView(LoginRequiredMixin, generic.DeleteView):
 ###### MealBooking
 
 
-class MealBookingListView(LoginRequiredMixin, generic.ListView):
+class MealBookingListView(TeamQuerysetMixin, LoginRequiredMixin, generic.ListView):
     model = models.MealBooking
     form_class = forms.MealBookingForm
 
@@ -316,7 +317,7 @@ class MealBookingCreateView(LoginRequiredMixin, generic.CreateView):
         return kwargs
     
 
-class MealBookingUpdateView(LoginRequiredMixin, generic.UpdateView):
+class MealBookingUpdateView(TeamQuerysetMixin, LoginRequiredMixin, generic.UpdateView):
     model = MealBooking
     form_class = forms.MealBookingForm
     template_name = 'Butikken/mealbooking_form.html'
@@ -328,7 +329,7 @@ class MealBookingUpdateView(LoginRequiredMixin, generic.UpdateView):
         return kwargs
     
 
-class MealBookingDetailView(LoginRequiredMixin, generic.DetailView):
+class MealBookingDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     model = models.MealBooking
     form_class = forms.MealBookingForm
    
@@ -338,7 +339,7 @@ class MealBookingDetailView(LoginRequiredMixin, generic.DetailView):
         return context
         
 
-class TeamMealPlanListView(LoginRequiredMixin, generic.ListView):
+class TeamMealPlanListView(TeamQuerysetMixin, LoginRequiredMixin, generic.ListView):
     model = TeamMealPlan
     form_class = TeamMealPlanForm
 
@@ -368,7 +369,7 @@ class TeamMealPlanCreateView(LoginRequiredMixin, generic.CreateView):
         context['TeamMealPlans'] = TeamMealPlan.objects.all()
         return context
 
-class TeamMealPlanDetailView(LoginRequiredMixin, generic.DetailView):
+class TeamMealPlanDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     model = TeamMealPlan
     form_class = TeamMealPlanForm
 
@@ -464,7 +465,7 @@ class ButikkenOrderCreateView(LoginRequiredMixin, generic.CreateView):
         return context
 
 
-class ButikkenOrderDetailView(LoginRequiredMixin, generic.DetailView):
+class ButikkenOrderDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     model = models.ButikkenOrder
     template_name = 'Butikken/butikkenorder_detail.html'
 
@@ -486,7 +487,7 @@ class ButikkenOrderDetailView(LoginRequiredMixin, generic.DetailView):
         return context
 
 
-class ButikkenOrderUpdateView(LoginRequiredMixin, generic.UpdateView):
+class ButikkenOrderUpdateView(TeamQuerysetMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.ButikkenOrder
     form_class = forms.ButikkenOrderForm
     template_name = 'Butikken/butikkenorder_form.html'
@@ -595,12 +596,12 @@ class ButikkenOrderUpdateView(LoginRequiredMixin, generic.UpdateView):
         return redirect(self.get_success_url())
 
 
-class ButikkenOrderDeleteView(LoginRequiredMixin, generic.DeleteView):
+class ButikkenOrderDeleteView(TeamQuerysetMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.ButikkenOrder
     success_url = reverse_lazy("Butikken_ButikkenOrder_list")
 
 
-class TeamMealPlanUpdateView(LoginRequiredMixin, generic.UpdateView):
+class TeamMealPlanUpdateView(TeamQuerysetMixin, LoginRequiredMixin, generic.UpdateView):
     model = TeamMealPlan
     form_class = TeamMealPlanForm
     pk_url_kwarg = "pk"
@@ -618,7 +619,7 @@ class TeamMealPlanUpdateView(LoginRequiredMixin, generic.UpdateView):
         return context
 
 
-class TeamMealPlanDeleteView(LoginRequiredMixin, generic.DeleteView):
+class TeamMealPlanDeleteView(TeamQuerysetMixin, LoginRequiredMixin, generic.DeleteView):
     model = TeamMealPlan
     success_url = reverse_lazy("Butikken_TeamMealPlan_list")
 
@@ -642,7 +643,7 @@ class TeamMealPlanDeleteView(LoginRequiredMixin, generic.DeleteView):
 #        return kwargs
 
 
-class MealBookingDeleteView(LoginRequiredMixin, generic.DeleteView):
+class MealBookingDeleteView(TeamQuerysetMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.MealBooking
     success_url = reverse_lazy("Butikken_MealBooking_list")
 
@@ -654,7 +655,7 @@ class DayListView(LoginRequiredMixin, generic.ListView):
     form_class = forms.DayForm
 
 
-class DayCreateView(LoginRequiredMixin, generic.CreateView):
+class DayCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.Day
     form_class = forms.DayForm
 
@@ -664,13 +665,13 @@ class DayDetailView(LoginRequiredMixin, generic.DetailView):
     form_class = forms.DayForm
 
 
-class DayUpdateView(LoginRequiredMixin, generic.UpdateView):
+class DayUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.Day
     form_class = forms.DayForm
     pk_url_kwarg = "pk"
 
 
-class DayDeleteView(LoginRequiredMixin, generic.DeleteView):
+class DayDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.Day
     success_url = reverse_lazy("Butikken_Day_list")
 
@@ -680,7 +681,7 @@ class RecipeListView(LoginRequiredMixin, generic.ListView):
     form_class = forms.RecipeForm
 
 
-class RecipeCreateView(LoginRequiredMixin, generic.CreateView):
+class RecipeCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
     model = models.Recipe
     form_class = forms.RecipeForm
 
@@ -690,18 +691,19 @@ class RecipeDetailView(LoginRequiredMixin, generic.DetailView):
     form_class = forms.RecipeForm
 
 
-class RecipeUpdateView(LoginRequiredMixin, generic.UpdateView):
+class RecipeUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.Recipe
     form_class = forms.RecipeForm
     pk_url_kwarg = "pk"
 
 
-class RecipeDeleteView(LoginRequiredMixin, generic.DeleteView):
+class RecipeDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.Recipe
     success_url = reverse_lazy("Butikken_Recipe_list")
 
 
 
+@login_required
 def bulk_meal_update(request):
     user = request.user
     

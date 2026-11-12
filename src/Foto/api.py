@@ -1,21 +1,20 @@
-from rest_framework import permissions, viewsets
+from rest_framework import viewsets
 
 from . import models, serializers
+from organization.permissions import (
+    IsStaffOrReadOnly,
+    IsStaffOrTeamMember,
+    TeamScopedMixin,
+)
 
 
 class FotoItemViewSet(viewsets.ModelViewSet):
-    """ViewSet for the FotoItem class"""
-
     queryset = models.FotoItem.objects.all()
     serializer_class = serializers.FotoItemSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsStaffOrReadOnly]
 
 
-class FotoBookingViewSet(viewsets.ModelViewSet):
-    """ViewSet for the FotoBooking class"""
-
+class FotoBookingViewSet(TeamScopedMixin, viewsets.ModelViewSet):
     queryset = models.FotoBooking.objects.all()
     serializer_class = serializers.FotoBookingSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-
+    permission_classes = [IsStaffOrTeamMember]

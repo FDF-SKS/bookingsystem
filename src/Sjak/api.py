@@ -1,30 +1,26 @@
-from rest_framework import permissions, viewsets
+from rest_framework import viewsets
 
 from . import models, serializers
+from organization.permissions import (
+    IsStaffOrReadOnly,
+    IsStaffOrTeamMember,
+    TeamScopedMixin,
+)
 
 
 class SjakItemViewSet(viewsets.ModelViewSet):
-    """ViewSet for the SjakItem class"""
-
     queryset = models.SjakItem.objects.all()
     serializer_class = serializers.SjakItemSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsStaffOrReadOnly]
 
 
-class SjakBookingViewSet(viewsets.ModelViewSet):
-    """ViewSet for the SjakBooking class"""
-
+class SjakBookingViewSet(TeamScopedMixin, viewsets.ModelViewSet):
     queryset = models.SjakBooking.objects.all()
     serializer_class = serializers.SjakBookingSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsStaffOrTeamMember]
 
 
 class SjakItemTypeViewSet(viewsets.ModelViewSet):
-    """ViewSet for the SjakItemType class"""
-
     queryset = models.SjakItemType.objects.all()
     serializer_class = serializers.SjakItemTypeSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-
-
+    permission_classes = [IsStaffOrReadOnly]
