@@ -58,7 +58,7 @@ class LoebModelTests(TestCase):
         first = Task.objects.create(loeb=self.loeb, title='First Task', task_type='physical', station=self.station, order=1)
         second = Task.objects.create(loeb=self.loeb, title='Second Task', task_type='physical', station=self.station, order=2)
 
-        response = self.client.get(reverse('Loeb_Task_move_up', args=[second.pk]))
+        response = self.client.post(reverse('Loeb_Task_move_up', args=[second.pk]))
         self.assertEqual(response.status_code, 302)
         second.refresh_from_db()
         self.assertEqual(second.order, 1)
@@ -228,3 +228,96 @@ class LoebModelTests(TestCase):
         self.assertContains(response, 'Preview Hold')
         self.assertContains(response, 'PREV1')
         self.assertContains(response, 'hold-login')
+
+
+class TaskMoveAuthorizationTests(TestCase):
+    """Web task reordering must respect team boundaries and require POST."""
+
+    def setUp(self):
+        self.team_a = Team.objects.create(name='Team A', short_name='TA')
+        self.team_b = Team.objects.create(name='Team B', short_name='TB')
+
+        self.member_a = Volunteer.objects.create_user(
+            username='member-a',
+            email='a@example.com',
+            password='secure-password-123',
+        )
+        TeamMembership.objects.create(team=self.team_a, member=self.member_a, role='member')
+
+        self.member_b = Volunteer.objects.create_user(
+            username='member-b',
+            email='b@example.com',
+            password='secure-password-123',
+        )
+        TeamMembership.objects.create(team=self.team_b, member=self.member_b, role='member')
+
+        self.staff = Volunteer.objects.create_user(
+            username='staff-user',
+            email='staff@example.com',
+            password='secure-password-123',
+            is_staff=True,
+        )
+
+        self.loeb_a = Loeb.objects.create(name='Løb A', team=self.team_a)
+        self.loeb_b = Loeb.objects.create(name='Løb B', team=self.team_b)
+
+        self.task_a1 = Task.objects.create(loeb=self.loeb_a, title='A1', order=1)
+        self.task_a2 = Task.objects.create(loeb=self.loeb_a, title='A2', order=2)
+        self.task_b1 = Task.objects.create(loeb=self.loeb_b, title='B1', order=1)
+        self.task_b2 = Task.objects.create(loeb=self.loeb_b, title='B2', order=2)
+
+    def test_member_can_reorder_own_team_tasks(self):
+        self.client.force_login(self.member_a)
+        response = self.client.post(reverse('Loeb_Task_move_up', args=[self.task_a2.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        self.task_a2.refresh_from_db()
+        self.task_a1.refresh_from_db()
+        self.assertEqual(self.task_a2.order, 1)
+        self.assertEqual(self.task_a1.order, 2)
+
+    def test_member_cannot_move_other_team_task_up(self):
+        self.client.force_login(self.member_a)
+        response = self.client.post(reverse('Loeb_Task_move_up', args=[self.task_b2.pk]))
+
+        self.assertEqual(response.status_code, 404)
+        self.task_b2.refresh_from_db()
+        self.task_b1.refresh_from_db()
+        self.assertEqual(self.task_b2.order, 2)
+        self.assertEqual(self.task_b1.order, 1)
+
+    def test_member_cannot_move_other_team_task_down(self):
+        self.client.force_login(self.member_a)
+        response = self.client.post(reverse('Loeb_Task_move_down', args=[self.task_b1.pk]))
+
+        self.assertEqual(response.status_code, 404)
+        self.task_b1.refresh_from_db()
+        self.task_b2.refresh_from_db()
+        self.assertEqual(self.task_b1.order, 1)
+        self.assertEqual(self.task_b2.order, 2)
+
+    def test_move_requires_post(self):
+        self.client.force_login(self.member_a)
+        response = self.client.get(reverse('Loeb_Task_move_up', args=[self.task_a2.pk]))
+
+        self.assertEqual(response.status_code, 405)
+        self.task_a2.refresh_from_db()
+        self.assertEqual(self.task_a2.order, 2)
+
+    def test_anonymous_user_cannot_move_task(self):
+        response = self.client.post(reverse('Loeb_Task_move_up', args=[self.task_a2.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login', response['Location'])
+        self.task_a2.refresh_from_db()
+        self.assertEqual(self.task_a2.order, 2)
+
+    def test_staff_can_move_any_team_task(self):
+        self.client.force_login(self.staff)
+        response = self.client.post(reverse('Loeb_Task_move_down', args=[self.task_b1.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        self.task_b1.refresh_from_db()
+        self.task_b2.refresh_from_db()
+        self.assertEqual(self.task_b1.order, 2)
+        self.assertEqual(self.task_b2.order, 1)

@@ -187,11 +187,17 @@
                                     <div class="fw-semibold">{{ task.title }}</div>
                                     <div class="small text-muted">{{ task.get_task_type_display }}{% if task.station %} · {{ task.station.name }}{% endif %}</div>
                                 </div>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <a href="{% url 'Loeb_Task_move_up' task.pk %}" class="btn btn-outline-secondary" aria-label="Flyt op">↑</a>
-                                    <a href="{% url 'Loeb_Task_move_down' task.pk %}" class="btn btn-outline-secondary" aria-label="Flyt ned">↓</a>
-                                    <a href="{% url 'Loeb_Task_update' task.pk %}" class="btn btn-outline-primary">Rediger</a>
-                                    <a href="{% url 'Loeb_Task_delete' task.pk %}" class="btn btn-outline-danger">Slet</a>
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    <form method="post" action="{% url 'Loeb_Task_move_up' task.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary" aria-label="Flyt op">↑</button>
+                                    </form>
+                                    <form method="post" action="{% url 'Loeb_Task_move_down' task.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary" aria-label="Flyt ned">↓</button>
+                                    </form>
+                                    <a href="{% url 'Loeb_Task_update' task.pk %}" class="btn btn-sm btn-outline-primary">Rediger</a>
+                                    <a href="{% url 'Loeb_Task_delete' task.pk %}" class="btn btn-sm btn-outline-danger">Slet</a>
                                 </div>
                             </div>
                         </div>

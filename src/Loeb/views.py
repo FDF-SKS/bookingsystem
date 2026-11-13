@@ -5,6 +5,7 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse, reverse_lazy
 from django.views import generic
+from django.views.decorators.http import require_POST
 
 from organization.models import TeamMembership
 from organization.permissions import StaffRequiredMixin, TeamQuerysetMixin, team_ids_for
@@ -34,10 +35,28 @@ class TaskSubmissionScopedMixin:
         return qs.filter(hold__loeb__team_id__in=team_ids_for(user))
 
 
+def _scoped_task_or_404(user, pk):
+    """Resolve a task the user is allowed to reorder.
+
+    Mirrors ``LoebChildScopedMixin``: staff may move any task, everyone else
+    only tasks whose Loeb belongs to one of their teams. A foreign task yields
+    404 rather than 403 so ids stay non-enumerable.
+    """
+    queryset = models.Task.objects.select_related('loeb')
+    if not user.is_staff:
+        queryset = queryset.filter(loeb__team_id__in=team_ids_for(user))
+    return get_object_or_404(queryset, pk=pk)
+
+
 @login_required
+@require_POST
 def move_task_up(request, pk):
-    task = get_object_or_404(models.Task, pk=pk)
-    previous = models.Task.objects.filter(loeb=task.loeb, order__lt=task.order).order_by('-order').first()
+    task = _scoped_task_or_404(request.user, pk)
+    previous = (
+        models.Task.objects.filter(loeb=task.loeb, order__lt=task.order)
+        .order_by('-order')
+        .first()
+    )
     if previous:
         task.order, previous.order = previous.order, task.order
         task.save(update_fields=['order'])
@@ -47,9 +66,14 @@ def move_task_up(request, pk):
 
 
 @login_required
+@require_POST
 def move_task_down(request, pk):
-    task = get_object_or_404(models.Task, pk=pk)
-    next_task = models.Task.objects.filter(loeb=task.loeb, order__gt=task.order).order_by('order').first()
+    task = _scoped_task_or_404(request.user, pk)
+    next_task = (
+        models.Task.objects.filter(loeb=task.loeb, order__gt=task.order)
+        .order_by('order')
+        .first()
+    )
     if next_task:
         task.order, next_task.order = next_task.order, task.order
         task.save(update_fields=['order'])

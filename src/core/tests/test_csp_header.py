@@ -31,6 +31,18 @@ class ContentSecurityPolicyTests(TestCase):
         self.assertIn('https://*.tile.openstreetmap.org', csp)
         self.assertIn('https://www.youtube.com', csp)
 
+    def test_admin_csp_allows_unsafe_eval_for_alpine(self):
+        response = self.client.get('/admin/login/')
+        csp = response.headers['Content-Security-Policy']
+
+        self.assertIn("'unsafe-eval'", csp)
+
+    def test_public_csp_does_not_allow_unsafe_eval(self):
+        response = self.client.get('/')
+        csp = response.headers['Content-Security-Policy']
+
+        self.assertNotIn("'unsafe-eval'", csp)
+
 
 class ThirdPartyScriptTests(TestCase):
     """Executable third-party assets must be pinned and self-hosted."""

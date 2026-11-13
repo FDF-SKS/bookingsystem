@@ -17,6 +17,11 @@ class ContentSecurityPolicyMiddleware:
     Leaflet, Sleekplan, etc.) rely on them. External script/style sources are
     still restricted to the exact hosts below, which blocks arbitrary
     third-party script injection.
+
+    The Django/Unfold admin is a special case: Unfold's Alpine.js evaluates
+    ``x-*`` expressions via ``new Function``, which browsers only allow when
+    ``'unsafe-eval'`` is present. That relaxation is scoped to the staff-only
+    ``/admin/`` prefix so the public site keeps a strict policy.
     """
 
     CSP_VALUE = (
@@ -35,12 +40,22 @@ class ContentSecurityPolicyMiddleware:
         "form-action 'self'"
     )
 
+    ADMIN_CSP_VALUE = CSP_VALUE.replace(
+        "script-src 'self' 'unsafe-inline' ",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' ",
+    )
+
+    ADMIN_PATH_PREFIX = '/admin/'
+
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
         response = self.get_response(request)
-        response['Content-Security-Policy'] = self.CSP_VALUE
+        if request.path.startswith(self.ADMIN_PATH_PREFIX):
+            response['Content-Security-Policy'] = self.ADMIN_CSP_VALUE
+        else:
+            response['Content-Security-Policy'] = self.CSP_VALUE
         return response
 
 
