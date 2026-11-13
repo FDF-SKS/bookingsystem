@@ -127,7 +127,7 @@
 <link href="{% static 'vendor/simple-datatables/style.css' %}" rel="stylesheet" type="text/css">
 <script src="{% static 'vendor/simple-datatables/simple-datatables.js' %}" type="text/javascript"></script>
 
-<script>
+<script nonce="{{ csp_nonce }}">
     document.addEventListener("DOMContentLoaded", function() {
         const dataTable = new simpleDatatables.DataTable("#volunteerTable", {
             searchable: true,

@@ -1,9 +1,8 @@
 """
-App Feature Gate Middleware
-
-This middleware blocks access to disabled apps by returning a 404 response.
-It checks the constance configuration to determine if an app is enabled.
+Security and feature-gate middleware.
 """
+import secrets
+
 from constance import config
 from django.shortcuts import render
 
@@ -12,21 +11,35 @@ class ContentSecurityPolicyMiddleware:
     """
     Set a Content-Security-Policy header on every response.
 
-    The policy is intentionally permissive about inline scripts/styles
-    (``'unsafe-inline'``) because the templates and third-party SDKs (Bootstrap,
-    Leaflet, Sleekplan, etc.) rely on them. External script/style sources are
-    still restricted to the exact hosts below, which blocks arbitrary
-    third-party script injection.
+    Inline JavaScript is blocked on the public site: ``script-src`` carries a
+    fresh per-request nonce instead of ``'unsafe-inline'``, and every inline
+    ``<script>`` element in the project templates carries that nonce. Inline
+    event-handler attributes (``onclick`` etc.) are not covered by nonces, so
+    templates use ``data-*`` attributes wired up by ``static/js/ui-actions.js``.
 
-    The Django/Unfold admin is a special case: Unfold's Alpine.js evaluates
-    ``x-*`` expressions via ``new Function``, which browsers only allow when
-    ``'unsafe-eval'`` is present. That relaxation is scoped to the staff-only
-    ``/admin/`` prefix so the public site keeps a strict policy.
+    ``style-src`` still allows inline styles because Bootstrap and the many
+    ``style="..."`` attributes in the templates depend on them; inline CSS is a
+    far smaller attack surface than inline script.
+
+    External script/style sources are restricted to the exact hosts below,
+    which blocks arbitrary third-party script injection.
+
+    The Django/Unfold admin is a special case: it is staff-only and Unfold's
+    Alpine.js both evaluates ``x-*`` expressions via ``new Function`` (requiring
+    ``'unsafe-eval'``) and emits its own inline ``x-data`` expressions. It keeps
+    a relaxed policy; the public policy is what protects visitor sessions.
     """
 
-    CSP_VALUE = (
+    ADMIN_PATH_PREFIX = '/admin/'
+
+    NONCE_BYTES = 16
+
+    # Single placeholder so the shared directives live in one place;
+    # ``{script_nonce}`` is the script-src token list, which differs between the
+    # nonce-based public policy and the relaxed admin policy.
+    POLICY_TEMPLATE = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' "
+        "script-src {script_nonce}"
         "https://cdn.jsdelivr.net https://unpkg.com https://client.sleekplan.com; "
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
         "img-src 'self' data: https://cdn.jsdelivr.net https://unpkg.com "
@@ -40,23 +53,32 @@ class ContentSecurityPolicyMiddleware:
         "form-action 'self'"
     )
 
-    ADMIN_CSP_VALUE = CSP_VALUE.replace(
-        "script-src 'self' 'unsafe-inline' ",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' ",
-    )
-
-    ADMIN_PATH_PREFIX = '/admin/'
-
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        response = self.get_response(request)
         if request.path.startswith(self.ADMIN_PATH_PREFIX):
-            response['Content-Security-Policy'] = self.ADMIN_CSP_VALUE
-        else:
-            response['Content-Security-Policy'] = self.CSP_VALUE
+            # The admin has no nonce; it relies on 'unsafe-inline'/'unsafe-eval'.
+            request.csp_nonce = ''
+            response = self.get_response(request)
+            response['Content-Security-Policy'] = self._build_policy(
+                "'unsafe-inline' 'unsafe-eval' "
+            )
+            return response
+
+        nonce = secrets.token_urlsafe(self.NONCE_BYTES)
+        # Set before the view renders so templates can stamp ``nonce=`` on
+        # their inline scripts.
+        request.csp_nonce = nonce
+        response = self.get_response(request)
+        response['Content-Security-Policy'] = self._build_policy(
+            f"'nonce-{nonce}' "
+        )
         return response
+
+    @classmethod
+    def _build_policy(cls, script_nonce):
+        return cls.POLICY_TEMPLATE.format(script_nonce=script_nonce)
 
 
 class AppFeatureGateMiddleware:
@@ -148,5 +170,3 @@ class AppFeatureGateMiddleware:
             return not is_enabled
 
         return False
-
-

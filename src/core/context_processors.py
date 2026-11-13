@@ -20,3 +20,13 @@ def app_feature_toggles(request):
     }
 
 
+def csp_nonce(request):
+    """Expose the per-request CSP nonce so inline scripts can use it.
+
+    ``ContentSecurityPolicyMiddleware`` sets ``request.csp_nonce`` before the
+    view runs; admin responses get an empty string because the admin policy
+    still allows inline script.
+    """
+    return {'csp_nonce': getattr(request, 'csp_nonce', '')}
+
+

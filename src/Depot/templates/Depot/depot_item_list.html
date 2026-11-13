@@ -150,7 +150,7 @@
     {% endif %}
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
     document.addEventListener("DOMContentLoaded", function() {
         // Live search functionality
         const searchInput = document.getElementById('search-input');

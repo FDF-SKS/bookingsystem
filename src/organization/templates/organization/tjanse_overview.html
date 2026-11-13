@@ -20,7 +20,7 @@
 
     <form method="get" class="mb-3">
         <label for="id_event" class="form-label fw-semibold">Event</label>
-        <select id="id_event" name="event" class="form-select w-auto" onchange="this.form.submit()">
+        <select id="id_event" name="event" class="form-select w-auto" data-autosubmit>
             {% for event in events %}
             <option value="{{ event.pk }}" {% if selected_event and event.pk == selected_event.pk %}selected{% endif %}>{{ event.name }}</option>
             {% endfor %}

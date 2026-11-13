@@ -48,7 +48,7 @@
                         <div class="booking-box status-{{ b.status|lower }}" 
                              style="--level: {{ b.level }}; left: calc({{ b.left_val }} * {{ hour_width }}px); width: calc({{ b.width_val }} * {{ hour_width }}px);"
                              data-bs-toggle="tooltip" title="{{ b.hover_content }}"
-                             onclick="location.href='{% url 'AktivitetsTeam_AktivitetsTeamBooking_detail' pk=b.id %}'">
+                             data-href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_detail' pk=b.id %}">
                             <span class="px-1">{{ b.team_name }}</span>
                         </div>
                     {% endfor %}
@@ -70,7 +70,7 @@
     </button>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function () {
     // 1. Tooltips
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))

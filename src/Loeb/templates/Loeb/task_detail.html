@@ -118,7 +118,7 @@
     </div>
 </div>
 {% if qr_url %}
-<script>
+<script nonce="{{ csp_nonce }}">
     (function () {
         var copyButton = document.getElementById('copy-qr-link');
         if (!copyButton) return;

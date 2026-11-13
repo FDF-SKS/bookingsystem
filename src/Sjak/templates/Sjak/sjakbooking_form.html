@@ -138,7 +138,7 @@
 </div>
 
 <script src="{% static 'vendor/tom-select/tom-select.complete.min.js' %}"></script>
-<script>
+<script nonce="{{ csp_nonce }}">
     document.addEventListener("DOMContentLoaded", function() {
         const itemSelect = document.querySelector('select[name="item"]');
         if (itemSelect) {

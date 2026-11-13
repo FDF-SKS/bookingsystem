@@ -11,7 +11,7 @@
     <link rel="icon" type="image/png" href="{% static 'favicon.png' %}">
     <title>Det nye booking system</title>
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
         // Apply saved theme (light|dark|system) early to avoid FOUC.
         (function(){
             try {
@@ -284,10 +284,10 @@
         booking data and a CSRF token, so they must not run it.
     {% endcomment %}
     {% if not user.is_authenticated %}
-    <script type="text/javascript">window.$sleek=[];window.SLEEK_PRODUCT_ID=535324369;(function(){d=document;s=d.createElement("script");s.src="https://client.sleekplan.com/sdk/e.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
+    <script type="text/javascript" nonce="{{ csp_nonce }}">window.$sleek=[];window.SLEEK_PRODUCT_ID=535324369;(function(){d=document;s=d.createElement("script");s.src="https://client.sleekplan.com/sdk/e.js";s.async=1;d.getElementsByTagName("head")[0].appendChild(s);})();</script>
     {% endif %}
 
-    <script>
+    <script nonce="{{ csp_nonce }}">
         // Dynamically show Danish weekday + day for date inputs on booking forms
         (function(){
             function capitalize(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s; }
@@ -361,7 +361,8 @@
     </style>
 
     <script src="{% static 'js/theme-toggle.js' %}"></script>
-    <script>if(window.themeToggle && typeof window.themeToggle.init==='function'){ window.themeToggle.init(); }</script>
+    <script src="{% static 'js/ui-actions.js' %}"></script>
+    <script nonce="{{ csp_nonce }}">if(window.themeToggle && typeof window.themeToggle.init==='function'){ window.themeToggle.init(); }</script>
 
     {% block extra_js %}{% endblock %}
 </body>

@@ -118,7 +118,7 @@
     </form>
 </div>
 
-<script>
+<script nonce="{{ csp_nonce }}">
     // 1. TIMELINE LOGIC
     document.addEventListener('DOMContentLoaded', function() {
         const timelineStart = new Date("{{ timeline_start_iso }}");

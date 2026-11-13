@@ -49,7 +49,7 @@
             <p class="text-muted mb-0">Forhåndsvis opgaver og se de QR-koder holdene skal scanne</p>
         </div>
         <div class="d-flex flex-wrap gap-2">
-            <button type="button" class="btn btn-outline-secondary" onclick="window.print();">
+            <button type="button" class="btn btn-outline-secondary" data-print>
                 <i class="bi bi-printer"></i> Udskriv oversigt & QR
             </button>
             <a href="{% url 'Loeb_Hold_login' object.pk %}" target="_blank" class="btn btn-outline-info">
@@ -103,7 +103,7 @@
                         <div class="small fw-semibold text-muted mb-1">Direkte URL til hold-login:</div>
                         <div class="d-flex align-items-center gap-2">
                             <code class="text-break flex-grow-1" id="hold-login-url">{{ hold_login_url }}</code>
-                            <button type="button" class="btn btn-sm btn-outline-secondary no-print" onclick="navigator.clipboard.writeText('{{ hold_login_url }}'); this.textContent='Kopieret!'; setTimeout(() => this.textContent='Kopiér', 1500);">Kopiér</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary no-print" data-copy-text="{{ hold_login_url }}" data-copy-label="Kopieret!">Kopiér</button>
                         </div>
                     </div>
 
@@ -241,7 +241,7 @@
                                                        class="btn btn-sm btn-outline-secondary">
                                                         <i class="bi bi-download"></i> Hent QR
                                                     </a>
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="navigator.clipboard.writeText('{{ item.qr_url }}'); this.textContent='Kopieret!'; setTimeout(() => this.textContent='Kopiér link', 1500);">
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary" data-copy-text="{{ item.qr_url }}" data-copy-label="Kopieret!">
                                                         Kopiér link
                                                     </button>
                                                 </div>

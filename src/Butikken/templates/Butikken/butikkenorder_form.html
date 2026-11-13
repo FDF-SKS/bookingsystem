@@ -146,7 +146,7 @@
 {{ unit_map|json_script:"unit-data" }}
 {{ items_data|json_script:"items-data" }}
 
-<script>
+<script nonce="{{ csp_nonce }}">
     document.addEventListener("DOMContentLoaded", function() {
         const unitDataElement = document.getElementById('unit-data');
         const unitMap = unitDataElement ? JSON.parse(unitDataElement.textContent) : {};

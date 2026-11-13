@@ -107,7 +107,7 @@
 <script src="{% static 'vendor/tom-select/tom-select.complete.min.js' %}"></script>
 {{ unit_map|json_script:"unit-data" }}
 
-<script>
+<script nonce="{{ csp_nonce }}">
     document.addEventListener("DOMContentLoaded", function() {
         const dataElement = document.getElementById('unit-data');
         if (!dataElement) return;

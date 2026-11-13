@@ -458,7 +458,7 @@
     }
 </style>
 
-<script>
+<script nonce="{{ csp_nonce }}">
 document.addEventListener('DOMContentLoaded', function() {
     // Read the CSRF token from a meta tag instead of the cookie so the
     // cookie can be marked HttpOnly.
