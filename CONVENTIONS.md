@@ -13,7 +13,7 @@
 - Project root: `docker-compose*.yaml`, `dockerfile`, `nginx/`, `scripts/`
 - Django project in `src/`; settings/urls/celery in `src/core/`
 - Apps (each typically has `models.py`, `views.py`, `forms.py`, `serializers.py`, `api.py`, `urls.py`, `signals.py`, `admin.py`, `templates/`):
-  `organization` (volunteers, groups, Discord services), `AktivitetsTeam`, `Butikken`, `Depot`, `Foto`, `Loeb`, `Sjak`, `SOS`, `Teknik`, `emailing`
+  `organization` (volunteers, groups, Discord services), `AktivitetsTeam`, `Butikken`, `Depot`, `Foto`, `Loeb`, `Sjak`, `SOS`, `Teknik`, `Wiki`, `emailing`
 - Shared helpers in `src/utils/`; global templates in `src/templates/`
 
 ## Patterns

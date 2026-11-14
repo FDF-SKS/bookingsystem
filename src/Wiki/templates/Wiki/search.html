@@ -1,0 +1,55 @@
+{% extends 'Wiki/base_wiki.html' %}
+
+{% block wiki_content %}
+<div class="mb-4">
+    <h1 class="fw-bold mb-1">Søg i wiki</h1>
+    <p class="text-secondary mb-0">Søgningen kigger både i sidetitler og i sidens indhold.</p>
+</div>
+
+<form action="{% url 'Wiki_Search' %}" method="get" role="search" class="mb-4">
+    <div class="input-group input-group-lg">
+        <span class="input-group-text bg-white"><i class="bi bi-search" aria-hidden="true"></i></span>
+        <input type="search" name="q" value="{{ query }}" class="form-control"
+               placeholder="Skriv et eller flere ord…" aria-label="Søg i wiki" autofocus>
+        <button class="btn btn-primary px-4" type="submit">Søg</button>
+    </div>
+</form>
+
+{% if query %}
+    <p class="text-secondary small mb-3">
+        {{ result_count }} resultat{{ result_count|pluralize:"er" }} for
+        <strong>“{{ query }}”</strong>
+    </p>
+
+    {% if results %}
+        <div class="list-group shadow-sm border-0 wiki-search-results">
+            {% for result in results %}
+                <a href="{{ result.page.get_absolute_url }}" class="list-group-item list-group-item-action border-0">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div>
+                            <h2 class="h5 fw-semibold mb-1">{{ result.title_html }}</h2>
+                            {% if result.page.parent %}
+                                <div class="small text-secondary mb-2">{{ result.page.get_ancestors|join:" / " }}</div>
+                            {% endif %}
+                            <p class="mb-0 text-secondary wiki-snippet">{{ result.snippet }}</p>
+                        </div>
+                        <i class="bi bi-arrow-right text-primary mt-1" aria-hidden="true"></i>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-search display-5 text-secondary" aria-hidden="true"></i>
+                <h2 class="h5 fw-bold mt-3">Ingen sider matcher søgningen</h2>
+                <p class="text-secondary mb-0">Prøv med et andet eller kortere søgeord.</p>
+            </div>
+        </div>
+    {% endif %}
+{% else %}
+    <div class="alert alert-light border text-secondary">
+        Skriv et søgeord for at finde sider i wikien.
+    </div>
+{% endif %}
+{% endblock %}

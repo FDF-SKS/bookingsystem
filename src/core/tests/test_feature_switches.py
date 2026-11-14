@@ -83,6 +83,12 @@ class FeatureToggleMiddlewareTests(TestCase):
         response = self.client.get('/depot/')
         self.assertEqual(response.status_code, 404)
 
+    @override_config(APP_ENABLE_WIKI=False)
+    def test_disabled_wiki_app_returns_404(self):
+        """Test that a disabled Wiki app returns 404."""
+        response = self.client.get('/wiki/')
+        self.assertEqual(response.status_code, 404)
+
     def test_admin_always_accessible_when_enabled(self):
         """Test that /admin/ is always accessible even if other apps disabled."""
         # Try accessing admin with all apps disabled

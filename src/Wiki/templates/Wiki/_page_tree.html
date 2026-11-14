@@ -1,0 +1,21 @@
+{% for node in nodes %}
+    <li class="wiki-nav-item">
+        {% if node.children %}
+            <details class="wiki-nav-group" {% if node.page.pk in active_ids %}open{% endif %}>
+                <summary class="wiki-nav-summary">
+                    <i class="bi bi-chevron-right wiki-nav-chevron" aria-hidden="true"></i>
+                    <a class="wiki-nav-link{% if current_page and node.page.pk == current_page.pk %} active{% endif %}"
+                       href="{{ node.page.get_absolute_url }}">{{ node.page.title }}</a>
+                </summary>
+                <ul class="wiki-nav-list">
+                    {% include 'Wiki/_page_tree.html' with nodes=node.children %}
+                </ul>
+            </details>
+        {% else %}
+            <a class="wiki-nav-link{% if current_page and node.page.pk == current_page.pk %} active{% endif %}"
+               href="{{ node.page.get_absolute_url }}">
+                <i class="bi bi-file-text wiki-nav-leaf-icon" aria-hidden="true"></i>{{ node.page.title }}
+            </a>
+        {% endif %}
+    </li>
+{% endfor %}

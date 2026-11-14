@@ -93,6 +93,7 @@ class AppFeatureGateMiddleware:
     - /butikken/ → APP_ENABLE_BUTIKKEN
     - /sjak/ → APP_ENABLE_SJAK
     - /loeb/ → APP_ENABLE_LOEB
+    - /wiki/ → APP_ENABLE_WIKI
     - /depot/ → APP_ENABLE_DEPOT
     - /organization/volunteer/ → APP_ENABLE_CONTACTS
     - /organization/volunteerappointment/ → APP_ENABLE_LEGEAFTALER
@@ -109,6 +110,7 @@ class AppFeatureGateMiddleware:
         'butikken': 'APP_ENABLE_BUTIKKEN',
         'sjak': 'APP_ENABLE_SJAK',
         'loeb': 'APP_ENABLE_LOEB',
+        'wiki': 'APP_ENABLE_WIKI',
         'depot': 'APP_ENABLE_DEPOT',
     }
 

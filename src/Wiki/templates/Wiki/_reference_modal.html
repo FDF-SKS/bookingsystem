@@ -1,0 +1,22 @@
+<div class="modal fade" id="wikiReferenceModal" tabindex="-1" aria-labelledby="wikiReferenceModalLabel"
+     aria-hidden="true" data-lookup-url="{% url 'Wiki_Lookup' %}">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title h5 fw-bold" id="wikiReferenceModalLabel">Indsæt artikelhenvisning</h2>
+                    <p class="text-secondary small mb-0">Vælg en side, så indsættes et link ved markøren.</p>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Luk"></button>
+            </div>
+            <div class="modal-body">
+                <div class="input-group mb-3">
+                    <span class="input-group-text bg-transparent"><i class="bi bi-search" aria-hidden="true"></i></span>
+                    <input type="search" id="wiki-reference-search" class="form-control"
+                           placeholder="Søg efter en side…" autocomplete="off" aria-label="Søg efter en side">
+                </div>
+                <div id="wiki-reference-results" class="list-group list-group-flush" aria-live="polite"></div>
+            </div>
+        </div>
+    </div>
+</div>

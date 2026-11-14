@@ -30,6 +30,7 @@ urlpatterns = [
     path('foto/', include('Foto.urls')),
     path('depot/', include('Depot.urls')),
     path('loeb/', include('Loeb.urls')),
+    path('wiki/', include('Wiki.urls')),
     
     # NEW: Comments URLs
     path('comments/', include('django_comments_xtd.urls')),

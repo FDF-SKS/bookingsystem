@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load wiki_tags %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/wiki.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="row g-4 wiki-shell">
+    <aside class="col-lg-3">
+        {% wiki_sidebar current_page=page %}
+    </aside>
+    <div class="col-lg-9">
+        {% block wiki_content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/wiki.js' %}" defer></script>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% extends 'Wiki/base_wiki.html' %}
+{% load django_bootstrap5 %}
+
+{% block wiki_content %}
+{{ form.media }}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="fw-bold mb-1">{% if page %}Rediger side{% else %}Ny side{% endif %}</h1>
+        <p class="text-secondary mb-0">
+            {% if page %}Opdatér indholdet på “{{ page.title }}”.{% else %}Opret en ny side i vidensbiblioteket.{% endif %}
+        </p>
+    </div>
+    <a href="{% if page %}{{ page.get_absolute_url }}{% else %}{% url 'Wiki_WikiPage_list' %}{% endif %}"
+       class="btn btn-outline-secondary">Annuller</a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-4 p-md-5">
+        <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+            {% bootstrap_form_errors form type='non_fields' %}
+
+            <div class="row g-3">
+                <div class="col-md-8">{% bootstrap_field form.title %}</div>
+                <div class="col-md-4">{% bootstrap_field form.order %}</div>
+                <div class="col-12">{% bootstrap_field form.parent %}</div>
+
+                <div class="col-12">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                        <label for="{{ form.content.id_for_label }}" class="form-label fw-bold mb-0">
+                            {{ form.content.label }}
+                        </label>
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                data-bs-toggle="modal" data-bs-target="#wikiReferenceModal">
+                            <i class="bi bi-link-45deg" aria-hidden="true"></i> Indsæt artikelhenvisning
+                        </button>
+                    </div>
+                    <div class="wiki-editor">
+                        {{ form.content }}
+                    </div>
+                    {% if form.content.errors %}
+                        <div class="invalid-feedback d-block">{{ form.content.errors }}</div>
+                    {% endif %}
+                    <div class="form-text">
+                        Tip: Brug knappen <strong>Indsæt artikelhenvisning</strong> til at linke direkte til en anden
+                        side i wikien.
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">Gem side</button>
+                <a href="{% if page %}{{ page.get_absolute_url }}{% else %}{% url 'Wiki_WikiPage_list' %}{% endif %}"
+                   class="btn btn-outline-secondary">Annuller</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% include 'Wiki/_reference_modal.html' %}
+{% endblock %}

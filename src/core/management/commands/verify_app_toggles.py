@@ -58,6 +58,7 @@ class Command(BaseCommand):
             'APP_ENABLE_CONTACTS': 'Contact Book',
             'APP_ENABLE_LEGEAFTALER': 'Volunteer Appointments',
             'APP_ENABLE_DEPOT': 'Depot (Inventory)',
+            'APP_ENABLE_WIKI': 'Wiki',
         }
 
         for toggle_name, display_name in toggles.items():

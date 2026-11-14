@@ -148,6 +148,7 @@ INSTALLED_APPS = [
     'Foto',
     'Depot',
     'Loeb',
+    'Wiki',
     'emailing',
     #"debug_toolbar",
 
@@ -230,6 +231,7 @@ CONSTANCE_CONFIG = {
     'APP_ENABLE_CONTACTS': (True, 'Slå kontaktbog modul til/fra'),
     'APP_ENABLE_LEGEAFTALER': (True, 'Slå legeaftale modul til/fra'),
     'APP_ENABLE_DEPOT': (True, 'Slå Depot (inventar) modul til/fra'),
+    'APP_ENABLE_WIKI': (True, 'Slå Wiki modul til/fra'),
 }
 CONSTANCE_ADDITIONAL_FIELDS = {
     **UNFOLD_CONSTANCE_ADDITIONAL_FIELDS,
@@ -629,6 +631,19 @@ UNFOLD = {
                         "title": _("Depot kasser"),
                         "icon": "box",
                         "link": reverse_lazy("admin:Depot_depotlocation_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Wiki"),
+                "separator": True,
+                "collapsible": True,
+                "default_open": True,
+                "items": [
+                    {
+                        "title": _("Wikisider"),
+                        "icon": "menu_book",
+                        "link": reverse_lazy("admin:Wiki_wikipage_changelist"),
                     },
                 ],
             },

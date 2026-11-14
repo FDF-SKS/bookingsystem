@@ -1,0 +1,31 @@
+<div class="card border-0 shadow-sm wiki-sidebar-card">
+    <div class="card-body p-3">
+        <form action="{% url 'Wiki_Search' %}" method="get" role="search" class="mb-4">
+            <label for="wiki-sidebar-search" class="form-label small text-uppercase text-secondary fw-bold">Søg i wiki</label>
+            <div class="input-group">
+                <span class="input-group-text bg-transparent"><i class="bi bi-search" aria-hidden="true"></i></span>
+                <input type="search" id="wiki-sidebar-search" name="q" value="{{ request.GET.q|default:'' }}"
+                       class="form-control" placeholder="Søg i titler og indhold" autocomplete="off">
+            </div>
+        </form>
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h2 class="h6 text-uppercase text-secondary fw-bold mb-0">Sider</h2>
+            {% if request.user.is_staff %}
+                <a href="{% url 'Wiki_WikiPage_create' %}" class="btn btn-sm btn-outline-primary" title="Ny side">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i><span class="d-none d-xl-inline ms-1">Ny</span>
+                </a>
+            {% endif %}
+        </div>
+
+        {% if nodes %}
+            <nav aria-label="Wikisider">
+                <ul class="wiki-nav-list">
+                    {% include 'Wiki/_page_tree.html' %}
+                </ul>
+            </nav>
+        {% else %}
+            <p class="text-secondary small mb-0">Der er endnu ingen sider i wikien.</p>
+        {% endif %}
+    </div>
+</div>

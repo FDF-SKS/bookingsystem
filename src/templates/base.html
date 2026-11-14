@@ -142,6 +142,22 @@
                         </li>
                         {% endif %}
 
+                        {% if config.APP_ENABLE_WIKI %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Wiki
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{% url 'Wiki_WikiPage_list' %}">Vidensbibliotek</a></li>
+                                <li><a class="dropdown-item" href="{% url 'Wiki_Search' %}">Søg i wiki</a></li>
+                                {% if request.user.is_staff %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{% url 'Wiki_WikiPage_create' %}">Ny side</a></li>
+                                {% endif %}
+                            </ul>
+                        </li>
+                        {% endif %}
+
                         {% if config.APP_ENABLE_SOS %}
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">

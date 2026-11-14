@@ -1,0 +1,32 @@
+{% extends 'Wiki/base_wiki.html' %}
+
+{% block wiki_content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small mb-3">
+        <li class="breadcrumb-item"><a href="{% url 'Wiki_WikiPage_list' %}">Wiki</a></li>
+        <li class="breadcrumb-item"><a href="{{ page.get_absolute_url }}">{{ page.title }}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Slet</li>
+    </ol>
+</nav>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-4 p-md-5">
+        <h1 class="h3 fw-bold mb-3">Slet “{{ page.title }}”?</h1>
+        {% if page.children.exists %}
+            <div class="alert alert-warning">
+                Siden har undersider. De bliver også slettet.
+            </div>
+        {% endif %}
+        <p class="text-secondary">
+            Handlingen kan ikke fortrydes. Hvis andre sider linker til denne side, vil linkene ikke længere virke.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-danger">Ja, slet siden</button>
+                <a href="{{ page.get_absolute_url }}" class="btn btn-outline-secondary">Annuller</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
