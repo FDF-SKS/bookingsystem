@@ -2,9 +2,11 @@ import os
 from io import BytesIO
 
 from django.contrib.auth.models import AbstractUser, UserManager
+from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.db import models
 from django.urls import reverse
+from django.utils import timezone
 from django_tiptap_editor.fields import TipTapJSONField
 from PIL import Image
 from simple_history.models import HistoricalRecords
@@ -321,15 +323,46 @@ class VolunteerAppointment(models.Model):
 
 
 class Tjanse(models.Model):
-    """Reusable duty/chore template (e.g. 'Opvask'), assigned to teams per event via TjanseOwnership."""
+    """Reusable duty/chore template (e.g. 'Opvask'), assigned to teams per event via TjanseOwnership.
+
+    ``kind`` separates the regular, event-long tjanser from the last-day
+    Slutrengøring pool so the two workflows never appear in each other's views.
+    """
+
+    KIND_CHOICES = [
+        ('regular', 'Almindelig'),
+        ('slutrengoring', 'Slutrengøring'),
+    ]
+    PRIORITY_CHOICES = [
+        ('required', 'Påkrævet'),
+        ('high', 'Høj'),
+        ('medium', 'Mellem'),
+        ('low', 'Lav'),
+    ]
+    PRIORITY_RANK = {
+        'required': 0,
+        'high': 1,
+        'medium': 2,
+        'low': 3,
+    }
 
     title = models.CharField(max_length=100)
     description = TipTapJSONField(blank=True, default=dict)
+    kind = models.CharField(
+        max_length=20, choices=KIND_CHOICES, default='regular', db_index=True
+    )
+    priority = models.CharField(
+        max_length=20, choices=PRIORITY_CHOICES, default='medium', db_index=True
+    )
+    area = models.CharField(max_length=100, blank=True, db_index=True)
+    estimated_minutes = models.PositiveSmallIntegerField(null=True, blank=True)
+    order = models.PositiveIntegerField(default=0)
     created = models.DateTimeField(auto_now_add=True, editable=False)
     last_updated = models.DateTimeField(auto_now=True, editable=False)
 
     class Meta:
         verbose_name = "Tjanse"
+        ordering = ['order', 'title']
 
     def __str__(self):
         return self.title
@@ -345,7 +378,12 @@ class TjanseOwnership(models.Model):
         ('not_done', 'Ikke Udført'),
     ]
 
-    tjanse = models.ForeignKey("organization.Tjanse", on_delete=models.CASCADE, related_name="ownerships")
+    tjanse = models.ForeignKey(
+        "organization.Tjanse",
+        on_delete=models.CASCADE,
+        related_name="ownerships",
+        limit_choices_to={'kind': 'regular'},
+    )
     event = models.ForeignKey("organization.Event", on_delete=models.CASCADE, related_name="tjanse_ownerships")
     team = models.ForeignKey("organization.Team", on_delete=models.CASCADE, related_name="tjanse_ownerships")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='assigned')
@@ -362,6 +400,13 @@ class TjanseOwnership(models.Model):
 
     def __str__(self):
         return f"{self.tjanse} - {self.team} ({self.get_status_display()})"
+
+    def clean(self):
+        super().clean()
+        if self.tjanse_id and self.tjanse.kind != 'regular':
+            raise ValidationError(
+                {'tjanse': 'Slutrengøringstjanser skal tildeles via slutrengøringsmodulet.'}
+            )
 
     def get_absolute_url(self):
         return reverse("organization_TjanseOwnership_detail", args=(self.pk,))
@@ -431,11 +476,127 @@ class TjanseSwapRequest(models.Model):
         self.status = 'rejected'
         self.resolved_by = resolved_by
         self.save()
-    
 
 
+class SlutrengoringAssignment(models.Model):
+    """One executable Slutrengøring task for a single event.
 
+    A row starts as ``available`` (team is NULL) and can be claimed by a team.
+    The nullable team and claimable states are what distinguish this workflow
+    from the regular ``TjanseOwnership`` model.
+    """
 
+    STATUS_CHOICES = [
+        ('available', 'Ledig'),
+        ('assigned', 'Tildelt'),
+        ('in_progress', 'I gang'),
+        ('done', 'Udført'),
+        ('not_finished', 'Ikke udført'),
+    ]
+    ACTIVE_STATUSES = ('assigned', 'in_progress')
+    CLAIMABLE_STATUSES = ('available', 'not_finished')
 
+    tjanse = models.ForeignKey(
+        "organization.Tjanse",
+        on_delete=models.CASCADE,
+        related_name="slutrengoring_assignments",
+        limit_choices_to={'kind': 'slutrengoring'},
+    )
+    event = models.ForeignKey(
+        "organization.Event",
+        on_delete=models.CASCADE,
+        related_name="slutrengoring_assignments",
+    )
+    team = models.ForeignKey(
+        "organization.Team",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="slutrengoring_assignments",
+    )
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default='available', db_index=True
+    )
 
+    assigned_by = models.ForeignKey(
+        "organization.Volunteer",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+    )
+    assigned_at = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    completed_by = models.ForeignKey(
+        "organization.Volunteer",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+    )
+    not_finished_at = models.DateTimeField(null=True, blank=True)
+    not_finished_reason = models.TextField(blank=True)
+    attempt_count = models.PositiveSmallIntegerField(default=0)
+    last_team = models.ForeignKey(
+        "organization.Team",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+',
+    )
+
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+    last_updated = models.DateTimeField(auto_now=True, editable=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        verbose_name = "Slutrengøringstildeling"
+        verbose_name_plural = "Slutrengøringstildelinger"
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tjanse', 'event'],
+                name='unique_slutrengoring_task_per_event',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['event', 'status'], name='slutreng_event_status_idx'),
+            models.Index(fields=['event', 'team', 'status'], name='slutreng_event_team_status_idx'),
+        ]
+
+    def __str__(self):
+        owner = self.team.name if self.team_id else 'Ledig'
+        return f"{self.tjanse.title} - {owner} ({self.get_status_display()})"
+
+    def clean(self):
+        super().clean()
+        if self.tjanse_id and self.tjanse.kind != 'slutrengoring':
+            raise ValidationError(
+                {'tjanse': 'Kun tjanser af typen Slutrengøring kan tildeles her.'}
+            )
+
+    def save(self, *args, **kwargs):
+        """Keep timestamps coherent when staff edit rows from the admin."""
+        if self.status in self.ACTIVE_STATUSES and self.team_id and self.assigned_at is None:
+            self.assigned_at = timezone.now()
+        if self.status == 'in_progress' and self.started_at is None:
+            self.started_at = timezone.now()
+        if self.status == 'done' and self.completed_at is None:
+            self.completed_at = timezone.now()
+        super().save(*args, **kwargs)
+
+    @property
+    def is_active(self):
+        return self.status in self.ACTIVE_STATUSES
+
+    @property
+    def is_claimable(self):
+        return self.team_id is None and self.status in self.CLAIMABLE_STATUSES
+
+    @property
+    def priority(self):
+        return self.tjanse.priority
+
+    def get_absolute_url(self):
+        return reverse("organization_Slutrengoring_detail", args=(self.pk,))
 

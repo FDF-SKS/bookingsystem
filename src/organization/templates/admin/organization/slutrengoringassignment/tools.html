@@ -1,0 +1,95 @@
+{% extends "admin/base_site.html" %}
+{% load i18n unfold %}
+{% block title %}Opret og tildel slutrengøring{% endblock %}
+{% block content %}
+    {% component "unfold/components/container.html" %}
+    <div class="flex flex-col gap-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                {% component "unfold/components/title.html" %}Opret og tildel slutrengøring{% endcomponent %}
+            <p class="mt-1 text-sm text-base-500 dark:text-base-400">
+                Opret opgaverne for eventet, og fordel de højest prioriterede opgaver til teams.
+            </p>
+        </div>
+        <a href="{% url 'admin:organization_slutrengoringassignment_board' %}{% if selected_event %}?event={{ selected_event.pk }}{% endif %}"
+           class="rounded-default border border-base-200 px-3 py-2 text-sm font-medium text-base-700 hover:bg-base-50 dark:border-base-700 dark:text-base-200 dark:hover:bg-base-800">
+            Åbn statusoversigt
+        </a>
+    </div>
+    <form method="get" class="flex flex-col gap-1 p-4 sm:flex-row sm:items-end">
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+            <label for="id_event"
+                   class="text-sm font-medium text-base-700 dark:text-base-200">Event</label>
+            <select id="id_event"
+                    name="event"
+                    onchange="this.form.submit()"
+                    class="w-full rounded-default border border-base-200 bg-white px-3 py-2 text-sm text-base-700 shadow-sm outline-none transition focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 dark:border-base-700 dark:bg-base-900 dark:text-base-200">
+                {% for event in events %}
+                    <option value="{{ event.pk }}"
+                            {% if selected_event and event.pk == selected_event.pk %}selected{% endif %}>{{ event.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+    {% if not selected_event %}
+        <div class="rounded-default border border-base-200 bg-white p-6 text-sm text-base-500 dark:border-base-700 dark:bg-base-900 dark:text-base-400">
+            Der er ingen events at vise endnu.
+        </div>
+    {% else %}
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div class="rounded-default border border-base-200 bg-white p-4 shadow-sm dark:border-base-700 dark:bg-base-900">
+                <div class="text-xs font-medium uppercase tracking-wide text-base-500 dark:text-base-400">Tildelinger</div>
+                <div class="mt-1 text-2xl font-semibold text-base-900 dark:text-base-100">{{ assignment_count }}</div>
+            </div>
+            <div class="rounded-default border border-base-200 bg-white p-4 shadow-sm dark:border-base-700 dark:bg-base-900">
+                <div class="text-xs font-medium uppercase tracking-wide text-base-500 dark:text-base-400">Ledige opgaver</div>
+                <div class="mt-1 text-2xl font-semibold text-primary-600 dark:text-primary-400">{{ available_count }}</div>
+            </div>
+            <div class="rounded-default border border-base-200 bg-white p-4 shadow-sm dark:border-base-700 dark:bg-base-900">
+                <div class="text-xs font-medium uppercase tracking-wide text-base-500 dark:text-base-400">Teams</div>
+                <div class="mt-1 text-2xl font-semibold text-base-900 dark:text-base-100">{{ team_count }}</div>
+            </div>
+            <div class="rounded-default border border-base-200 bg-white p-4 shadow-sm dark:border-base-700 dark:bg-base-900">
+                <div class="text-xs font-medium uppercase tracking-wide text-base-500 dark:text-base-400">Teams med aktiv opgave</div>
+                <div class="mt-1 text-2xl font-semibold text-amber-600 dark:text-amber-400">{{ busy_team_count }}</div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <div class="rounded-default border border-base-200 bg-white p-4 shadow-sm dark:border-base-700 dark:bg-base-900">
+                <h2 class="text-base font-semibold text-base-900 dark:text-base-100">Opret tildelinger</h2>
+                <p class="mt-1 text-sm text-base-500 dark:text-base-400">
+                    Opretter én tildeling for hver tjanse markeret som Slutrengøring. Eksisterende tildelinger røres ikke.
+                </p>
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="event" value="{{ selected_event.pk }}">
+                    <input type="hidden" name="action" value="create">
+                    <button type="submit"
+                            class="rounded-default bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">
+                        Opret tildelinger for {{ selected_event.name }}
+                    </button>
+                </form>
+            </div>
+            <div class="rounded-default border border-base-200 bg-white p-4 shadow-sm dark:border-base-700 dark:bg-base-900">
+                <h2 class="text-base font-semibold text-base-900 dark:text-base-100">Tildel højeste prioritet</h2>
+                <p class="mt-1 text-sm text-base-500 dark:text-base-400">
+                    Giver hvert ledigt team den højest prioriterede ledige opgave. Teams med en aktiv opgave springes over.
+                </p>
+                <form method="post" class="mt-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="event" value="{{ selected_event.pk }}">
+                    <input type="hidden" name="action" value="assign">
+                    <button type="submit"
+                            class="rounded-default bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700">
+                        Tildel én opgave til hvert ledigt team
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="rounded-default border border-base-200 bg-white p-4 text-sm text-base-500 shadow-sm dark:border-base-700 dark:bg-base-900 dark:text-base-400">
+            Tildelinger sender automatisk en Discord-besked til det team, der får opgaven.
+        </div>
+    {% endif %}
+</div>
+{% endcomponent %}
+{% endblock %}

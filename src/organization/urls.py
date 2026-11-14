@@ -99,5 +99,13 @@ urlpatterns = [
      path('tjanse/swap/', views.TjanseSwapRequestListView.as_view(), name='organization_TjanseSwapRequest_list'),
      path('tjanse/swap/create/', views.TjanseSwapRequestCreateView.as_view(), name='organization_TjanseSwapRequest_create'),
      path('tjanse/swap/<int:pk>/status/<str:new_status>/', views.tjanse_swap_request_update, name='tjanse_swap_request_update'),
+
+     path('slutrengoring/', views.SlutrengoringHomeView.as_view(), name='organization_Slutrengoring_home'),
+     path('slutrengoring/vaelg/', views.SlutrengoringClaimListView.as_view(), name='organization_Slutrengoring_claim_list'),
+     path('slutrengoring/<int:pk>/', views.SlutrengoringAssignmentDetailView.as_view(), name='organization_Slutrengoring_detail'),
+     path('slutrengoring/<int:pk>/claim/', views.slutrengoring_claim, name='slutrengoring_claim'),
+     path('slutrengoring/<int:pk>/start/', views.slutrengoring_start, name='slutrengoring_start'),
+     path('slutrengoring/<int:pk>/done/', views.slutrengoring_done, name='slutrengoring_done'),
+     path('slutrengoring/<int:pk>/not-finished/', views.slutrengoring_not_finished, name='slutrengoring_not_finished'),
 ]
 

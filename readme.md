@@ -145,6 +145,16 @@ python manage.py test
 GitHub Actions-workflowet **Django Tests** (`.github/workflows/django.yml`) kører automatisk `manage.py check`, `makemigrations --check` og hele testsuiten ved hvert push og hver pull request. En PR kan ikke merges hvis testene fejler.
 
 
+## 📚 Wiki-guides
+Wikien har et sæt indbyggede guides til bookingsystemet. De ligger som HTML-filer i `src/Wiki/guides/pages/` og oprettes i databasen med:
+```bash
+python manage.py seed_wiki_guides
+```
+Kommandoen er idempotent: findes en side allerede, røres den ikke. Brug `--update` for at overskrive titel, indhold og placering med det, der står i filerne, og `--dry-run` for at se ændringerne først. Billederne ligger i `src/static/wiki/guides/` og bliver en del af `collectstatic`.
+
+Retter man en side direkte i wiki-editoren, skal man også rette HTML-filen – ellers bliver ændringen overskrevet næste gang, nogen kører `--update`.
+
+
 ## 🚀 Sådan kører du projektet
 
 ### 1. Lokal Udvikling

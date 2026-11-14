@@ -1,0 +1,47 @@
+<p>Tjanser er de opgaver, der skal løses i løbet af eventet. Du opretter selve opgaven én gang og tildeler den derefter til et team på et event med en frist.</p>
+
+<h2>Opret en tjanse</h2>
+<ol>
+    <li>Gå til <strong>Administrator &rarr; Organization &rarr; Tjanser &rarr; Tilføj</strong>.</li>
+    <li>Skriv en tydelig <strong>titel</strong>, fx »Rengør fællesbadene«.</li>
+    <li>Skriv en <strong>beskrivelse</strong> i editoren – gerne med hvad der skal bruges, og hvornår det skal være færdigt.</li>
+    <li>Vælg <strong>Type</strong>: <em>Almindelig</em> til tjanser i løbet af eventet, <em>Slutrengøring</em> til den sidste dag.</li>
+    <li>Vælg <strong>Prioritet</strong> og eventuelt <strong>Område</strong> og <strong>Anslået tid</strong>.</li>
+    <li>Brug <strong>Rækkefølge</strong> til at styre, hvordan tjanserne sorteres.</li>
+    <li>Gem.</li>
+</ol>
+
+<p><img src="/static/wiki/guides/admin-tjanse.png" alt="Tjanser i administrationspanelet med kolonnerne Type og Prioritet"></p>
+
+<p><em>I listen kan du filtrere på Type og Prioritet – fx for at se kun slutrengøringsopgaver.</em></p>
+
+<h2>Tildel en tjanse til et team</h2>
+<ol>
+    <li>Gå til <strong>Administrator &rarr; Organization &rarr; Tjanser-tildelinger &rarr; Tilføj</strong>.</li>
+    <li>Vælg <strong>tjanse</strong>, <strong>event</strong>, <strong>team</strong> og <strong>due date</strong> (frist).</li>
+    <li>Gem.</li>
+</ol>
+<p>Skal du rette flere på én gang, kan du ændre <strong>team</strong>, <strong>status</strong> og <strong>due date</strong> direkte i listen og gemme.</p>
+
+<blockquote>
+    <p><strong>Slutrengøring blandes ikke med almindelige tjanser.</strong> En tjanse med Type = Slutrengøring må ikke tildeles her – systemet afviser det. Brug <em>Slutrengøringstildelinger</em> i stedet, og se <a href="/wiki/slutrengoring-opsaetning/">opsætningsguiden</a>.</p>
+</blockquote>
+
+<h2>Følg opgaverne</h2>
+<ul>
+    <li><strong>Overblikket</strong> – på de almindelige sider under <em>Organisation &rarr; Tjanser &rarr; Alle tjanser</em> ser du alle teams opgaver dag for dag.</li>
+    <li><strong>Tjanser-bytter</strong> – når et team vil bytte, kan du acceptere eller afvise i panelet med handlingerne <em>Accept swap</em> / <em>Reject swap</em>.</li>
+    <li><strong>Påmindelser</strong> – kommandoen <code>python manage.py send_tjanse_reminders</code> sender en mail til teams med en tjänst, der har frist i dag og ikke er udført.</li>
+</ul>
+
+<h2>Statusser</h2>
+<ul>
+    <li><strong>Tildelt</strong> – teamet har opgaven.</li>
+    <li><strong>I Gang</strong> – opgaven er startet.</li>
+    <li><strong>Udført</strong> – opgaven er klaret.</li>
+    <li><strong>Ikke Udført</strong> – opgaven blev ikke gennemført.</li>
+</ul>
+
+<p>Som administrator kan du altid rette status, hvis et team har glemt at trykke. Historikken på posten viser, hvad der er ændret.</p>
+
+<p>Se også: <a href="/wiki/tjanser/">Tjanser i løbet af eventet</a>.</p>

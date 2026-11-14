@@ -82,6 +82,11 @@ class TjanseSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "description",
+            "kind",
+            "priority",
+            "area",
+            "estimated_minutes",
+            "order",
             "created",
             "last_updated",
         ]
@@ -102,6 +107,13 @@ class TjanseOwnershipSerializer(serializers.ModelSerializer):
             "created",
             "last_updated",
         ]
+
+    def validate_tjanse(self, value):
+        if value.kind != "regular":
+            raise serializers.ValidationError(
+                "Slutrengøringstjanser skal tildeles via slutrengøringsmodulet."
+            )
+        return value
 
 class TjanseSwapRequestSerializer(serializers.ModelSerializer):
 

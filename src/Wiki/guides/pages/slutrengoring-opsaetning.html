@@ -1,0 +1,57 @@
+<p>Som administrator opretter du slutrengøringsopgaverne og fordeler dem. Det gøres i to trin: først opretter du tjanserne, derefter laver du tildelingerne for eventet.</p>
+
+<h2>1. Opret opgaverne som tjanser</h2>
+<ol>
+    <li>Gå til <strong>Administrator &rarr; Organization &rarr; Tjanser &rarr; Tilføj</strong>.</li>
+    <li>Skriv en tydelig <strong>titel</strong> – fx »Rengør fællesbadene i Blok B«.</li>
+    <li>Sæt <strong>Type</strong> til <em>Slutrengøring</em>. Det er det, der holder opgaverne adskilt fra almindelige tjanser.</li>
+    <li>Vælg <strong>Prioritet</strong>: Påkrævet, Høj, Mellem eller Lav.</li>
+    <li>Udfyld <strong>Område</strong> (fx »Blok A«) og <strong>Anslået tid</strong> i minutter, så teams kan filtrere og planlægge.</li>
+    <li>Skriv en kort <strong>beskrivelse</strong> med, hvad der skal gøres, og hvad der skal bruges.</li>
+    <li>Gem. Gentag for hver opgave – typisk omkring 100 opgaver til 20 teams.</li>
+</ol>
+
+<blockquote>
+    <p><strong>Område og anslået tid er frivilligt</strong>, men gør puljen meget lettere at bruge på dagen. Brug samme stavemåde i områdefeltet, fx altid »Blok A« – så virker filteret.</p>
+</blockquote>
+
+<h2>2. Opret tildelingerne for eventet</h2>
+<ol>
+    <li>Gå til <strong>Administrator &rarr; Organization &rarr; Slutrengøringstildelinger</strong>.</li>
+    <li>Tryk <strong>Opret / tildel</strong> øverst.</li>
+    <li>Vælg eventet i feltet <strong>Event</strong>.</li>
+    <li>Tryk <strong>Opret tildelinger for &lt;event&gt;</strong>.</li>
+</ol>
+
+<p><img src="/static/wiki/guides/slutrengoring-opret.png" alt="Siden Opret og tildel med knapperne Opret tildelinger og Tildel én opgave til hvert ledigt team"></p>
+
+<p><em>Siden <strong>Opret / tildel</strong> samler de to handlinger, du skal bruge før og under slutrengøringen.</em></p>
+
+<p>Kommandoen opretter én tildeling for hver tjanse markeret som <em>Slutrengøring</em>. Tildelinger, der allerede findes, røres ikke – du kan derfor trykke igen, uden at noget går tabt.</p>
+
+<h2>3. Fordel opgaver til teams</h2>
+<p>Du kan fordele på to måder:</p>
+<ul>
+    <li><strong>Fra starten:</strong> Åbn listen <em>Slutrengøringstildelinger</em>, vælg et team i kolonnen <strong>Team</strong> direkte på linjen, og gem. Så har teamet opgaven fra begyndelsen.</li>
+    <li><strong>Med ét tryk:</strong> På <em>Opret / tildel</em> trykker du <strong>Tildel én opgave til hvert ledigt team</strong>. Hvert team uden aktiv opgave får den højest prioriterede ledige opgave.</li>
+</ul>
+
+<p>Begge dele sender automatisk en Discord-besked til det team, der får opgaven – forudsat at teamet har en webhook sat op under <em>Teams</em>.</p>
+
+<h2>4. Alternativ: kommandolinjen</h2>
+<p>Skal du oprette mange tildelinger på én gang, kan du bruge management-kommandoen:</p>
+<ul>
+    <li><code>python manage.py create_slutrengoring_assignments --event 3</code></li>
+    <li><code>python manage.py create_slutrengoring_assignments --event 3 --team 12</code> – tildel direkte til et team.</li>
+</ul>
+
+<blockquote>
+    <p><strong>Opret ikke almindelige tjanser ved en fejl.</strong> Slutrengøringsopgaver skal have Type = Slutrengøring og bruge <em>Slutrengøringstildelinger</em>. Almindelige tjanser bruger <em>Tjanser</em> og <em>Tjanser-tildelinger</em>, og systemet afviser at blande dem.</p>
+</blockquote>
+
+<h2>Undervejs</h2>
+<p>Når dagen starter, åbner du <a href="/wiki/slutrengoring-call-center/">statusoversigten</a>. Den opdaterer sig selv, og derfra kan du genåbne, returnere og tildele opgaver.</p>
+
+<p><img src="/static/wiki/guides/admin-tjanse.png" alt="Tjanser i administrationspanelet med kolonnerne Type og Prioritet"></p>
+
+<p><em>I administrationspanelet kan du se og filtrere på Type og Prioritet, så slutrengøringsopgaverne er nemme at finde.</em></p>

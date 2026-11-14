@@ -39,7 +39,7 @@ class ContentSecurityPolicyMiddleware:
     # nonce-based public policy and the relaxed admin policy.
     POLICY_TEMPLATE = (
         "default-src 'self'; "
-        "script-src {script_nonce}"
+        "script-src 'self' {script_nonce}"
         "https://cdn.jsdelivr.net https://unpkg.com https://client.sleekplan.com; "
         "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
         "img-src 'self' data: https://cdn.jsdelivr.net https://unpkg.com "

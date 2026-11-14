@@ -1,0 +1,24 @@
+{% extends "emailing/base_email.html" %}
+{% block title %}Ny slutrengøringopgave til {{ team.name }}{% endblock %}
+{% block content %}
+    <p style="margin:0 0 16px 0;">Jeres team har fået tildelt en slutrengøringopgave til {{ event.name }}:</p>
+    <table role="presentation"
+           width="100%"
+           cellpadding="0"
+           cellspacing="0"
+           border="0"
+           style="margin:0 0 8px 0">
+        <tr>
+            <td style="background-color:#f1f4f7;
+                       border-left:4px solid #FF733C;
+                       border-radius:8px;
+                       padding:16px">
+                <p style="margin:0;font-weight:700;color:#003255;">{{ tjanse.title }}</p>
+                {% if tjanse.description %}<p style="margin:8px 0 0 0;">{{ tjanse.description }}</p>{% endif %}
+                <p style="margin:8px 0 0 0;"><strong>Prioritet:</strong> {{ tjanse.get_priority_display }}</p>
+                {% if tjanse.area %}<p style="margin:8px 0 0 0;"><strong>Område:</strong> {{ tjanse.area }}</p>{% endif %}
+            </td>
+        </tr>
+    </table>
+    {% include "emailing/_button.html" with url=site_url|add:"/slutrengoring/" label="Se jeres slutrengøring" %}
+{% endblock %}

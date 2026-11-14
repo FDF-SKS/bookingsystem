@@ -5,6 +5,7 @@
 *.pyc
 __pycache__/
 local_settings.py
+docker-compose.staging.local.yaml
 db.sqlite3
 db.sqlite3-journal
 media

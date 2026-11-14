@@ -4,13 +4,14 @@ from datetime import date, timedelta
 from django.contrib import admin, messages
 from django.contrib.auth.models import Group
 from django.core.exceptions import PermissionDenied
-from django.db.models import Count, Q
+from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.shortcuts import redirect, render
 from django.urls import path
+from django.utils.timezone import localtime, now
 from django_tiptap_editor.admin.mixin import TipTapModelAdminMixin
 from import_export import fields, resources
 from import_export.admin import ImportExportModelAdmin
-from import_export.widgets import ManyToManyWidget
+from import_export.widgets import ForeignKeyWidget, ManyToManyWidget
 from simple_history.admin import SimpleHistoryAdmin
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.contrib.import_export.forms import ExportForm, ImportForm
@@ -23,6 +24,7 @@ from .models import (
     Event,
     EventMembership,
     Key,
+    SlutrengoringAssignment,
     Team,
     TeamEventMembership,
     TeamMembership,
@@ -31,6 +33,10 @@ from .models import (
     TjanseSwapRequest,
     Volunteer,
     VolunteerAppointment,
+)
+from .slutrengoring_services import (
+    assign_highest_priority_to_teams,
+    create_assignments_for_event,
 )
 
 
@@ -382,8 +388,10 @@ class VolunteerAppointmentAdmin(ModelAdmin):
 @admin.register(Tjanse)
 class TjanseAdmin(TipTapModelAdminMixin, ModelAdmin):
     tiptap_fields = ["description"]
-    list_display = ["title", "created", "last_updated"]
-    search_fields = ["title", "description"]
+    list_display = ["title", "kind", "priority", "area", "created", "last_updated"]
+    list_filter = ["kind", "priority"]
+    search_fields = ["title", "description", "area"]
+    ordering = ["kind", "order", "title"]
     readonly_fields = ["created", "last_updated"]
 
 
@@ -411,7 +419,7 @@ class TjanseOwnershipAdmin(SimpleHistoryAdmin, ModelAdmin):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.select_related("tjanse", "event", "team")
+        return qs.filter(tjanse__kind="regular").select_related("tjanse", "event", "team")
 
     def get_urls(self):
         urls = super().get_urls()
@@ -438,6 +446,7 @@ class TjanseOwnershipAdmin(SimpleHistoryAdmin, ModelAdmin):
                     "history_user", "team", "tjanse"
                 ).all()
         return super().changeform_view(request, object_id, form_url, extra_context)
+
 
     def overview_view(self, request):
         if not self.has_view_or_change_permission(request):
@@ -471,7 +480,7 @@ class TjanseOwnershipAdmin(SimpleHistoryAdmin, ModelAdmin):
                 f"{request.path}?event={selected_event.pk}&week_start={week_start.isoformat()}"
             )
 
-        tjanser = Tjanse.objects.order_by("title")
+        tjanser = Tjanse.objects.filter(kind="regular").order_by("title")
         ownerships = self.get_queryset(request).filter(
             event=selected_event,
             due_date__gte=days[0],
@@ -564,7 +573,7 @@ class TjanseOwnershipAdmin(SimpleHistoryAdmin, ModelAdmin):
                     for day in days
                 ],
             }
-            for tjanse in Tjanse.objects.order_by("title")
+            for tjanse in Tjanse.objects.filter(kind="regular").order_by("title")
         ]
         context = {
             **self.admin_site.each_context(request),
@@ -583,7 +592,7 @@ class TjanseOwnershipAdmin(SimpleHistoryAdmin, ModelAdmin):
 
     def _save_overview_grid(self, request, event, days):
         event_team_ids = set(Team.objects.values_list("pk", flat=True))
-        for tjanse in Tjanse.objects.all():
+        for tjanse in Tjanse.objects.filter(kind="regular"):
             for day in days:
                 field_key = f"{tjanse.pk}_{day.isoformat()}"
                 submitted_team_ids = request.POST.getlist(f"team_{field_key}")
@@ -623,6 +632,359 @@ class TjanseOwnershipAdmin(SimpleHistoryAdmin, ModelAdmin):
                         team_id=team_id,
                     )
 
+
+class SlutrengoringAssignmentResource(resources.ModelResource):
+    tjanse = fields.Field(
+        column_name="tjanse",
+        attribute="tjanse",
+        widget=ForeignKeyWidget(Tjanse, "title"),
+    )
+    event = fields.Field(
+        column_name="event",
+        attribute="event",
+        widget=ForeignKeyWidget(Event, "name"),
+    )
+    team = fields.Field(
+        column_name="team",
+        attribute="team",
+        widget=ForeignKeyWidget(Team, "name"),
+    )
+
+    class Meta:
+        model = SlutrengoringAssignment
+        fields = ("id", "tjanse", "event", "team", "status")
+        import_id_fields = ("tjanse", "event")
+
+
+SLUTRENGOERING_PRIORITY_ORDER = Case(
+    When(tjanse__priority='required', then=Value(0)),
+    When(tjanse__priority='high', then=Value(1)),
+    When(tjanse__priority='medium', then=Value(2)),
+    When(tjanse__priority='low', then=Value(3)),
+    default=Value(99),
+    output_field=IntegerField(),
+)
+
+
+@admin.register(SlutrengoringAssignment)
+class SlutrengoringAssignmentAdmin(SimpleHistoryAdmin, ModelAdmin, ImportExportModelAdmin):
+    resource_classes = [SlutrengoringAssignmentResource]
+    import_form_class = ImportForm
+    export_form_class = ExportForm
+    change_list_template = "admin/organization/slutrengoringassignment/change_list.html"
+    list_display = [
+        "tjanse",
+        "event",
+        "priority_display",
+        "team",
+        "status",
+        "attempt_count",
+        "assigned_at",
+        "started_at",
+        "completed_at",
+    ]
+    list_display_links = ["tjanse"]
+    list_editable = ["team", "status"]
+    list_filter = ["status", "event", "team", "tjanse__priority"]
+    search_fields = ["tjanse__title", "tjanse__area", "team__name"]
+    list_select_related = ("tjanse", "event", "team")
+    readonly_fields = [
+        "assigned_at",
+        "started_at",
+        "completed_at",
+        "not_finished_at",
+        "attempt_count",
+        "last_team",
+        "created",
+        "last_updated",
+    ]
+    fields = [
+        "tjanse",
+        "event",
+        "team",
+        "status",
+        "assigned_by",
+        "assigned_at",
+        "started_at",
+        "completed_at",
+        "completed_by",
+        "not_finished_at",
+        "not_finished_reason",
+        "attempt_count",
+        "last_team",
+        "created",
+        "last_updated",
+    ]
+    actions = ["return_to_pool_action", "reopen_action", "mark_done_action"]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(
+            tjanse__kind="slutrengoring"
+        ).select_related("tjanse", "event", "team", "last_team")
+
+    def save_model(self, request, obj, form, change):
+        previous_team_id = None
+        if change and obj.pk:
+            previous_team_id = (
+                SlutrengoringAssignment.objects
+                .filter(pk=obj.pk)
+                .values_list("team_id", flat=True)
+                .first()
+            )
+
+        # Keep team/status coherent when staff use the editable changelist.
+        if obj.team_id and obj.status in ("available", "not_finished"):
+            obj.status = "assigned"
+        elif not obj.team_id and obj.status in SlutrengoringAssignment.ACTIVE_STATUSES:
+            obj.status = "available"
+
+        if obj.team_id and (not change or previous_team_id != obj.team_id):
+            obj.assigned_by = request.user
+        super().save_model(request, obj, form, change)
+
+    @admin.display(ordering="tjanse__priority", description="Prioritet")
+    def priority_display(self, obj):
+        return obj.tjanse.get_priority_display()
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                "board/",
+                self.admin_site.admin_view(self.board_view),
+                name="organization_slutrengoringassignment_board",
+            ),
+            path(
+                "tools/",
+                self.admin_site.admin_view(self.tools_view),
+                name="organization_slutrengoringassignment_tools",
+            ),
+        ]
+        return custom_urls + urls
+
+    @action(description="Returnér valgte opgaver til puljen")
+    def return_to_pool_action(self, request, queryset):
+        count = 0
+        for assignment in queryset.filter(status__in=SlutrengoringAssignment.ACTIVE_STATUSES):
+            assignment.last_team = assignment.team
+            assignment.team = None
+            assignment.status = "not_finished"
+            assignment.assigned_at = None
+            assignment.assigned_by = None
+            assignment.started_at = None
+            assignment.not_finished_at = now()
+            assignment.not_finished_reason = "Returneret af administrator."
+            assignment.attempt_count += 1
+            assignment.save()
+            count += 1
+        self.message_user(request, f"{count} opgaver blev returneret til puljen.", messages.SUCCESS)
+
+    @action(description="Genåbn valgte opgaver")
+    def reopen_action(self, request, queryset):
+        count = queryset.update(
+            status="available",
+            team=None,
+            assigned_at=None,
+            assigned_by=None,
+            started_at=None,
+            completed_at=None,
+            completed_by=None,
+        )
+        self.message_user(request, f"{count} opgaver blev genåbnet.", messages.SUCCESS)
+
+    @action(description="Markér valgte opgaver som udført")
+    def mark_done_action(self, request, queryset):
+        count = 0
+        for assignment in queryset.exclude(status="done"):
+            assignment.status = "done"
+            assignment.completed_at = now()
+            assignment.completed_by = request.user
+            assignment.save()
+            count += 1
+        self.message_user(request, f"{count} opgaver blev markeret som udført.", messages.SUCCESS)
+
+    def tools_view(self, request):
+        if not self.has_view_or_change_permission(request):
+            raise PermissionDenied
+        if request.method == "POST" and not self.has_change_permission(request):
+            raise PermissionDenied
+
+        events = Event.objects.order_by("-end_date", "name")
+        event_id = request.POST.get("event") or request.GET.get("event")
+        selected_event = events.filter(pk=event_id).first() if event_id else events.first()
+
+        if request.method == "POST" and selected_event:
+            action = request.POST.get("action")
+            if action == "create":
+                created = create_assignments_for_event(selected_event)
+                self.message_user(
+                    request,
+                    f"Oprettede {created} nye slutrengøringstildelinger til {selected_event.name}.",
+                    messages.SUCCESS,
+                )
+            elif action == "assign":
+                assigned, skipped = assign_highest_priority_to_teams(
+                    selected_event, actor=request.user
+                )
+                self.message_user(
+                    request,
+                    (
+                        f"Tildelte {len(assigned)} opgaver til teams. "
+                        f"{len(skipped)} teams blev sprunget over "
+                        "(allerede aktiv opgave eller ingen ledige opgaver tilbage)."
+                    ),
+                    messages.SUCCESS if assigned else messages.WARNING,
+                )
+            return redirect(f"{request.path}?event={selected_event.pk}")
+
+        context = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "title": "Opret og tildel slutrengøring",
+            "events": events,
+            "selected_event": selected_event,
+            "selected_event_id": selected_event.pk if selected_event else "",
+        }
+        if selected_event:
+            event_assignments = SlutrengoringAssignment.objects.filter(event=selected_event)
+            active_team_ids = (
+                event_assignments
+                .filter(status__in=SlutrengoringAssignment.ACTIVE_STATUSES)
+                .values_list("team_id", flat=True)
+                .distinct()
+            )
+            context.update({
+                "assignment_count": event_assignments.count(),
+                "available_count": event_assignments.filter(
+                    team__isnull=True,
+                    status__in=SlutrengoringAssignment.CLAIMABLE_STATUSES,
+                ).count(),
+                "team_count": Team.objects.count(),
+                "busy_team_count": len(set(active_team_ids)),
+            })
+        return render(
+            request,
+            "admin/organization/slutrengoringassignment/tools.html",
+            context,
+        )
+
+    def board_view(self, request):
+        if not self.has_view_or_change_permission(request):
+            raise PermissionDenied
+
+        events = Event.objects.order_by("-end_date", "name")
+        event_id = request.GET.get("event")
+        selected_event = events.filter(pk=event_id).first() if event_id else events.first()
+
+        context = {
+            **self.admin_site.each_context(request),
+            "opts": self.model._meta,
+            "title": "Slutrengøringsstatus",
+            "events": events,
+            "selected_event": selected_event,
+            "auto_refresh": request.GET.get("auto") != "0",
+        }
+
+        if not selected_event:
+            return render(
+                request,
+                "admin/organization/slutrengoringassignment/board.html",
+                context,
+            )
+
+        assignments = (
+            SlutrengoringAssignment.objects
+            .filter(event=selected_event)
+            .select_related("tjanse", "team", "last_team")
+        )
+        done_assignments = list(
+            assignments.filter(status="done", completed_at__isnull=False).order_by("completed_at")
+        )
+        active_assignments = list(
+            assignments.filter(status__in=SlutrengoringAssignment.ACTIVE_STATUSES)
+            .select_related("team", "tjanse")
+            .order_by("team__name", "tjanse__priority", "tjanse__title")
+        )
+        missing_assignments = list(
+            assignments.filter(
+                team__isnull=True,
+                status__in=SlutrengoringAssignment.CLAIMABLE_STATUSES,
+            )
+            .annotate(priority_rank=SLUTRENGOERING_PRIORITY_ORDER)
+            .order_by("priority_rank", "tjanse__order", "tjanse__title")
+        )
+
+        active_by_team = defaultdict(list)
+        for assignment in active_assignments:
+            active_by_team[assignment.team_id].append(assignment)
+
+        team_rows = [
+            {"team": team, "assignments": active_by_team.get(team.pk, [])}
+            for team in Team.objects.order_by("name")
+        ]
+
+        priority_rows = []
+        for value, label in Tjanse.PRIORITY_CHOICES:
+            priority_qs = assignments.filter(tjanse__priority=value)
+            priority_rows.append({
+                "value": value,
+                "label": label,
+                "total": priority_qs.count(),
+                "done": priority_qs.filter(status="done").count(),
+                "missing": priority_qs.filter(
+                    team__isnull=True,
+                    status__in=SlutrengoringAssignment.CLAIMABLE_STATUSES,
+                ).count(),
+            })
+
+        bucket_counts = defaultdict(int)
+        for assignment in done_assignments:
+            completed = localtime(assignment.completed_at)
+            bucket = completed.replace(
+                minute=(completed.minute // 15) * 15,
+                second=0,
+                microsecond=0,
+            )
+            bucket_counts[bucket] += 1
+        max_bucket = max(bucket_counts.values(), default=1)
+        completion_buckets = [
+            {
+                "label": bucket.strftime("%H:%M"),
+                "count": count,
+                "width": round(count / max_bucket * 100),
+            }
+            for bucket, count in sorted(bucket_counts.items())
+        ]
+
+        total = assignments.count()
+        done = len(done_assignments)
+        context.update({
+            "assignments": assignments,
+            "total": total,
+            "done_count": done,
+            "active_count": len(active_assignments),
+            "available_count": assignments.filter(
+                team__isnull=True,
+                status__in=SlutrengoringAssignment.CLAIMABLE_STATUSES,
+            ).count(),
+            "not_finished_count": assignments.filter(status="not_finished").count(),
+            "required_missing_count": assignments.filter(
+                tjanse__priority="required",
+            ).exclude(status="done").count(),
+            "progress_percent": round(done / total * 100) if total else 0,
+            "missing_assignments": missing_assignments,
+            "active_assignments": active_assignments,
+            "team_rows": team_rows,
+            "priority_rows": priority_rows,
+            "completion_buckets": completion_buckets,
+            "recent_done": done_assignments[-10:][::-1],
+            "active_team_count": len(active_by_team),
+        })
+        return render(
+            request,
+            "admin/organization/slutrengoringassignment/board.html",
+            context,
+        )
 
 @admin.register(TjanseSwapRequest)
 class TjanseSwapRequestAdmin(ModelAdmin):

@@ -1,0 +1,250 @@
+{% extends "admin/base_site.html" %}
+{% load i18n unfold %}
+{% block title %}Slutrengøringsstatus{% endblock %}
+{% block extrahead %}
+    {{ block.super }}
+    {% if auto_refresh %}
+        <script>
+    window.setTimeout(function () {
+        window.location.reload();
+    }, 30000);
+        </script>
+    {% endif %}
+{% endblock %}
+{% block content %}
+    {% component "unfold/components/container.html" %}
+    <div class="flex flex-col gap-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                {% component "unfold/components/title.html" %}Slutrengøringsstatus{% endcomponent %}
+            <p class="mt-1 text-sm text-base-500 dark:text-base-400">
+                Overblik for call center: manglende opgaver, aktive teams og udførte opgaver over tid.
+            </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{% url 'admin:organization_slutrengoringassignment_tools' %}{% if selected_event %}?event={{ selected_event.pk }}{% endif %}"
+               class="rounded-default border border-base-200 px-3 py-2 text-sm font-medium text-base-700 hover:bg-base-50 dark:border-base-700 dark:text-base-200 dark:hover:bg-base-800">
+                Opret / tildel
+            </a>
+            {% if selected_event %}
+                <form method="post"
+                      action="{% url 'admin:organization_slutrengoringassignment_tools' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="event" value="{{ selected_event.pk }}">
+                    <input type="hidden" name="action" value="create">
+                    <button type="submit"
+                            class="rounded-default border border-base-200 px-3 py-2 text-sm font-medium text-base-700 hover:bg-base-50 dark:border-base-700 dark:text-base-200 dark:hover:bg-base-800">
+                        Opret tildelinger
+                    </button>
+                </form>
+                <form method="post"
+                      action="{% url 'admin:organization_slutrengoringassignment_tools' %}"
+                      onsubmit="return confirm('Tildel én højprioriteret opgave til hvert ledigt team?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="event" value="{{ selected_event.pk }}">
+                    <input type="hidden" name="action" value="assign">
+                    <button type="submit"
+                            class="rounded-default bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700">
+                        Tildel højeste prioritet
+                    </button>
+                </form>
+            {% endif %}
+            <a href="?{% if selected_event %}event={{ selected_event.pk }}&{% endif %}auto={% if auto_refresh %}0{% else %}1{% endif %}"
+               class="rounded-default border border-base-200 px-3 py-2 text-sm font-medium text-base-700 hover:bg-base-50 dark:border-base-700 dark:text-base-200 dark:hover:bg-base-800">
+                {% if auto_refresh %}Slå auto-opdatering fra{% else %}Slå auto-opdatering til{% endif %}
+            </a>
+            <a href="?{% if selected_event %}event={{ selected_event.pk }}{% endif %}"
+               class="rounded-default bg-primary-600 px-3 py-2 text-sm font-medium text-white hover:bg-primary-700">
+                Opdater nu
+            </a>
+        </div>
+    </div>
+    <form method="get" class="flex flex-col gap-1 p-4 sm:flex-row sm:items-end">
+        <div class="flex min-w-0 flex-1 flex-col gap-1">
+            <label for="id_event"
+                   class="text-sm font-medium text-base-700 dark:text-base-200">Event</label>
+            <select id="id_event"
+                    name="event"
+                    onchange="this.form.submit()"
+                    class="w-full rounded-default border border-base-200 bg-white px-3 py-2 text-sm text-base-700 shadow-sm outline-none transition focus:border-primary-600 focus:ring-2 focus:ring-primary-600/20 dark:border-base-700 dark:bg-base-900 dark:text-base-200">
+                {% for event in events %}
+                    <option value="{{ event.pk }}"
+                            {% if selected_event and event.pk == selected_event.pk %}selected{% endif %}>{{ event.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+    {% if not selected_event %}
+        <div class="rounded-default border border-base-200 bg-white p-6 text-sm text-base-500 dark:border-base-700 dark:bg-base-900 dark:text-base-400">
+            Der er ingen events at vise endnu.
+        </div>
+    {% else %}
+        <div class="grid grid-cols-2 gap-3 lg:grid-cols-6">
+            <div class="rounded-default border border-base-200 bg-white p-4 shadow-sm dark:border-base-700 dark:bg-base-900">
+                <div class="text-xs font-medium uppercase tracking-wide text-base-500 dark:text-base-400">Opgaver i alt</div>
+                <div class="mt-1 text-2xl font-semibold text-base-900 dark:text-base-100">{{ total }}</div>
+            </div>
+            <div class="rounded-default border border-base-200 bg-white p-4 shadow-sm dark:border-base-700 dark:bg-base-900">
+                <div class="text-xs font-medium uppercase tracking-wide text-base-500 dark:text-base-400">Udført</div>
+                <div class="mt-1 text-2xl font-semibold text-green-600 dark:text-green-400">{{ done_count }}</div>
+            </div>
+            <div class="rounded-default border border-base-200 bg-white p-4 shadow-sm dark:border-base-700 dark:bg-base-900">
+                <div class="text-xs font-medium uppercase tracking-wide text-base-500 dark:text-base-400">Ledige</div>
+                <div class="mt-1 text-2xl font-semibold text-primary-600 dark:text-primary-400">{{ available_count }}</div>
+            </div>
+            <div class="rounded-default border border-base-200 bg-white p-4 shadow-sm dark:border-base-700 dark:bg-base-900">
+                <div class="text-xs font-medium uppercase tracking-wide text-base-500 dark:text-base-400">Aktive opgaver</div>
+                <div class="mt-1 text-2xl font-semibold text-amber-600 dark:text-amber-400">{{ active_count }}</div>
+            </div>
+            <div class="rounded-default border border-base-200 bg-white p-4 shadow-sm dark:border-base-700 dark:bg-base-900">
+                <div class="text-xs font-medium uppercase tracking-wide text-base-500 dark:text-base-400">Påkrævet ikke udført</div>
+                <div class="mt-1 text-2xl font-semibold text-red-600 dark:text-red-400">{{ required_missing_count }}</div>
+            </div>
+            <div class="rounded-default border border-base-200 bg-white p-4 shadow-sm dark:border-base-700 dark:bg-base-900">
+                <div class="text-xs font-medium uppercase tracking-wide text-base-500 dark:text-base-400">Aktive teams</div>
+                <div class="mt-1 text-2xl font-semibold text-base-900 dark:text-base-100">{{ active_team_count }}</div>
+            </div>
+        </div>
+        <div class="rounded-default border border-base-200 bg-white p-4 shadow-sm dark:border-base-700 dark:bg-base-900">
+            <div class="mb-2 flex items-center justify-between text-sm">
+                <span class="font-medium text-base-700 dark:text-base-200">Fremdrift</span>
+                <span class="text-base-500 dark:text-base-400">{{ done_count }} / {{ total }} ({{ progress_percent }}%)</span>
+            </div>
+            <div class="h-2 w-full overflow-hidden rounded-full bg-base-200 dark:bg-base-700">
+                <div class="h-full rounded-full bg-green-500"
+                     style="width: {{ progress_percent }}%"></div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <div class="rounded-default border border-base-200 bg-white shadow-sm dark:border-base-700 dark:bg-base-900">
+                <div class="border-b border-base-200 px-4 py-3 dark:border-base-700">
+                    <h2 class="text-base font-semibold text-base-900 dark:text-base-100">Mangler stadig</h2>
+                    <p class="mt-1 text-xs text-base-500 dark:text-base-400">Ledige og returnerede opgaver, højeste prioritet først.</p>
+                </div>
+                <div class="max-h-[28rem] overflow-auto divide-y divide-base-200 dark:divide-base-700">
+                    {% for assignment in missing_assignments %}
+                        <div class="flex items-start justify-between gap-3 px-4 py-3">
+                            <div>
+                                <a href="{% url 'admin:organization_slutrengoringassignment_change' assignment.pk %}"
+                                   class="font-medium text-base-900 hover:text-primary-600 dark:text-base-100 dark:hover:text-primary-400">
+                                    {{ assignment.tjanse.title }}
+                                </a>
+                                <div class="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                                    <span class="inline-flex rounded-full px-2 py-0.5 font-medium {% if assignment.tjanse.priority == 'required' %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300 {% elif assignment.tjanse.priority == 'high' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 {% elif assignment.tjanse.priority == 'medium' %}bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300 {% else %}bg-base-100 text-base-600 dark:bg-base-800 dark:text-base-300{% endif %}">
+                                        {{ assignment.tjanse.get_priority_display }}
+                                    </span>
+                                    {% if assignment.tjanse.area %}
+                                        <span class="text-base-500 dark:text-base-400">{{ assignment.tjanse.area }}</span>
+                                    {% endif %}
+                                    {% if assignment.attempt_count %}
+                                        <span class="text-red-600 dark:text-red-400">Returneret {{ assignment.attempt_count }} gang{{ assignment.attempt_count|pluralize:"e" }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="px-4 py-6 text-sm text-base-500 dark:text-base-400">Ingen manglende opgaver. Alt er tildelt eller udført.</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="rounded-default border border-base-200 bg-white shadow-sm dark:border-base-700 dark:bg-base-900">
+                <div class="border-b border-base-200 px-4 py-3 dark:border-base-700">
+                    <h2 class="text-base font-semibold text-base-900 dark:text-base-100">Hvad laver teams lige nu?</h2>
+                    <p class="mt-1 text-xs text-base-500 dark:text-base-400">Aktive opgaver pr. team.</p>
+                </div>
+                <div class="max-h-[28rem] overflow-auto divide-y divide-base-200 dark:divide-base-700">
+                    {% for row in team_rows %}
+                        <div class="px-4 py-3">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="font-medium text-base-900 dark:text-base-100">{{ row.team.name }}</span>
+                                {% if row.assignments %}
+                                    <span class="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">Aktiv</span>
+                                {% else %}
+                                    <span class="inline-flex rounded-full bg-base-100 px-2 py-0.5 text-xs font-medium text-base-500 dark:bg-base-800 dark:text-base-400">Ledig</span>
+                                {% endif %}
+                            </div>
+                            {% for assignment in row.assignments %}
+                                <div class="mt-1 text-sm text-base-600 dark:text-base-300">
+                                    {{ assignment.tjanse.title }}
+                                    <span class="text-xs text-base-500 dark:text-base-400">
+                                        · {{ assignment.get_status_display }}
+                                        {% if assignment.started_at %}· startet for {{ assignment.started_at|timesince }} siden{% endif %}
+                                    </span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% empty %}
+                        <div class="px-4 py-6 text-sm text-base-500 dark:text-base-400">Der er ingen teams endnu.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
+            <div class="rounded-default border border-base-200 bg-white shadow-sm dark:border-base-700 dark:bg-base-900">
+                <div class="border-b border-base-200 px-4 py-3 dark:border-base-700">
+                    <h2 class="text-base font-semibold text-base-900 dark:text-base-100">Udført over tid</h2>
+                    <p class="mt-1 text-xs text-base-500 dark:text-base-400">Antal opgaver markeret udført pr. 15. minut.</p>
+                </div>
+                <div class="space-y-2 px-4 py-4">
+                    {% for bucket in completion_buckets %}
+                        <div class="flex items-center gap-3 text-xs">
+                            <span class="w-12 shrink-0 text-base-500 dark:text-base-400">{{ bucket.label }}</span>
+                            <div class="h-3 flex-1 overflow-hidden rounded-full bg-base-100 dark:bg-base-800">
+                                <div class="h-full rounded-full bg-green-500"
+                                     style="width: {{ bucket.width }}%"></div>
+                            </div>
+                            <span class="w-6 shrink-0 text-right font-medium text-base-700 dark:text-base-200">{{ bucket.count }}</span>
+                        </div>
+                    {% empty %}
+                        <div class="py-4 text-sm text-base-500 dark:text-base-400">Ingen opgaver er markeret udført endnu.</div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="rounded-default border border-base-200 bg-white shadow-sm dark:border-base-700 dark:bg-base-900">
+                <div class="border-b border-base-200 px-4 py-3 dark:border-base-700">
+                    <h2 class="text-base font-semibold text-base-900 dark:text-base-100">Prioritetsstatus</h2>
+                    <p class="mt-1 text-xs text-base-500 dark:text-base-400">Total, udført og ledige opgaver pr. prioritet.</p>
+                </div>
+                <div class="overflow-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-base-200 bg-base-50 text-left text-xs uppercase tracking-wide text-base-500 dark:border-base-700 dark:bg-base-800 dark:text-base-400">
+                                <th class="px-4 py-2">Prioritet</th>
+                                <th class="px-4 py-2 text-right">Total</th>
+                                <th class="px-4 py-2 text-right">Udført</th>
+                                <th class="px-4 py-2 text-right">Ledige</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-base-200 dark:divide-base-700">
+                            {% for row in priority_rows %}
+                                <tr>
+                                    <td class="px-4 py-2 font-medium text-base-700 dark:text-base-200">{{ row.label }}</td>
+                                    <td class="px-4 py-2 text-right text-base-600 dark:text-base-300">{{ row.total }}</td>
+                                    <td class="px-4 py-2 text-right text-green-600 dark:text-green-400">{{ row.done }}</td>
+                                    <td class="px-4 py-2 text-right {% if row.value == 'required' and row.missing %}font-semibold text-red-600 dark:text-red-400{% else %}text-base-600 dark:text-base-300{% endif %}">{{ row.missing }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="rounded-default border border-base-200 bg-white shadow-sm dark:border-base-700 dark:bg-base-900">
+            <div class="border-b border-base-200 px-4 py-3 dark:border-base-700">
+                <h2 class="text-base font-semibold text-base-900 dark:text-base-100">Senest udført</h2>
+            </div>
+            <div class="divide-y divide-base-200 dark:divide-base-700">
+                {% for assignment in recent_done %}
+                    <div class="flex items-center justify-between px-4 py-2 text-sm">
+                        <span class="text-base-700 dark:text-base-200">{{ assignment.tjanse.title }}</span>
+                        <span class="text-xs text-base-500 dark:text-base-400">{{ assignment.team.name|default:"-" }} · {{ assignment.completed_at|date:"H:i" }}</span>
+                    </div>
+                {% empty %}
+                    <div class="px-4 py-6 text-sm text-base-500 dark:text-base-400">Ingen udførte opgaver endnu.</div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endcomponent %}
+{% endblock %}

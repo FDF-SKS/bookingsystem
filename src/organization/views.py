@@ -7,11 +7,12 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import PasswordResetView
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.messages.views import SuccessMessageMixin
-from django.db.models import IntegerField, Q
+from django.db import transaction
+from django.db.models import Case, IntegerField, Q, Value, When
 from django.db.models.functions import Cast
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils.timezone import now
 from django.views import generic
 from django.views.decorators.http import require_POST
@@ -27,6 +28,16 @@ User = get_user_model()
 # Hard cap on the width of the tjanse overview grid. Events with a longer
 # range are truncated to this many days to bound per-request work.
 MAX_OVERVIEW_DAYS = 60
+
+# Used when ordering the Slutrengøring pool: Required -> High -> Medium -> Low.
+SLUTRENGOERING_PRIORITY_ORDER = Case(
+    When(tjanse__priority='required', then=Value(0)),
+    When(tjanse__priority='high', then=Value(1)),
+    When(tjanse__priority='medium', then=Value(2)),
+    When(tjanse__priority='low', then=Value(3)),
+    default=Value(99),
+    output_field=IntegerField(),
+)
 
 
 
@@ -389,6 +400,9 @@ class TjanseOwnershipDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.D
     model = models.TjanseOwnership
     context_object_name = 'ownership'
 
+    def get_queryset(self):
+        return super().get_queryset().filter(tjanse__kind='regular')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user_team_ids = set(TeamMembership.objects.filter(member=self.request.user).values_list('team_id', flat=True))
@@ -434,7 +448,8 @@ class TjanseOwnershipListView(LoginRequiredMixin, generic.ListView):
     def get_queryset(self):
         user_team_ids = TeamMembership.objects.filter(member=self.request.user).values_list('team_id', flat=True)
         return models.TjanseOwnership.objects.filter(
-            team_id__in=user_team_ids
+            team_id__in=user_team_ids,
+            tjanse__kind='regular',
         ).select_related('tjanse', 'event', 'team').order_by('due_date', 'status')
 
 
@@ -465,6 +480,7 @@ class TjanseOverviewView(LoginRequiredMixin, generic.TemplateView):
             ]
             ownerships = models.TjanseOwnership.objects.filter(
                 event=selected_event,
+                tjanse__kind='regular',
                 due_date__gte=days[0],
                 due_date__lte=days[-1],
             ).select_related('team', 'tjanse').order_by('team__name') if days else models.TjanseOwnership.objects.none()
@@ -483,7 +499,7 @@ class TjanseOverviewView(LoginRequiredMixin, generic.TemplateView):
                         for day in days
                     ],
                 }
-                for tjanse in models.Tjanse.objects.order_by('title')
+                for tjanse in models.Tjanse.objects.filter(kind='regular').order_by('title')
             ]
 
         context.update({
@@ -521,7 +537,10 @@ class TjanseSwapRequestCreateView(LoginRequiredMixin, generic.CreateView):
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         user_team_ids = TeamMembership.objects.filter(member=self.request.user).values_list('team_id', flat=True)
-        form.fields['task_ownership'].queryset = models.TjanseOwnership.objects.filter(team_id__in=user_team_ids)
+        form.fields['task_ownership'].queryset = models.TjanseOwnership.objects.filter(
+            team_id__in=user_team_ids,
+            tjanse__kind='regular',
+        )
         form.fields['receiving_team'].queryset = Team.objects.exclude(id__in=user_team_ids)
         return form
 
@@ -560,4 +579,413 @@ def tjanse_swap_request_update(request, pk, new_status):
         swap.reject(resolved_by=request.user)
         messages.success(request, "Tjanse-byttet blev afvist.")
     return redirect('organization_TjanseSwapRequest_list')
+
+
+# ---------------------------------------------------------------------------
+# Slutrengøring
+# ---------------------------------------------------------------------------
+
+def _slutrengoring_team_ids(user):
+    if user is None or not user.is_authenticated:
+        return set()
+    return set(
+        TeamMembership.objects.filter(member=user).values_list('team_id', flat=True)
+    )
+
+
+def _resolve_slutrengoring_event(request):
+    """Return the event to show, preferring the user's current active task."""
+    events = models.Event.objects.filter(is_active=True).order_by('-end_date', 'name')
+    event_id = request.POST.get('event') or request.GET.get('event')
+    if event_id:
+        try:
+            selected = events.filter(pk=int(event_id)).first()
+        except (TypeError, ValueError):
+            selected = None
+        if selected:
+            return selected, events
+
+    team_ids = _slutrengoring_team_ids(request.user)
+    if team_ids:
+        current = (
+            models.SlutrengoringAssignment.objects
+            .filter(
+                event__is_active=True,
+                team_id__in=team_ids,
+                status__in=models.SlutrengoringAssignment.ACTIVE_STATUSES,
+            )
+            .select_related('event')
+            .order_by('-event__end_date')
+            .first()
+        )
+        if current:
+            return current.event, events
+    return events.first(), events
+
+
+def _slutrengoring_team_for_action(request, event, team_id=None):
+    """Validate that the acting user may represent ``team_id``.
+
+    Staff may pick any team; everyone else may only pick one of their own.
+    """
+    team_ids = _slutrengoring_team_ids(request.user)
+    if team_id:
+        try:
+            team_id = int(team_id)
+        except (TypeError, ValueError):
+            return None
+        if request.user.is_staff:
+            return Team.objects.filter(pk=team_id).first()
+        return Team.objects.filter(pk=team_id, id__in=team_ids).first()
+
+    if len(team_ids) == 1:
+        return Team.objects.filter(pk=next(iter(team_ids))).first()
+    return None
+
+
+def _slutrengoring_can_act(request, assignment):
+    if request.user.is_staff:
+        return True
+    return assignment.team_id in _slutrengoring_team_ids(request.user)
+
+
+def _slutrengoring_redirect_after_finish(request, assignment, team):
+    """Send a team to the claim page once its last active task is finished."""
+    event_id = assignment.event_id
+    remaining = models.SlutrengoringAssignment.objects.filter(
+        event_id=event_id,
+        team=team,
+        status__in=models.SlutrengoringAssignment.ACTIVE_STATUSES,
+    ).exists() if team else False
+
+    if remaining:
+        return redirect(f"{reverse('organization_Slutrengoring_home')}?event={event_id}")
+
+    messages.info(request, "I har ingen aktive opgaver. Vælg den næste opgave.")
+    team_param = f"&team={team.pk}" if team else ""
+    return redirect(
+        f"{reverse('organization_Slutrengoring_claim_list')}?event={event_id}{team_param}"
+    )
+
+
+class SlutrengoringHomeView(LoginRequiredMixin, generic.TemplateView):
+    """A team's current and recently completed Slutrengøring tasks."""
+    template_name = 'organization/slutrengoring_home.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        selected_event, events = _resolve_slutrengoring_event(self.request)
+        team_ids = _slutrengoring_team_ids(self.request.user)
+
+        assignments = models.SlutrengoringAssignment.objects.none()
+        active = models.SlutrengoringAssignment.objects.none()
+        completed = models.SlutrengoringAssignment.objects.none()
+        claimable_count = 0
+
+        if selected_event:
+            claimable_qs = models.SlutrengoringAssignment.objects.filter(
+                event=selected_event,
+                team__isnull=True,
+                status__in=models.SlutrengoringAssignment.CLAIMABLE_STATUSES,
+            )
+            if team_ids and not self.request.user.is_staff:
+                claimable_qs = claimable_qs.exclude(
+                    status='not_finished', last_team_id__in=team_ids
+                )
+            claimable_count = claimable_qs.count()
+
+        if selected_event and team_ids:
+            assignments = (
+                models.SlutrengoringAssignment.objects
+                .filter(event=selected_event, team_id__in=team_ids)
+                .select_related('tjanse', 'team', 'event')
+            )
+            active = assignments.filter(
+                status__in=models.SlutrengoringAssignment.ACTIVE_STATUSES
+            ).annotate(priority_rank=SLUTRENGOERING_PRIORITY_ORDER).order_by(
+                'priority_rank', 'tjanse__order', 'tjanse__title'
+            )
+            completed = assignments.filter(status='done').order_by('-completed_at')[:10]
+
+        context.update({
+            'events': events,
+            'selected_event': selected_event,
+            'active_assignments': active,
+            'completed_assignments': completed,
+            'claimable_count': claimable_count,
+            'team_ids': team_ids,
+        })
+        return context
+
+
+class SlutrengoringClaimListView(LoginRequiredMixin, generic.TemplateView):
+    """The pool of unclaimed tasks, ordered by priority."""
+    template_name = 'organization/slutrengoring_claim_list.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        selected_event, events = _resolve_slutrengoring_event(self.request)
+        team_ids = _slutrengoring_team_ids(self.request.user)
+        teams = Team.objects.filter(id__in=team_ids).order_by('name')
+        if self.request.user.is_staff:
+            teams = Team.objects.order_by('name')
+
+        assignments = models.SlutrengoringAssignment.objects.none()
+        areas = []
+        if selected_event:
+            assignments = (
+                models.SlutrengoringAssignment.objects
+                .filter(
+                    event=selected_event,
+                    team__isnull=True,
+                    status__in=models.SlutrengoringAssignment.CLAIMABLE_STATUSES,
+                )
+                .select_related('tjanse', 'last_team')
+            )
+            if team_ids and not self.request.user.is_staff:
+                # A team that returned a task should let another team take it.
+                assignments = assignments.exclude(
+                    status='not_finished', last_team_id__in=team_ids
+                )
+
+            priority = self.request.GET.get('priority')
+            if priority in dict(models.Tjanse.PRIORITY_CHOICES):
+                assignments = assignments.filter(tjanse__priority=priority)
+            area = self.request.GET.get('area')
+            if area:
+                assignments = assignments.filter(tjanse__area=area)
+
+            assignments = assignments.annotate(
+                priority_rank=SLUTRENGOERING_PRIORITY_ORDER
+            ).order_by('priority_rank', 'tjanse__order', 'tjanse__title')
+            areas = (
+                models.Tjanse.objects
+                .filter(
+                    kind='slutrengoring',
+                    slutrengoring_assignments__event=selected_event,
+                )
+                .exclude(area='')
+                .values_list('area', flat=True)
+                .distinct()
+                .order_by('area')
+            )
+
+        selected_team_id = self.request.GET.get('team') or ''
+        context.update({
+            'events': events,
+            'selected_event': selected_event,
+            'assignments': assignments,
+            'teams': teams,
+            'selected_team_id': selected_team_id,
+            'areas': areas,
+            'priority_choices': models.Tjanse.PRIORITY_CHOICES,
+            'selected_priority': self.request.GET.get('priority', ''),
+            'selected_area': self.request.GET.get('area', ''),
+        })
+        return context
+
+
+class SlutrengoringAssignmentDetailView(LoginRequiredMixin, generic.DetailView):
+    """A single Slutrengøring task with start/finish actions and history."""
+    model = models.SlutrengoringAssignment
+    context_object_name = 'assignment'
+    template_name = 'organization/slutrengoring_detail.html'
+
+    def get_queryset(self):
+        qs = super().get_queryset().select_related('tjanse', 'event', 'team', 'last_team')
+        if self.request.user.is_staff:
+            return qs
+        team_ids = _slutrengoring_team_ids(self.request.user)
+        return qs.filter(
+            Q(team_id__in=team_ids)
+            | Q(
+                team__isnull=True,
+                status__in=models.SlutrengoringAssignment.CLAIMABLE_STATUSES,
+            )
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        assignment = self.object
+        team_ids = _slutrengoring_team_ids(self.request.user)
+        teams = Team.objects.filter(id__in=team_ids).order_by('name')
+        if self.request.user.is_staff:
+            teams = Team.objects.order_by('name')
+
+        context.update({
+            'teams': teams,
+            'can_act': _slutrengoring_can_act(self.request, assignment),
+            'can_claim': assignment.is_claimable and assignment.last_team_id not in team_ids,
+            'history': assignment.history.select_related('history_user', 'team').all(),
+        })
+        return context
+
+
+@login_required
+@require_POST
+def slutrengoring_claim(request, pk):
+    """Atomically claim a task from the pool for a team."""
+    assignment = get_object_or_404(
+        models.SlutrengoringAssignment.objects.select_related('event', 'tjanse'),
+        pk=pk,
+    )
+    if not assignment.is_claimable or not assignment.event.is_active:
+        messages.error(request, "Opgaven er ikke længere ledig.")
+        return redirect(
+            f"{reverse('organization_Slutrengoring_claim_list')}?event={assignment.event_id}"
+        )
+
+    team = _slutrengoring_team_for_action(
+        request, assignment.event, request.POST.get('team')
+    )
+    if team is None:
+        messages.error(request, "Vælg hvilket team der tager opgaven.")
+        return redirect(
+            f"{reverse('organization_Slutrengoring_detail', args=(assignment.pk,))}"
+        )
+
+    if (
+        not request.user.is_staff
+        and assignment.status == 'not_finished'
+        and assignment.last_team_id == team.pk
+    ):
+        messages.error(
+            request,
+            "Opgaven er returneret af jeres team. Lad et andet team tage den.",
+        )
+        return redirect(
+            f"{reverse('organization_Slutrengoring_claim_list')}?event={assignment.event_id}"
+        )
+
+    with transaction.atomic():
+        # Serialize claims from the same team so it cannot grab two tasks.
+        Team.objects.select_for_update().get(pk=team.pk)
+        has_active = models.SlutrengoringAssignment.objects.filter(
+            event=assignment.event,
+            team=team,
+            status__in=models.SlutrengoringAssignment.ACTIVE_STATUSES,
+        ).exists()
+        if has_active:
+            messages.error(request, "I har allerede en aktiv opgave. Afslut den først.")
+            return redirect(
+                f"{reverse('organization_Slutrengoring_home')}?event={assignment.event_id}"
+            )
+
+        claimed = (
+            models.SlutrengoringAssignment.objects
+            .filter(
+                pk=assignment.pk,
+                team__isnull=True,
+                status__in=models.SlutrengoringAssignment.CLAIMABLE_STATUSES,
+            )
+            .update(
+                team=team,
+                status='assigned',
+                assigned_at=now(),
+                assigned_by=request.user,
+                last_updated=now(),
+            )
+        )
+        if claimed:
+            # ``update()`` bypasses simple-history; re-save the claimed row so
+            # the assignment history and audit trail stay complete.
+            assignment.refresh_from_db()
+            assignment.save()
+
+    if not claimed:
+        messages.error(
+            request,
+            "Opgaven blev desværre taget af et andet team. Vælg en anden.",
+        )
+        return redirect(
+            f"{reverse('organization_Slutrengoring_claim_list')}?event={assignment.event_id}"
+        )
+
+    messages.success(request, f"Opgaven er nu tildelt {team.name}.")
+    return redirect('organization_Slutrengoring_detail', pk=assignment.pk)
+
+
+@login_required
+@require_POST
+def slutrengoring_start(request, pk):
+    with transaction.atomic():
+        assignment = get_object_or_404(
+            models.SlutrengoringAssignment.objects.select_for_update(), pk=pk
+        )
+        if not _slutrengoring_can_act(request, assignment):
+            raise Http404()
+        if assignment.status != 'assigned':
+            messages.error(request, "Opgaven kan ikke startes i sin nuværende status.")
+        else:
+            assignment.status = 'in_progress'
+            assignment.started_at = now()
+            assignment.save(update_fields=['status', 'started_at', 'last_updated'])
+            messages.success(request, "Opgaven er markeret som i gang.")
+    return redirect('organization_Slutrengoring_detail', pk=assignment.pk)
+
+
+@login_required
+@require_POST
+def slutrengoring_done(request, pk):
+    with transaction.atomic():
+        assignment = get_object_or_404(
+            models.SlutrengoringAssignment.objects.select_for_update(), pk=pk
+        )
+        if not _slutrengoring_can_act(request, assignment):
+            raise Http404()
+        if assignment.status not in models.SlutrengoringAssignment.ACTIVE_STATUSES:
+            messages.error(request, "Opgaven er allerede afsluttet.")
+            return redirect('organization_Slutrengoring_detail', pk=assignment.pk)
+
+        team = assignment.team
+        assignment.status = 'done'
+        assignment.completed_at = now()
+        assignment.completed_by = request.user
+        assignment.save(
+            update_fields=['status', 'completed_at', 'completed_by', 'last_updated']
+        )
+        messages.success(request, "Opgaven er markeret som udført.")
+
+    return _slutrengoring_redirect_after_finish(request, assignment, team)
+
+
+@login_required
+@require_POST
+def slutrengoring_not_finished(request, pk):
+    reason = request.POST.get('reason', '').strip()
+    with transaction.atomic():
+        assignment = get_object_or_404(
+            models.SlutrengoringAssignment.objects.select_for_update(), pk=pk
+        )
+        if not _slutrengoring_can_act(request, assignment):
+            raise Http404()
+        if assignment.status not in models.SlutrengoringAssignment.ACTIVE_STATUSES:
+            messages.error(request, "Opgaven er allerede afsluttet.")
+            return redirect('organization_Slutrengoring_detail', pk=assignment.pk)
+        if not reason:
+            messages.error(request, "Skriv hvorfor opgaven ikke kunne færdiggøres.")
+            return redirect('organization_Slutrengoring_detail', pk=assignment.pk)
+
+        team = assignment.team
+        assignment.last_team = team
+        assignment.team = None
+        assignment.status = 'not_finished'
+        assignment.assigned_at = None
+        assignment.assigned_by = None
+        assignment.started_at = None
+        assignment.not_finished_at = now()
+        assignment.not_finished_reason = reason
+        assignment.attempt_count += 1
+        assignment.completed_at = None
+        assignment.completed_by = None
+        assignment.save(
+            update_fields=[
+                'last_team', 'team', 'status', 'assigned_at', 'assigned_by',
+                'started_at', 'not_finished_at', 'not_finished_reason',
+                'attempt_count', 'completed_at', 'completed_by', 'last_updated',
+            ]
+        )
+        messages.success(request, "Opgaven er returneret til puljen.")
+
+    return _slutrengoring_redirect_after_finish(request, assignment, team)
 

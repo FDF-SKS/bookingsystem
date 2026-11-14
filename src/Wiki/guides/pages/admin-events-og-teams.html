@@ -1,0 +1,49 @@
+<p>Et <strong>event</strong> er rammen om alt det, der sker: det har en start- og slutdato, og alle bookinger, tjanser og deadlines hænger på det. Et <strong>team</strong> er den gruppe frivillige, der ejer opgaver og bookinger.</p>
+
+<h2>Opret et event</h2>
+<ol>
+    <li>Gå til <strong>Administrator &rarr; Organization &rarr; Events &rarr; Tilføj</strong>.</li>
+    <li>Skriv eventets <strong>navn</strong>, og vælg <strong>start- og slutdato</strong>.</li>
+    <li>Sæt <strong>is active</strong> til, når eventet skal være det, systemet arbejder med. Kun aktive events vises i bookinger og på forsiden.</li>
+    <li>Udfyld <strong>deadlines</strong> for de områder, der skal have en frist.</li>
+    <li>Gem.</li>
+</ol>
+
+<h2>Deadlines</h2>
+<p>Hver deadline er en dato. Efter datoen afviser systemet nye bookinger i det område.</p>
+<ul>
+    <li><strong>deadline_sjak</strong> – Sjak.</li>
+    <li><strong>deadline_teknik</strong> – Teknik.</li>
+    <li><strong>deadline_mad</strong> – Butikken og måltider.</li>
+    <li><strong>deadline_aktivitetsteam</strong> – AktivitetsTeam.</li>
+    <li><strong>deadline_foto</strong> – Foto.</li>
+    <li><strong>deadline_sos</strong> – SOS.</li>
+</ul>
+
+<blockquote>
+    <p><strong>Kun ét aktivt event ad gangen.</strong> Sæt det gamle event til inaktivt, når I skifter. Ellers kan bookinger og deadlines pege på det forkerte event.</p>
+</blockquote>
+
+<h2>Opret et team</h2>
+<ol>
+    <li>Gå til <strong>Administrator &rarr; Organization &rarr; Teams &rarr; Tilføj</strong>.</li>
+    <li>Skriv teamets <strong>navn</strong> og et kort <strong>short name</strong>. Kortnavnet bruges i slutrengøringen, hvor der ikke er plads til det fulde navn.</li>
+    <li>Udfyld <strong>Discord webhook URL</strong>, hvis teamet skal have besked i Discord – fx når det får en slutrengøringsopgave.</li>
+    <li>Gem.</li>
+</ol>
+
+<h2>Sæt medarbejdere på et team</h2>
+<ol>
+    <li>Gå til <strong>TeamMemberships &rarr; Tilføj</strong>.</li>
+    <li>Vælg <strong>team</strong>, <strong>member</strong> og eventuelt en <strong>role</strong>.</li>
+    <li>Gem. Medarbejderen ser nu teamets tjanser og bookinger.</li>
+</ol>
+
+<blockquote>
+    <p><strong>Teamet styrer adgangen.</strong> Det er teammedlemskabet, der afgør, hvilke tjanser og bookinger en frivillig kan se og handle på. En medarbejder uden team kan ikke hente opgaver i slutrengøringen.</p>
+</blockquote>
+
+<h2>Event-membership</h2>
+<p><strong>EventMemberships</strong> fortæller, hvilke medarbejdere der deltager i et event. Du kan tilføje mange på én gang fra medarbejderlisten med handlingen <em>Add selected to the next upcoming event</em>.</p>
+
+<p>Se også: <a href="/wiki/admin-medarbejdere-og-noegler/">Admin: medarbejdere og nøgler</a>.</p>

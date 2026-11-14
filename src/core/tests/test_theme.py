@@ -47,6 +47,7 @@ def _extract_hex_vars(block_text: str) -> dict[str, str]:
         "--bs-muted",
         "--bs-primary",
         "--bs-tertiary",
+        "--bs-card-surface",
     ):
         match = re.search(rf"{re.escape(name)}\s*:\s*([^;]+);", block_text)
         if match:
@@ -88,6 +89,52 @@ class ThemeContrastTests(SimpleTestCase):
                     f"{label}: {description} ({foreground} on {body_bg}) has "
                     f"contrast {ratio:.2f}, below WCAG AA 4.5",
                 )
+
+
+class ThemeCardSurfaceTests(SimpleTestCase):
+    """Dark-mode cards must be visibly separated from the page background.
+
+    Bootstrap's ``.card`` re-declares ``--bs-card-bg: var(--bs-body-bg)`` on the
+    element itself, so a ``:root`` override never reaches it and cards end up
+    the exact page colour. These tests lock in both the lighter surface and the
+    element-level re-declaration that makes it apply.
+    """
+
+    def test_dark_card_surface_is_lighter_than_page_background(self):
+        _, dark = _theme_palettes()
+        body_bg = dark["--bs-body-bg"]
+        card_surface = dark["--bs-card-surface"]
+
+        self.assertGreater(
+            _luminance(card_surface),
+            _luminance(body_bg),
+            f"dark card surface {card_surface} must be lighter than {body_bg}",
+        )
+        self.assertGreaterEqual(
+            wcag_contrast(body_bg, card_surface),
+            1.2,
+            "dark cards are too close in luminance to the page background",
+        )
+
+    def test_card_bg_is_redeclared_on_card_in_dark_mode(self):
+        css = CSS_PATH.read_text()
+        match = re.search(
+            r'\[data-bs-theme="dark"\]\s+\.card\s*\{([^}]*)\}', css
+        )
+        self.assertIsNotNone(match, "missing dark-mode .card rule")
+        self.assertIn(
+            "--bs-card-bg",
+            match.group(1),
+            "Bootstrap shadows --bs-card-bg on .card; it must be redeclared there",
+        )
+
+    def test_card_custom_gets_a_border_in_dark_mode(self):
+        css = CSS_PATH.read_text()
+        match = re.search(
+            r'\[data-bs-theme="dark"\]\s+\.card-custom\s*\{([^}]*)\}', css
+        )
+        self.assertIsNotNone(match, "missing dark-mode .card-custom rule")
+        self.assertIn("border", match.group(1))
 
 
 class ThemeDarkOverrideTests(SimpleTestCase):

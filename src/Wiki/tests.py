@@ -1,10 +1,13 @@
 from django.core.exceptions import ValidationError
+from django.core.management import call_command
 from django.test import TestCase
 from django.urls import reverse
+from django_tiptap_editor.utils.sanitize_html import sanitize_html
 from django_tiptap_editor.widgets.tiptap_widget import TipTapWidget
 
 from organization.models import Volunteer
 
+from .guides import PAGES, SLUGS, content_for, content_path
 from .models import WikiPage
 from .search import plain_text
 
@@ -193,6 +196,96 @@ class WikiViewTests(TestCase):
 
         response = self.client.get(self.root.get_absolute_url())
         self.assertIn(self.child, response.context['backlinks'])
+
+
+class WikiGuideContentTests(TestCase):
+    """The bundled guides are deployable as-is: valid markup and real assets."""
+
+    def test_every_page_has_a_content_file(self):
+        for page in PAGES:
+            self.assertTrue(
+                content_path(page['slug']).exists(),
+                f"Missing content for {page['slug']}",
+            )
+            self.assertTrue(content_for(page), page['slug'])
+
+    def test_parents_are_defined_before_their_children(self):
+        seen = set()
+        for page in PAGES:
+            if page['parent']:
+                self.assertIn(page['parent'], seen, page['slug'])
+            seen.add(page['slug'])
+
+    def test_slugs_are_unique(self):
+        self.assertEqual(len(SLUGS), len(set(SLUGS)))
+
+    def test_content_survives_the_editor_sanitizer_unchanged(self):
+        """A page opened and saved in the editor must not change."""
+        for page in PAGES:
+            content = content_for(page)
+            self.assertEqual(str(sanitize_html(content)), content, page['slug'])
+
+    def test_images_point_at_existing_static_files(self):
+        import re
+
+        from django.conf import settings
+
+        pattern = re.compile(r'<img[^>]+src="([^"]+)"')
+        for page in PAGES:
+            for src in pattern.findall(content_for(page)):
+                self.assertTrue(src.startswith('/static/'), f"{page['slug']}: {src}")
+                asset = settings.BASE_DIR / 'static' / src.removeprefix('/static/')
+                self.assertTrue(asset.exists(), f"{page['slug']}: {src} is missing")
+
+    def test_internal_wiki_links_point_at_known_pages(self):
+        import re
+
+        pattern = re.compile(r'href="/wiki/([a-z0-9-]+)/"')
+        reserved = {'search', 'lookup', 'create'}
+        for page in PAGES:
+            for slug in pattern.findall(content_for(page)):
+                if slug in reserved:
+                    continue
+                self.assertIn(slug, SLUGS, f"{page['slug']} links to {slug}")
+
+
+class SeedWikiGuidesCommandTests(TestCase):
+    def test_command_creates_the_whole_tree(self):
+        call_command('seed_wiki_guides', verbosity=0)
+
+        self.assertEqual(WikiPage.objects.count(), len(PAGES))
+        for page in PAGES:
+            wiki_page = WikiPage.objects.get(slug=page['slug'])
+            self.assertEqual(wiki_page.title, page['title'])
+            expected_parent = WikiPage.objects.get(slug=page['parent']) if page['parent'] else None
+            self.assertEqual(wiki_page.parent, expected_parent)
+
+    def test_running_twice_does_not_duplicate_or_overwrite(self):
+        call_command('seed_wiki_guides', verbosity=0)
+        page = WikiPage.objects.get(slug=PAGES[0]['slug'])
+        page.content = '<p>Rettet i editoren.</p>'
+        page.save()
+
+        call_command('seed_wiki_guides', verbosity=0)
+
+        self.assertEqual(WikiPage.objects.count(), len(PAGES))
+        page.refresh_from_db()
+        self.assertEqual(page.content, '<p>Rettet i editoren.</p>')
+
+    def test_update_flag_restores_the_bundled_content(self):
+        call_command('seed_wiki_guides', verbosity=0)
+        page = WikiPage.objects.get(slug=PAGES[0]['slug'])
+        page.content = '<p>Rettet i editoren.</p>'
+        page.save()
+
+        call_command('seed_wiki_guides', '--update', verbosity=0)
+
+        page.refresh_from_db()
+        self.assertEqual(page.content, content_for(PAGES[0]))
+
+    def test_dry_run_writes_nothing(self):
+        call_command('seed_wiki_guides', '--dry-run', verbosity=0)
+        self.assertFalse(WikiPage.objects.exists())
 
 
 class WikiSearchTests(TestCase):

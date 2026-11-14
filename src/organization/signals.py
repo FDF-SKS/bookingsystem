@@ -4,14 +4,20 @@ Django signals for organization models - handles Discord notifications and comme
 import requests
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django_comments_xtd.models import XtdComment
 
 from emailing.services import send_email
 
 from .discord_services import build_embed
-from .models import TjanseOwnership, TjanseSwapRequest, VolunteerAppointment
+from .models import (
+    SlutrengoringAssignment,
+    TjanseOwnership,
+    TjanseSwapRequest,
+    VolunteerAppointment,
+)
+from .slutrengoring_services import notify_assignment_discord
 from .tasks import enqueue_discord_embed
 
 TJANSE_STATUS_COLORS = {
@@ -26,6 +32,7 @@ SWAP_STATUS_COLORS = {
     'rejected': 0xE74C3C,
     'cancelled': 0x95A5A6,
 }
+
 
 
 @receiver(post_save, sender=XtdComment)
@@ -144,6 +151,79 @@ def notify_tjanse_swap_discord(sender, instance, created, **kwargs):
     for team in {requesting.pk: requesting, receiving.pk: receiving}.values():
         if team.discord_webhook_url:
             enqueue_discord_embed(team.pk, embed, "Tjanse Notifikationer")
+
+
+def send_slutrengoring_assigned_email(assignment):
+    """Email the team when a Slutrengøring task is pre-assigned from the admin.
+
+    Self-claims use ``QuerySet.update()`` and therefore do not emit ``post_save``;
+    the team is already on the page and does not need another email.
+    """
+    if not assignment.team_id:
+        return
+    team_emails = list(
+        assignment.team.volunteer_set.exclude(email='').values_list('email', flat=True)
+    )
+    if not team_emails:
+        return
+
+    subject = f"Ny slutrengøringopgave: {assignment.tjanse.title}"
+    context = {
+        'team': assignment.team,
+        'event': assignment.event,
+        'tjanse': assignment.tjanse,
+        'assignment': assignment,
+    }
+    send_email(
+        subject,
+        'organization/slutrengoring_assigned_email.html',
+        context,
+        team_emails,
+    )
+
+
+@receiver(pre_save, sender=SlutrengoringAssignment)
+def capture_slutrengoring_previous_team(sender, instance, **kwargs):
+    """Remember the old owner so post_save can detect a real team change."""
+    if not instance.pk:
+        instance._previous_team_id = None
+        return
+    instance._previous_team_id = (
+        sender.objects.filter(pk=instance.pk).values_list('team_id', flat=True).first()
+    )
+
+
+def _is_staff_assignment(instance):
+    return bool(
+        instance.team_id
+        and instance.assigned_by_id
+        and instance.assigned_by
+        and instance.assigned_by.is_staff
+    )
+
+
+def _assignment_team_changed(instance, created):
+    if created:
+        return True
+    return getattr(instance, '_previous_team_id', instance.team_id) != instance.team_id
+
+
+@receiver(post_save, sender=SlutrengoringAssignment)
+def notify_slutrengoring_assigned(sender, instance, created, **kwargs):
+    # Only notify for a deliberate assignment by a staff member.
+    if not created or not _is_staff_assignment(instance):
+        return
+    send_slutrengoring_assigned_email(instance)
+
+
+@receiver(post_save, sender=SlutrengoringAssignment)
+def notify_slutrengoring_discord(sender, instance, created, **kwargs):
+    """Post assignments (and reassignments) to the receiving team's Discord."""
+    if not _is_staff_assignment(instance):
+        return
+    if not _assignment_team_changed(instance, created):
+        return
+    notify_assignment_discord(instance, changed_by=instance.assigned_by)
 
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)

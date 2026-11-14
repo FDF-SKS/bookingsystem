@@ -45,6 +45,7 @@
     --bs-body-bg: #ffffff;
     --bs-body-color: #212529;
     --bs-card-bg: #ffffff;
+    --bs-card-surface: #ffffff;
     --bs-card-border: #dee2e6;
     --bs-muted: #6c757d;
     --bs-soft-primary: #e7f1ff;
@@ -81,9 +82,13 @@
     --bs-secondary-rgb: 0, 50, 85;
     --bs-tertiary: #7aa6e6;
 
-    /* Darker card surface by default; dashboard cards will use full secondary */
-    --bs-card-bg: rgba(255,255,255,0.02);
-    --bs-card-border: rgba(255,255,255,0.04);
+    /* Cards need a surface clearly lighter than the page, plus a visible
+       edge; otherwise a card reads as one continuous dark area. The solid
+       colour is used instead of a translucent one so nested cards do not
+       compound into a darker block. */
+    --bs-card-surface: #343b43;
+    --bs-card-bg: var(--bs-card-surface);
+    --bs-card-border: rgba(255, 255, 255, 0.12);
 
     /* Navbar and links tuned to the orange primary */
     --bs-navbar-bg: rgba(255,255,255,0.02);
@@ -94,7 +99,7 @@
     --logo-icon-color: #003255;
 
     /* Dashboard card specific colors in dark mode */
-    --dashboard-card-bg: rgba(255,255,255,0.035);
+    --dashboard-card-bg: var(--bs-card-surface);
     --dashboard-card-body-color: var(--bs-body-color);
 
     /* Dark-mode surface shades (slightly lighter/darker variants for headers/inputs) */
@@ -361,7 +366,25 @@ a:hover {
     color: var(--bs-body-color);
 }
 
-/* Dashboard cards (index tiles) - in dark mode use full secondary orange */
+/* Bootstrap's .card re-declares --bs-card-bg locally as var(--bs-body-bg), so
+   the :root dark override cannot reach it and cards end up the exact page
+   colour. Re-declare the value on the element itself so every card sits
+   visibly above the page surface in dark mode. */
+[data-bs-theme="dark"] .card {
+    --bs-card-bg: var(--bs-card-surface);
+    --bs-card-border-color: var(--bs-card-border);
+    background-color: var(--bs-card-bg);
+    border-color: var(--bs-card-border-color);
+}
+
+/* .card-custom is borderless in light mode; in dark mode the lighter surface
+   alone is not enough separation, so restore a subtle border. */
+[data-bs-theme="dark"] .card-custom {
+    border: 1px solid var(--bs-card-border);
+}
+
+/* Dashboard cards (index tiles) follow the same card surface so they do not
+   blend into the page background in dark mode. */
 .dashboard-card {
     background-color: var(--bs-card-bg);
     color: var(--bs-body-color);
@@ -532,14 +555,15 @@ a:hover {
 /* Booking item hover (index) - light default and dark override */
 .booking-item:hover { background-color: #f5f5f5; }
 
-/* Dark mode: give list items a visible card surface instead of blending into
-   the page background. Explicit bg-* utilities (e.g. bg-light empty state)
-   still win because they carry !important. */
+/* Dark mode: give list items the same card surface as .card so lists (e.g.
+   the appointment list) read as distinct blocks instead of blending into the
+   page background. Explicit bg-* utilities (e.g. bg-light empty state) still
+   win because they carry !important. */
 [data-bs-theme="dark"] .list-group-item {
-    background-color: rgba(255, 255, 255, 0.06);
+    background-color: var(--bs-card-surface);
 }
 [data-bs-theme="dark"] .list-group-item:hover {
-    background-color: rgba(255, 255, 255, 0.10) !important;
+    background-color: #3d454e !important;
 }
 [data-bs-theme="dark"] .booking-item:hover { background-color: var(--dashboard-card-bg) !important; }
 

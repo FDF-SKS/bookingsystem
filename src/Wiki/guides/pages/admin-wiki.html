@@ -1,0 +1,43 @@
+<p>Wikien er fælles viden for alle i huset. Alle, der er logget ind, kan læse siderne – men kun administratorer kan oprette og redigere dem.</p>
+
+<h2>Opret en side</h2>
+<ol>
+    <li>Gå til <strong>Wiki &rarr; Ny side</strong>, eller brug <strong>Administrator &rarr; Wiki &rarr; Wikisider &rarr; Tilføj</strong>.</li>
+    <li>Skriv en <strong>titel</strong>. URL-navnet bliver dannet automatisk – lad feltet stå tomt.</li>
+    <li>Vælg en <strong>overordnet side</strong>, hvis siden skal ligge under en anden.</li>
+    <li>Brug <strong>Rækkefølge</strong> til at styre, hvor i menuen siden står.</li>
+    <li>Skriv indholdet i editoren.</li>
+    <li>Gem.</li>
+</ol>
+
+<h2>Editoren</h2>
+<p>Editoren virker som et almindeligt tekstbehandlingsprogram. Du kan bruge:</p>
+<ul>
+    <li><strong>Overskrifter</strong> – brug H2 og H3 til at dele siden op. Siden har allerede en titel, så du behøver ikke H1.</li>
+    <li><strong>Punkt- og nummerlister</strong> – til trin og oversigter.</li>
+    <li><strong>Fed, kursiv, understregning og kode</strong>.</li>
+    <li><strong>Citat</strong> – god til »Godt at vide«-bokse.</li>
+    <li><strong>Links</strong> – til andre sider i systemet eller til wikien.</li>
+    <li><strong>Billeder</strong> – tryk på billedknappen, og upload en PNG, JPG eller WebP. Billedet skal være under 10 MB.</li>
+</ul>
+
+<h2>Indsæt en artikelhenvisning</h2>
+<ol>
+    <li>Tryk knappen <strong>Indsæt artikelhenvisning</strong> over editoren.</li>
+    <li>Søg efter den side, du vil linke til.</li>
+    <li>Vælg siden – linket indsættes, hvor markøren står.</li>
+</ol>
+<p>Når en anden side linker til en side, vises den under <em>Refereret fra</em> nederst på siden. Så kan du se, hvor indholdet bliver brugt.</p>
+
+<h2>Sidestruktur</h2>
+<p>Wikien er et træ. Forsiden viser de øverste sider, og hver side viser sine undersider. Overvej strukturen, før du opretter mange sider – det er lettere end at flytte dem bagefter.</p>
+
+<blockquote>
+    <p><strong>Formatering bliver renset.</strong> Systemet gemmer kun den formatering, editoren selv kan lave. Kopierer du indhold fra fx Word med farver og tabeller, bliver det reduceret til almindelig tekst, lister og links.</p>
+</blockquote>
+
+<h2>De indbyggede guides</h2>
+<p>Denne guide er oprettet med kommandoen <code>python manage.py seed_wiki_guides</code>. Den opretter hele sidestrukturen med indhold og billeder. Kører du den igen, røres siderne ikke – tilføjer du <code>--update</code>, opdateres de med den nyeste version fra kildekoden.</p>
+<p>Vil du rette en guide permanent, så ret den i filerne under <code>src/Wiki/guides/pages/</code> og kør kommandoen igen. Retter du direkte i editoren, bliver ændringen overskrevet næste gang, nogen kører <code>--update</code>.</p>
+
+<p>Tilbage til <a href="/wiki/administrator/">For administratorer</a>.</p>

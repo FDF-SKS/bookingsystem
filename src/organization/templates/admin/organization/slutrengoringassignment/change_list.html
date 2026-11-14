@@ -1,0 +1,12 @@
+{% extends "admin/change_list.html" %}
+{% block object-tools-items %}
+    <li>
+        <a href="{% url 'admin:organization_slutrengoringassignment_tools' %}"
+           class="addlink">Opret / tildel</a>
+    </li>
+    <li>
+        <a href="{% url 'admin:organization_slutrengoringassignment_board' %}"
+           class="addlink"></li>Statusoversigt</a>
+    </li>
+    {{ block.super }}
+{% endblock %}

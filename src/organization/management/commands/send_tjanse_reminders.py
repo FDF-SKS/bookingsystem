@@ -17,6 +17,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         due_ownerships = TjanseOwnership.objects.filter(
             due_date=date.today(),
+            tjanse__kind='regular',
         ).exclude(status='done').select_related('tjanse', 'event', 'team')
 
         sent_count = 0

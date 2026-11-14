@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% load bootstrap_icons %}
+{% block content %}
+    <div class="container py-4">
+        <nav aria-label="breadcrumb" class="d-none d-md-block">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'organization_Slutrengoring_home' %}?event={{ assignment.event_id }}">Slutrengøring</a></li>
+                <li class="breadcrumb-item active">{{ assignment.tjanse.title }}</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+            <div>
+                <h1 class="h2 mb-1">{{ assignment.tjanse.title }}</h1>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="badge rounded-pill {% if assignment.tjanse.priority == 'required' %}bg-danger {% elif assignment.tjanse.priority == 'high' %}bg-warning text-dark {% elif assignment.tjanse.priority == 'medium' %}bg-info text-dark {% else %}bg-secondary{% endif %}">
+                        {{ assignment.tjanse.get_priority_display }}
+                    </span>
+                    <span class="badge rounded-pill {% if assignment.status == 'done' %}bg-success {% elif assignment.status == 'not_finished' %}bg-danger {% elif assignment.status == 'in_progress' %}bg-info text-dark {% else %}bg-warning text-dark{% endif %}">
+                        {{ assignment.get_status_display }}
+                    </span>
+                    {% if assignment.attempt_count %}
+                        <span class="badge rounded-pill bg-light text-dark">Returneret {{ assignment.attempt_count }} gang{{ assignment.attempt_count|pluralize:"e" }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <a href="{% url 'organization_Slutrengoring_home' %}?event={{ assignment.event_id }}"
+               class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> <span>Mine opgaver</span>
+            </a>
+        </div>
+        <div class="card shadow-sm border-0 rounded-3 mb-4">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Beskrivelse</h2>
+                {% if assignment.tjanse.description.html %}
+                    <div class="tjanse-description">{{ assignment.tjanse.description }}</div>
+                {% else %}
+                    <p class="text-muted mb-0">Ingen beskrivelse endnu.</p>
+                {% endif %}
+                <hr>
+                <dl class="row mb-0">
+                    <dt class="col-sm-3">Event</dt>
+                    <dd class="col-sm-9">
+                        {{ assignment.event.name }}
+                    </dd>
+                    <dt class="col-sm-3">Team</dt>
+                    <dd class="col-sm-9">
+                        {{ assignment.team.name|default:"Ikke tildelt" }}
+                    </dd>
+                    {% if assignment.tjanse.area %}
+                        <dt class="col-sm-3">Område</dt>
+                        <dd class="col-sm-9">
+                            {{ assignment.tjanse.area }}
+                        </dd>
+                    {% endif %}
+                    {% if assignment.tjanse.estimated_minutes %}
+                        <dt class="col-sm-3">Anslået tid</dt>
+                        <dd class="col-sm-9">
+                            ca. {{ assignment.tjanse.estimated_minutes }} min.
+                        </dd>
+                    {% endif %}
+                    {% if assignment.not_finished_reason %}
+                        <dt class="col-sm-3">Sidste årsag</dt>
+                        <dd class="col-sm-9">
+                            {{ assignment.not_finished_reason }}
+                        </dd>
+                    {% endif %}
+                </dl>
+                {% if can_act %}
+                    <div class="d-flex flex-wrap gap-2 mt-4">
+                        {% if assignment.status == "assigned" %}
+                            <form method="post"
+                                  action="{% url 'slutrengoring_start' pk=assignment.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-primary">Start opgave</button>
+                            </form>
+                        {% endif %}
+                        {% if assignment.status == "assigned" or assignment.status == "in_progress" %}
+                            <form method="post"
+                                  action="{% url 'slutrengoring_done' pk=assignment.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success">Markér udført</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                    {% if assignment.status == "assigned" or assignment.status == "in_progress" %}
+                        <details class="mt-3">
+                            <summary class="text-danger">Kan ikke færdiggøres</summary>
+                            <form method="post"
+                                  action="{% url 'slutrengoring_not_finished' pk=assignment.pk %}"
+                                  class="mt-2">
+                                {% csrf_token %}
+                                <label class="form-label"
+                                       for="id_reason">Hvorfor kunne opgaven ikke færdiggøres?</label>
+                                <div class="input-group">
+                                    <input id="id_reason" name="reason" class="form-control" required>
+                                    <button type="submit" class="btn btn-outline-danger">Returnér til puljen</button>
+                                </div>
+                            </form>
+                        </details>
+                    {% endif %}
+                {% endif %}
+                {% if can_claim %}
+                    <hr>
+                    <h2 class="h5 mb-3">Tag opgaven</h2>
+                    <form method="post"
+                          action="{% url 'slutrengoring_claim' pk=assignment.pk %}"
+                          class="d-flex align-items-center gap-2">
+                        {% csrf_token %}
+                        {% if teams|length > 1 %}
+                            <select name="team" class="form-select w-auto" required>
+                                <option value="">Vælg team</option>
+                                {% for team in teams %}
+                                    <option value="{{ team.pk }}">{{ team.name }}</option>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <input type="hidden" name="team" value="{{ teams.0.pk }}">
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary">Tag opgaven</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card shadow-sm border-0 rounded-3">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Historik</h2>
+                <ul class="list-unstyled mb-0">
+                    {% for record in history %}
+                        <li class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <span>
+                                {% if record.history_type == "+" %}Oprettet{% elif record.history_type == "-" %}Slettet{% else %}Ændret{% endif %}
+                                · {{ record.team.name|default:"Ledig" }} · {{ record.get_status_display }}
+                            </span>
+                            <small class="text-muted">{{ record.history_date|date:"d/m/Y H:i" }}</small>
+                        </li>
+                    {% empty %}
+                        <li class="text-muted">Ingen historik endnu.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -53,7 +53,7 @@ class TjanseViewSet(viewsets.ModelViewSet):
 
 
 class TjanseOwnershipViewSet(TeamScopedMixin, viewsets.ModelViewSet):
-    queryset = models.TjanseOwnership.objects.all()
+    queryset = models.TjanseOwnership.objects.filter(tjanse__kind="regular")
     serializer_class = serializers.TjanseOwnershipSerializer
     permission_classes = [IsStaffOrTeamMember]
 
