@@ -67,6 +67,20 @@ services:
       - redis
       - db
 
+  beat:
+    image: mglavind/booking-app:latest
+    container_name: django_beat_prod
+    restart: always
+    # Schedules the "about to start" reminders (see CELERY_BEAT_SCHEDULE).
+    entrypoint: ["celery", "-A", "core", "beat", "-l", "info", "--schedule=/tmp/celerybeat-schedule"]
+    environment:
+      DEBUG: "False"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+
   nginx:
     image: nginx:latest
     container_name: nginx_proxy

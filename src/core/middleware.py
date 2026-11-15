@@ -46,6 +46,8 @@ class ContentSecurityPolicyMiddleware:
         "https://*.tile.openstreetmap.org; "
         "font-src 'self' data: https://cdn.jsdelivr.net https://unpkg.com; "
         "connect-src 'self' https://client.sleekplan.com https://*.sleekplan.com; "
+        "manifest-src 'self'; "
+        "worker-src 'self'; "
         "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com "
         "https://player.vimeo.com https://w.soundcloud.com; "
         "object-src 'none'; "

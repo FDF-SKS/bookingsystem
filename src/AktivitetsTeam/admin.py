@@ -23,6 +23,7 @@ from unfold.admin import ModelAdmin, TabularInline
 from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
 from unfold.decorators import display
 
+from notifications.services import set_booking_status
 from organization.models import Volunteer
 from utils.ical_utils import export_selected_to_ical, send_ical_via_email
 
@@ -79,13 +80,13 @@ class AktivitetsTeamBaseAdmin(ModelAdmin, ImportExportModelAdmin):
     @admin.action(description="Godkend valgte")
     def approve_selected(self, request, queryset):
         """Godkend valgte bookinger."""
-        updated = queryset.update(status="Approved")
+        updated = set_booking_status(queryset, "Approved")
         self.message_user(request, f"{updated} bookinger er nu godkendt.", messages.SUCCESS)
 
     @admin.action(description="Afvis valgte")
     def reject_selected(self, request, queryset):
         """Afvis valgte bookinger."""
-        updated = queryset.update(status="Rejected")
+        updated = set_booking_status(queryset, "Rejected")
         self.message_user(request, f"{updated} bookinger er blevet afvist.", messages.WARNING)
 
     @admin.action(description="Eksporter valgte (CSV)")

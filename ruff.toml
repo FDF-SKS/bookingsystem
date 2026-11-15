@@ -32,6 +32,7 @@ known-first-party = [
     "core",
     "organization",
     "emailing",
+    "notifications",
     "utils",
     "AktivitetsTeam",
     "Butikken",

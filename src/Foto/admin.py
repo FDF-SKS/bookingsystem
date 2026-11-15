@@ -10,6 +10,8 @@ from unfold.admin import ModelAdmin
 from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
 from unfold.decorators import display
 
+from notifications.services import set_booking_status
+
 from .models import FotoBooking, FotoItem
 
 # --- Resources ---
@@ -68,13 +70,13 @@ class FotoBookingAdmin(ModelAdmin, ImportExportModelAdmin):
     # --- Actions ---
     @admin.action(description="Godkend valgte")
     def approve_selected(self, request, queryset):
-        queryset.update(status="Approved")
-        self.message_user(request, "Foto bookinger godkendt.", messages.SUCCESS)
+        updated = set_booking_status(queryset, "Approved")
+        self.message_user(request, f"{updated} foto bookinger godkendt.", messages.SUCCESS)
 
     @admin.action(description="Afvis valgte")
     def reject_selected(self, request, queryset):
-        queryset.update(status="Rejected")
-        self.message_user(request, "Foto bookinger afvist.", messages.WARNING)
+        updated = set_booking_status(queryset, "Rejected")
+        self.message_user(request, f"{updated} foto bookinger afvist.", messages.WARNING)
 
     @admin.action(description="Exporter valgte bookinger til iCal fil")
     def export_selected_to_ical(self, request, queryset):

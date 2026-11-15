@@ -85,6 +85,27 @@ else:
 
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'slettenbooking@gmail.com')
 
+# --- PWA / WEB PUSH ---
+# Generate a key pair with: python manage.py generate_vapid_keys
+# Both keys must be set for push notifications to be sent. The public key is
+# exposed to signed-in users so their browser can create a subscription.
+WEBPUSH_VAPID_PUBLIC_KEY = os.environ.get('WEBPUSH_VAPID_PUBLIC_KEY', '').strip()
+WEBPUSH_VAPID_PRIVATE_KEY = os.environ.get('WEBPUSH_VAPID_PRIVATE_KEY', '').strip()
+WEBPUSH_VAPID_SUBJECT = (
+    os.environ.get('WEBPUSH_VAPID_SUBJECT')
+    or f'mailto:{DEFAULT_FROM_EMAIL}'
+)
+WEBPUSH_TTL_SECONDS = int(os.environ.get('WEBPUSH_TTL_SECONDS', '86400'))
+
+# Push reminders: how long before a program block starts, and the hour at which
+# tjanser with a due date are announced on the due date.
+NOTIFICATIONS_UPCOMING_MINUTES = int(
+    os.environ.get('NOTIFICATIONS_UPCOMING_MINUTES', '30')
+)
+NOTIFICATIONS_TASK_REMINDER_HOUR = int(
+    os.environ.get('NOTIFICATIONS_TASK_REMINDER_HOUR', '8')
+)
+
 # --- CELERY ---
 CELERY_BROKER_URL = os.environ.get(
     'CELERY_BROKER_URL',
@@ -96,6 +117,15 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 # Dev has no Redis; run tasks inline.
 CELERY_TASK_ALWAYS_EAGER = ENVIRONMENT == 'dev'
+
+# Celery beat drives the scheduled "about to start" reminders. Run it with:
+#   celery -A core beat -l info
+CELERY_BEAT_SCHEDULE = {
+    'notifications-upcoming-reminders': {
+        'task': 'notifications.tasks.send_upcoming_reminders',
+        'schedule': 300.0,  # every five minutes
+    },
+}
 
 # Debug setting
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
@@ -136,6 +166,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'core',
+    'notifications',
     'django_bootstrap5',
     'template_partials',
     'django_bootstrap_icons',
@@ -704,6 +735,35 @@ UNFOLD = {
                         "title": _("Wikisider"),
                         "icon": "menu_book",
                         "link": reverse_lazy("admin:Wiki_wikipage_changelist"),
+                    },
+                ],
+            },
+            {
+                "title": _("Notifikationer"),
+                "separator": True,
+                "collapsible": True,
+                "default_open": False,
+                "items": [
+                    {
+                        "title": _("Push-abonnementer"),
+                        "icon": "notifications",
+                        "link": reverse_lazy(
+                            "admin:notifications_pushsubscription_changelist"
+                        ),
+                    },
+                    {
+                        "title": _("Push-indstillinger"),
+                        "icon": "tune",
+                        "link": reverse_lazy(
+                            "admin:notifications_notificationpreference_changelist"
+                        ),
+                    },
+                    {
+                        "title": _("Kalenderabonnementer"),
+                        "icon": "calendar_month",
+                        "link": reverse_lazy(
+                            "admin:notifications_calendarfeedtoken_changelist"
+                        ),
                     },
                 ],
             },

@@ -12,6 +12,7 @@ from unfold.admin import ModelAdmin
 from unfold.contrib.import_export.forms import ImportForm, SelectableFieldsExportForm
 from unfold.decorators import display
 
+from notifications.services import set_booking_status
 from organization.models import Team, Volunteer
 
 from .models import SOSBooking, SOSItem, SOSType
@@ -51,13 +52,13 @@ class SOSBaseAdmin(ModelAdmin, ImportExportModelAdmin):
     
     @admin.action(description="Godkend valgte")
     def approve_selected(self, request, queryset):
-        queryset.update(status="Approved")
-        self.message_user(request, f"{queryset.count()} bookinger godkendt.", messages.SUCCESS)
+        updated = set_booking_status(queryset, "Approved")
+        self.message_user(request, f"{updated} bookinger godkendt.", messages.SUCCESS)
 
     @admin.action(description="Afvis valgte")
     def reject_selected(self, request, queryset):
-        queryset.update(status="Rejected")
-        self.message_user(request, f"{queryset.count()} bookinger afvist.", messages.WARNING)
+        updated = set_booking_status(queryset, "Rejected")
+        self.message_user(request, f"{updated} bookinger afvist.", messages.WARNING)
 
 # --- Admin Classes ---
 

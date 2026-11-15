@@ -51,5 +51,8 @@ cryptography>=48.0.1
 celery>=5.4
 redis>=5.0
 
+# PWA / Web Push (device notifications)
+pywebpush>=2.5
+
 # Geographic Data
 geopy>=2.5.0

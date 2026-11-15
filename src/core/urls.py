@@ -8,6 +8,8 @@ from django.urls import include, path
 from django.views.generic.base import RedirectView
 from django_ses.views import SESEventWebhookView
 
+from notifications import views as notification_views
+
 from . import views
 from .tiptap_uploads import TipTapImageUploadView
 
@@ -19,6 +21,11 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('ses/notifications/', SESEventWebhookView.as_view(), name='ses_notifications'),
     path('tiptap/images/upload/', TipTapImageUploadView.as_view(), name='tiptap_image_upload'),
+    # The service worker and manifest must live at the site root so their scope
+    # covers the whole app (see notifications/).
+    path('sw.js', notification_views.service_worker, name='pwa_service_worker'),
+    path('manifest.webmanifest', notification_views.manifest, name='pwa_manifest'),
+    path('notifications/', include('notifications.urls')),
     path('', views.index, name='index'),  # Protect the view with login_required
     path('accounts/', include('allauth.urls')),
     path('organization/', include('organization.urls')),

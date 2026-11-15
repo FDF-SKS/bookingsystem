@@ -1,6 +1,8 @@
 """
 Django signals for organization models - handles Discord notifications and comments.
 """
+import logging
+
 import requests
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -9,6 +11,10 @@ from django.dispatch import receiver
 from django_comments_xtd.models import XtdComment
 
 from emailing.services import send_email
+from notifications.services import (
+    notify_new_tjanse,
+    notify_slutrengoring_assignment,
+)
 
 from .discord_services import build_embed
 from .models import (
@@ -19,6 +25,8 @@ from .models import (
 )
 from .slutrengoring_services import notify_assignment_discord
 from .tasks import enqueue_discord_embed
+
+logger = logging.getLogger(__name__)
 
 TJANSE_STATUS_COLORS = {
     'assigned': 0x5865F2,
@@ -111,6 +119,12 @@ def notify_tjanse_assigned(sender, instance, created, **kwargs):
     if not created:
         return
     send_tjanse_assigned_email(instance)
+    try:
+        notify_new_tjanse(instance)
+    except Exception:
+        logger.exception(
+            'Push-notifikation for ny tjanse %s fejlede', instance.pk
+        )
 
 
 @receiver(post_save, sender=TjanseOwnership)
@@ -214,6 +228,12 @@ def notify_slutrengoring_assigned(sender, instance, created, **kwargs):
     if not created or not _is_staff_assignment(instance):
         return
     send_slutrengoring_assigned_email(instance)
+    try:
+        notify_slutrengoring_assignment(instance)
+    except Exception:
+        logger.exception(
+            'Push-notifikation for slutrengøring %s fejlede', instance.pk
+        )
 
 
 @receiver(post_save, sender=SlutrengoringAssignment)

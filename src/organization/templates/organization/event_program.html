@@ -79,6 +79,12 @@
                title="Eksportér til Excel">
                 <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
             </a>
+            <a href="{% url 'notifications_settings' %}"
+               class="btn btn-sm btn-outline-primary program-tool-button"
+               aria-label="Abonnér på kalender"
+               title="Abonnér på kalender">
+                <i class="bi bi-calendar-plus" aria-hidden="true"></i>
+            </a>
             {% if can_create %}
                 <button type="button"
                         class="btn btn-sm btn-primary program-tool-button"

@@ -180,6 +180,49 @@ Kommandoen er idempotent: findes en side allerede, røres den ikke. Brug `--upda
 Retter man en side direkte i wiki-editoren, skal man også rette HTML-filen – ellers bliver ændringen overskrevet næste gang, nogen kører `--update`.
 
 
+## 🔔 PWA, push-notifikationer og kalenderabonnement
+Appen kan installeres som PWA på iOS og Android. Når den er installeret, kan brugeren få systemnotifikationer og abonnere på sine opgaver og sit rammeprogram i telefonens kalenderapp. Indstillingerne findes under **Min profil → Notifikationer & kalender** (eller `/notifications/settings/`).
+
+### Push-notifikationer
+Følgende hændelser kan give en push-notifikation:
+- en booking bliver **godkendt** eller **afvist** (Sjak, Teknik, Foto, SOS, AktivitetsTeam, Depot og Butikken)
+- der tildeles en **ny tjanse** eller **slutrengøringsoppgave** til brugerens team
+- en **programblok** starter inden for `NOTIFICATIONS_UPCOMING_MINUTES` (standard 30 min.)
+- en **tjanse med frist i dag** varsles fra `NOTIFICATIONS_TASK_REMINDER_HOUR` (standard kl. 8)
+
+Push kræver et VAPID-nøglepar. Generér det én gang pr. miljø:
+```bash
+python manage.py generate_vapid_keys
+```
+Sæt derefter værdierne i `.env`:
+```
+WEBPUSH_VAPID_PUBLIC_KEY=...
+WEBPUSH_VAPID_PRIVATE_KEY=...
+WEBPUSH_VAPID_SUBJECT=mailto:din@adresse.dk
+```
+Uden nøglerne viser indstillingssiden en advarsel, og der sendes ingen push – resten af appen virker som normalt.
+
+> ⚠️ Push virker kun over **HTTPS** (localhost er undtaget i de fleste browsere). På iPhone/iPad skal appen være føjet til hjemmeskærmen (iOS 16.4+), før notifikationer kan slås til.
+
+Påmindelser planlægges af **Celery beat**. Kør både worker og beat:
+```bash
+celery -A core worker -l info
+celery -A core beat -l info
+```
+i `src`-mappen (kræver Redis). Docker-opsætningerne har allerede en `beat`-service ved siden af `worker`.
+
+### Kalenderabonnement
+Hver bruger har et personligt, token-beskyttet iCalendar-feed:
+```
+/notifications/calendar/<token>.ics            # opgaver + rammeprogram
+/notifications/calendar/<token>.ics?feed=tasks # kun opgaver
+/notifications/calendar/<token>.ics?feed=program # kun rammeprogram
+```
+Siden viser både `https://`- og `webcal://`-links. Feeden indeholder brugerens egne teamblokke, det fælles rammeprogram for aktive events samt teamets tjanser med frist. Kalenderappen henter ændringer automatisk (ca. hvert 15.–60. minut, afhængigt af appen). Linket kan fornys på indstillingssiden, hvis det er blevet delt ved en fejl.
+
+Vil man tilføje endnu en bookingmodel til push, skal den registreres i `src/notifications/bookings.py`.
+
+
 ## 🚀 Sådan kører du projektet
 
 ### 1. Lokal Udvikling

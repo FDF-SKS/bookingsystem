@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4"
+     id="notification-settings"
+     data-subscribe-url="{% url 'notifications_push_subscribe' %}"
+     data-unsubscribe-url="{% url 'notifications_push_unsubscribe' %}"
+     data-test-url="{% url 'notifications_push_test' %}"
+     data-vapid-public-key="{{ vapid_public_key }}"
+     data-push-configured="{% if push_configured %}1{% else %}0{% endif %}">
+
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none">Hjem</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'organization_Volunteer_detail' request.user.pk %}" class="text-decoration-none">Min profil</a></li>
+            <li class="breadcrumb-item active">Notifikationer &amp; kalender</li>
+        </ol>
+    </nav>
+
+    <div class="mb-4">
+        <h1 class="h3 mb-1">Notifikationer &amp; kalender</h1>
+        <p class="text-muted mb-0">
+            Få besked på telefonen, og føj dine opgaver og dit rammeprogram til telefonens kalender.
+        </p>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <div class="bg-primary-subtle text-primary p-2 rounded-3">
+                            <i class="bi bi-bell fs-4" aria-hidden="true"></i>
+                        </div>
+                        <div>
+                            <h2 class="h5 mb-1">Push-notifikationer</h2>
+                            <p class="text-muted small mb-0">
+                                Beskeder når bookinger godkendes eller afvises, når du får nye opgaver,
+                                og når en opgave eller en programblok er ved at starte.
+                            </p>
+                        </div>
+                    </div>
+
+                    {% if push_configured %}
+                        <div class="alert alert-info small d-none" data-ios-hint>
+                            <strong>Sådan får du notifikationer på iPhone/iPad</strong>
+                            <ol class="mb-0 ps-3 mt-1">
+                                <li>Åbn siden i Safari.</li>
+                                <li>Tryk på Del-ikonet, og vælg <em>Føj til hjemmeskærm</em>.</li>
+                                <li>Åbn appen fra hjemmeskærmen, og slå notifikationer til her.</li>
+                            </ol>
+                        </div>
+
+                        <div class="alert alert-light border small d-none" data-push-hint></div>
+
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <button type="button" class="btn btn-primary rounded-pill px-4" data-push-toggle>
+                                <i class="bi bi-bell me-1" aria-hidden="true"></i>
+                                <span data-push-toggle-label>Slå notifikationer til</span>
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-push-test disabled>
+                                <i class="bi bi-send me-1" aria-hidden="true"></i> Send test
+                            </button>
+                            <button type="button" class="btn btn-outline-primary rounded-pill px-4 d-none" data-install-app>
+                                <i class="bi bi-phone me-1" aria-hidden="true"></i> Installér app
+                            </button>
+                        </div>
+
+                        <p class="mt-3 mb-1 small text-muted" data-push-status>Status: kontrollerer enheden…</p>
+                        <p class="mb-0 small text-muted">
+                            {{ subscription_count }} enhed{{ subscription_count|pluralize:"er" }} tilmeldt.
+                            Hver enhed slås til og fra for sig.
+                        </p>
+                    {% else %}
+                        <div class="alert alert-warning small mb-0">
+                            <strong>Push er ikke konfigureret på serveren endnu.</strong><br>
+                            En administrator skal sætte <code>WEBPUSH_VAPID_PUBLIC_KEY</code>,
+                            <code>WEBPUSH_VAPID_PRIVATE_KEY</code> og <code>WEBPUSH_VAPID_SUBJECT</code>
+                            (se <code>readme.md</code>). Kalenderabonnementerne herunder virker allerede.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 rounded-4 h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <div class="bg-primary-subtle text-primary p-2 rounded-3">
+                            <i class="bi bi-sliders fs-4" aria-hidden="true"></i>
+                        </div>
+                        <div>
+                            <h2 class="h5 mb-1">Vælg hvad du vil have besked om</h2>
+                            <p class="text-muted small mb-0">Gælder alle dine enheder.</p>
+                        </div>
+                    </div>
+
+                    <form method="post" action="{% url 'notifications_update_preferences' %}">
+                        {% csrf_token %}
+                        <div class="form-check mb-3">
+                            {{ form.notify_bookings }}
+                            <label class="form-check-label" for="{{ form.notify_bookings.id_for_label }}">
+                                {{ form.notify_bookings.label }}
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            {{ form.notify_tasks }}
+                            <label class="form-check-label" for="{{ form.notify_tasks.id_for_label }}">
+                                {{ form.notify_tasks.label }}
+                            </label>
+                        </div>
+                        <div class="form-check mb-3">
+                            {{ form.notify_upcoming }}
+                            <label class="form-check-label" for="{{ form.notify_upcoming.id_for_label }}">
+                                {{ form.notify_upcoming.label }}
+                            </label>
+                            <div class="form-text">
+                                Programblokke varsles {{ upcoming_minutes }} minutter før.
+                                Opgaver varsles om morgenen på fristdagen.
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-outline-primary rounded-pill px-4">
+                            <i class="bi bi-check2 me-1" aria-hidden="true"></i> Gem valg
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4 mt-4">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-start gap-3 mb-3">
+                <div class="bg-primary-subtle text-primary p-2 rounded-3">
+                    <i class="bi bi-calendar-event fs-4" aria-hidden="true"></i>
+                </div>
+                <div>
+                    <h2 class="h5 mb-1">Abonnér på kalenderen</h2>
+                    <p class="text-muted small mb-0">
+                        Føj dine opgaver og dit rammeprogram til telefonens kalender.
+                        Kalenderen henter selv ændringer fra serveren – typisk inden for 15–60 minutter.
+                    </p>
+                </div>
+            </div>
+
+            <div class="list-group list-group-flush">
+                {% for feed in calendar_feeds %}
+                    <div class="list-group-item px-0 py-3">
+                        <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+                            <div class="pe-md-3">
+                                <div class="fw-semibold">{{ feed.label }}</div>
+                                <div class="small text-muted text-break">{{ feed.url }}</div>
+                            </div>
+                            <div class="d-flex gap-2 flex-shrink-0">
+                                <a href="{{ feed.webcal }}" class="btn btn-sm btn-primary rounded-pill px-3">
+                                    <i class="bi bi-calendar-plus me-1" aria-hidden="true"></i> Tilføj
+                                </a>
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                                        data-copy-text="{{ feed.url }}">
+                                    <i class="bi bi-clipboard me-1" aria-hidden="true"></i> Kopiér
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="alert alert-light border small mt-3 mb-0">
+                <strong>Sådan gør du:</strong>
+                <ul class="mb-0 ps-3 mt-1">
+                    <li><strong>iPhone/iPad:</strong> tryk <em>Tilføj</em>, eller indsæt linket i
+                        Indstillinger → Kalender → Konti → Tilføj konto → Anden → Tilføj abonneret kalender.</li>
+                    <li><strong>Android/Google Kalender:</strong> Åbn Google Kalender på computeren →
+                        Andre kalendere → Fra URL, og indsæt linket.</li>
+                    <li><strong>Outlook:</strong> Tilføj kalender → Abonnér fra web, og indsæt linket.</li>
+                </ul>
+            </div>
+
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mt-3">
+                <p class="small text-muted mb-0">
+                    <i class="bi bi-shield-lock me-1" aria-hidden="true"></i>
+                    Linket er personligt. Del det ikke med andre.
+                </p>
+                <form method="post" action="{% url 'notifications_rotate_calendar' %}"
+                      data-confirm="Er du sikker? Gamle kalenderlinks holder op med at virke.">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                        <i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i> Forny kalenderlink
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/notification-settings.js' %}"></script>
+{% endblock %}
