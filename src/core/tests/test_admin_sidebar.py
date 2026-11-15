@@ -65,7 +65,10 @@ class AdminSidebarTests(TestCase):
         self.assertNotIn(
             str(reverse_lazy("admin:organization_tjanse_changelist")), links
         )
-        self.assertEqual(len(links), 3)
+        self.assertEqual(len(links), 4)
+        self.assertIn(
+            str(reverse_lazy("admin:organization_programblock_changelist")), links
+        )
 
     def test_admin_index_renders_the_new_sections(self):
         user = get_user_model().objects.create_superuser(

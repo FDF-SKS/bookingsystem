@@ -19,6 +19,9 @@ gunicorn==27.0.0
 python-dotenv>=1.2.1
 sqlparse>=0.5.5
 
+# Excel export
+openpyxl>=3.1
+
 # Utilities & Date/Time
 packaging>=24.0
 icalendar>=7.3.0

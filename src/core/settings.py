@@ -445,6 +445,11 @@ UNFOLD = {
                         "icon": "event",
                         "link": reverse_lazy("admin:organization_event_changelist"),
                     },
+                    {
+                        "title": _("Rammeprogram"),
+                        "icon": "calendar_view_week",
+                        "link": reverse_lazy("admin:organization_programblock_changelist"),
+                    },
                 ],
             },
             {

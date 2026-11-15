@@ -1,8 +1,12 @@
 from datetime import time
 
 from django import forms
+from django.conf import settings
+from django.db.models import Q
 from django.forms import TextInput
 from django.utils import timezone
+from django_tiptap_editor.forms.json_field import TipTapJSONFormField
+from django_tiptap_editor.widgets.tiptap_widget import TipTapWidget
 
 from . import models
 
@@ -61,6 +65,120 @@ class EventForm(forms.ModelForm):
             "deadline_lokaler",
             "deadline_sos",
         ]
+
+
+class ProgramBlockForm(forms.ModelForm):
+    """Create/edit form for a single framework or team programme block.
+
+    ``event`` and ``team`` come from the view, which also enforces the
+    permission to write in that scope. ``team`` is ``None`` for blocks in the
+    shared framework, so the responsible dropdown then offers every volunteer;
+    for a team block it offers that team's members.
+    """
+
+    content = TipTapJSONFormField(
+        label='Indhold',
+        required=False,
+        widget=TipTapWidget(
+            storage='json',
+            config={
+                **dict(getattr(settings, 'TIPTAP_DEFAULT_CONFIG', {})),
+                'height': '240px',
+            },
+        ),
+    )
+
+    class Meta:
+        model = models.ProgramBlock
+        fields = [
+            'title',
+            'category',
+            'day',
+            'start_time',
+            'end_time',
+            'content',
+            'responsible',
+        ]
+        widgets = {
+            'title': forms.TextInput(
+                attrs={
+                    'class': 'form-control',
+                    'placeholder': 'F.eks. Morgenmad og briefing',
+                }
+            ),
+            'category': forms.Select(attrs={'class': 'form-select'}),
+            'day': forms.DateInput(
+                attrs={'class': 'form-control', 'type': 'date'},
+                format='%Y-%m-%d',
+            ),
+            'start_time': forms.TimeInput(
+                attrs={'class': 'form-control', 'type': 'time'},
+                format='%H:%M',
+            ),
+            'end_time': forms.TimeInput(
+                attrs={'class': 'form-control', 'type': 'time'},
+                format='%H:%M',
+            ),
+            'responsible': forms.SelectMultiple(
+                attrs={'class': 'form-select', 'size': 6}
+            ),
+        }
+        labels = {
+            'title': 'Titel',
+            'category': 'Type',
+            'day': 'Dag',
+            'start_time': 'Starttid',
+            'end_time': 'Sluttid',
+            'content': 'Indhold',
+            'responsible': 'Ansvarlige',
+        }
+
+    def __init__(self, *args, event=None, team=None, **kwargs):
+        self.event = event
+        self.team = team
+        super().__init__(*args, **kwargs)
+
+        volunteers = models.Volunteer.objects.order_by('first_name', 'last_name')
+        if team is not None:
+            # Keep volunteers that are already responsible on the block even if
+            # they have since left the team, so editing does not lose them.
+            current_ids = []
+            if self.instance.pk:
+                current_ids = list(
+                    self.instance.responsible.values_list('pk', flat=True)
+                )
+            volunteers = volunteers.filter(
+                Q(teammembership__team=team) | Q(pk__in=current_ids)
+            ).distinct()
+        self.fields['responsible'].queryset = volunteers
+        self.fields['responsible'].help_text = (
+            'Vælg en eller flere medarbejdere. Hold Ctrl/Cmd nede for at vælge flere.'
+        )
+
+        if event is not None:
+            self.fields['day'].initial = event.start_date
+            self.fields['start_time'].initial = time(9, 0)
+            self.fields['end_time'].initial = time(10, 0)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        day = cleaned_data.get('day')
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+
+        if start_time and end_time and start_time >= end_time:
+            self.add_error('end_time', 'Sluttiden skal være efter starttiden.')
+
+        if (
+            day
+            and self.event is not None
+            and not (self.event.start_date <= day <= self.event.end_date)
+        ):
+            self.add_error(
+                'day', 'Dagen skal ligge inden for eventets periode.'
+            )
+
+        return cleaned_data
 
 
 class EventMembershipForm(forms.ModelForm):

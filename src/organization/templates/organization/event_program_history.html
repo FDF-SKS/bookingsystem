@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="d-none d-md-block">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'organization_Program_event_list' %}">Rammeprogram</a></li>
+            <li class="breadcrumb-item"><a href="{{ program_url }}">{{ event.name }}</a></li>
+            <li class="breadcrumb-item active">Historik</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+            <h1 class="h2 mb-1">Programhistorik</h1>
+            <p class="text-muted mb-0">
+                {{ event.name }} · {{ scope_label }}
+            </p>
+        </div>
+        <a href="{{ program_url }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left" aria-hidden="true"></i> Tilbage til programmet
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col">Tidspunkt</th>
+                        <th scope="col">Bruger</th>
+                        <th scope="col">Handling</th>
+                        <th scope="col">Titel</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Dag og tid</th>
+                        <th scope="col">Ansvarlige</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in records %}
+                        <tr>
+                            <td class="text-nowrap">{{ record.history_date|date:"j. M Y H:i" }}</td>
+                            <td>
+                                {% if record.history_user %}
+                                    {{ record.history_user }}
+                                {% else %}
+                                    <span class="text-muted">System</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge
+                                    {% if record.history_type == '+' %}bg-success-subtle text-success-emphasis
+                                    {% elif record.history_type == '-' %}bg-danger-subtle text-danger-emphasis
+                                    {% else %}bg-warning-subtle text-warning-emphasis{% endif %}">
+                                    {{ record.change_label }}
+                                </span>
+                            </td>
+                            <td>{{ record.title }}</td>
+                            <td>{{ record.category_label }}</td>
+                            <td class="text-nowrap">
+                                {{ record.day|date:"j. M" }}
+                                {{ record.start_time|time:"H:i" }}–{{ record.end_time|time:"H:i" }}
+                            </td>
+                            <td>
+                                {% if record.responsible_names %}
+                                    {{ record.responsible_names|join:", " }}
+                                {% else %}
+                                    <span class="text-muted">–</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                Der er ingen ændringer endnu.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% include 'components/pagination.html' %}
+</div>
+{% endblock %}

@@ -7,6 +7,14 @@
     <a class="btn btn-light" href="{% url 'organization_Event_list' %}">
     Event Listing
     </a>
+    <a class="btn btn-primary" href="{% url 'organization_Event_program' object.pk %}">
+    Rammeprogram
+    </a>
+    {% if request.user.is_staff %}
+    <a class="btn btn-outline-secondary" href="{% url 'organization_Event_program_history' object.pk %}">
+    Programhistorik
+    </a>
+    {% endif %}
 </p>
     
 <table class="table">

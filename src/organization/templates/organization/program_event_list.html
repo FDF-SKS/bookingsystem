@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="d-none d-md-block">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
+            <li class="breadcrumb-item active">Rammeprogram</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+        <div>
+            <h1 class="h2 mb-1">Rammeprogram</h1>
+            <p class="text-muted mb-0">
+                Se det fælles rammeprogram og planlæg dit teams egne programpunkter.
+            </p>
+        </div>
+        {% if request.user.is_staff %}
+            <a href="{% url 'organization_Event_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-calendar-event" aria-hidden="true"></i> Administrér events
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="row g-3">
+        {% for event in events %}
+            <div class="col-md-6 col-xl-4">
+                <a href="{% url 'organization_Event_program' event.pk %}"
+                   class="card h-100 border-0 shadow-sm text-decoration-none program-event-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <h2 class="h5 mb-1">{{ event.name }}</h2>
+                            {% if event.is_active %}
+                                <span class="badge bg-success-subtle text-success-emphasis">Aktiv</span>
+                            {% endif %}
+                        </div>
+                        <p class="text-muted mb-2">
+                            <i class="bi bi-calendar-range" aria-hidden="true"></i>
+                            {{ event.start_date|date:"j. M Y" }} – {{ event.end_date|date:"j. M Y" }}
+                        </p>
+                        <span class="small">Åbn rammeprogram <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+                    </div>
+                </a>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <div class="alert alert-light border text-center py-5">
+                    <p class="mb-1 fw-bold">Der er ingen events endnu</p>
+                    <p class="text-muted mb-0">Opret et event i administrationen for at komme i gang.</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

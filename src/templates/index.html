@@ -24,6 +24,18 @@
         </div>
         {% endif %}
         
+        <div class="col">
+            <a href="{% url 'organization_Program_event_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
+                <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
+                    <div class="icon-box bg-dark text-white rounded-4 mb-2 mx-auto">
+                        <i class="bi bi-calendar3-week fs-1"></i>
+                    </div>
+                    <h4 class="fw-bold">Rammeprogram</h4>
+                    <p class="text-muted small mb-0">Eventets program og dit teams plan</p>
+                </div>
+            </a>
+        </div>
+
         {% if config.APP_ENABLE_BUTIKKEN %}
         <div class="col">
             <a href="{% url 'Butikken_ButikkenOrder_create' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">

@@ -1,4 +1,5 @@
 from datetime import timedelta
+from math import ceil
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model, logout
@@ -7,13 +8,14 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.views import PasswordResetView
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.messages.views import SuccessMessageMixin
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.db.models import Case, F, IntegerField, Q, Value, When
 from django.db.models.functions import Cast
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
-from django.utils.timezone import now
+from django.utils.timezone import localdate, now
 from django.views import generic
 from django.views.decorators.http import require_POST
 
@@ -21,8 +23,9 @@ from emailing.forms import BrandedPasswordResetForm
 from utils.ui import BookingDetailContextMixin, BookingListContextMixin
 
 from . import forms, models
-from .models import Team, TeamMembership
-from .permissions import StaffRequiredMixin, TeamQuerysetMixin
+from .models import ProgramBlock, Team, TeamMembership
+from .permissions import StaffRequiredMixin, TeamQuerysetMixin, team_ids_for
+from .program_export import build_program_workbook, filename_for_export
 
 User = get_user_model()
 
@@ -117,6 +120,570 @@ class EventUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView
 class EventDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.Event
     success_url = reverse_lazy("organization_Event_list")
+
+
+# ---------------------------------------------------------------------------
+# Rammeprogram (event framework programme)
+# ---------------------------------------------------------------------------
+
+PROGRAM_SCOPE_BASE = 'base'
+PROGRAM_SCOPE_ALL = 'all'
+PROGRAM_DEFAULT_START_HOUR = 6
+PROGRAM_END_HOUR = 24
+# Rendering cost grows with the number of day columns; cap very long events.
+MAX_PROGRAM_DAYS = 60
+PROGRAM_WEEKDAYS = (
+    'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag',
+)
+PROGRAM_CATEGORY_LABELS = dict(ProgramBlock.CATEGORY_CHOICES)
+PROGRAM_HISTORY_TYPE_LABELS = {
+    '+': 'Oprettet',
+    '~': 'Ændret',
+    '-': 'Slettet',
+}
+
+
+def _can_edit_team_program(user, team) -> bool:
+    """Staff may edit every team; volunteers only their own teams."""
+    if user is None or not user.is_authenticated:
+        return False
+    if user.is_staff:
+        return True
+    return team is not None and team.pk in team_ids_for(user)
+
+
+def _can_edit_program_block(user, block) -> bool:
+    """Framework blocks belong to staff; team blocks to that team's members."""
+    if user is None or not user.is_authenticated:
+        return False
+    if block.team_id is None:
+        return user.is_staff
+    return _can_edit_team_program(user, block.team)
+
+
+def _program_day_range(event) -> list:
+    """Return the event's dates, capped to keep the calendar bounded."""
+    days = []
+    current = event.start_date
+    while current <= event.end_date and len(days) < MAX_PROGRAM_DAYS:
+        days.append(current)
+        current += timedelta(days=1)
+    return days
+
+
+def _layout_day_blocks(blocks, start_hour: int, end_hour: int) -> list:
+    """Compute calendar geometry for the blocks of one day.
+
+    Overlapping blocks are placed in lanes; a lane count is computed per
+    overlapping cluster so a single crowded hour does not narrow every other
+    block of the day.
+    """
+    total_minutes = max(60, (end_hour - start_hour) * 60)
+    day_start_minutes = start_hour * 60
+    ordered = sorted(
+        blocks,
+        key=lambda block: (block.start_minutes, -block.end_minutes, block.pk),
+    )
+
+    clusters = []
+    current_cluster = []
+    cluster_end = None
+    for block in ordered:
+        if current_cluster and block.start_minutes >= cluster_end:
+            clusters.append(current_cluster)
+            current_cluster = []
+            cluster_end = None
+        current_cluster.append(block)
+        cluster_end = max(cluster_end or block.end_minutes, block.end_minutes)
+    if current_cluster:
+        clusters.append(current_cluster)
+
+    chunks = []
+    for cluster in clusters:
+        lane_ends = []
+        placed = []
+        for block in cluster:
+            for lane, lane_end in enumerate(lane_ends):
+                if block.start_minutes >= lane_end:
+                    lane_ends[lane] = block.end_minutes
+                    break
+            else:
+                lane = len(lane_ends)
+                lane_ends.append(block.end_minutes)
+            placed.append((block, lane))
+
+        lane_count = max(1, len(lane_ends))
+        for block, lane in placed:
+            raw_top = (block.start_minutes - day_start_minutes) / total_minutes * 100
+            top = max(0.0, min(100.0, raw_top))
+            raw_height = (block.end_minutes - block.start_minutes) / total_minutes * 100
+            height = max(0.4, min(100.0 - top, raw_height))
+            left = lane / lane_count * 100
+            width = 100 / lane_count
+            chunks.append(
+                {
+                    'block': block,
+                    # Build the CSS here rather than in the template: Django
+                    # localizes floats to a comma decimal separator for da-dk,
+                    # and ``top: 6,25%`` is invalid CSS. An unlocalized string
+                    # keeps the geometry intact in every language.
+                    'style': (
+                        f'top: {top:.3f}%; height: {height:.3f}%; '
+                        f'left: {left:.3f}%; width: {width:.3f}%;'
+                    ),
+                    'top': round(top, 3),
+                    'height': round(height, 3),
+                    'left': round(left, 3),
+                    'width': round(width, 3),
+                }
+            )
+    return chunks
+
+
+def _program_scope_from_request(request, scope_raw=None) -> str:
+    raw = scope_raw
+    if raw is None:
+        raw = request.GET.get('team', '')
+    raw = (raw or '').strip()
+    if raw in (PROGRAM_SCOPE_BASE, PROGRAM_SCOPE_ALL):
+        return raw
+    if raw.isdigit():
+        return raw
+    return PROGRAM_SCOPE_BASE
+
+
+def _program_redirect(event, scope: str):
+    url = reverse('organization_Event_program', args=(event.pk,))
+    if scope and scope != PROGRAM_SCOPE_BASE:
+        return redirect(f'{url}?team={scope}')
+    return redirect(url)
+
+
+def _resolve_program_scope(request, scope_raw=None):
+    """Return ``(scope, selected_team, all_teams)`` for a request."""
+    scope = _program_scope_from_request(request, scope_raw)
+    selected_team = None
+    all_teams = scope == PROGRAM_SCOPE_ALL
+    if not all_teams and scope.isdigit():
+        selected_team = Team.objects.filter(pk=int(scope)).first()
+        if selected_team is None:
+            scope = PROGRAM_SCOPE_BASE
+    return scope, selected_team, all_teams
+
+
+def _program_blocks_queryset(event, scope, selected_team, all_teams):
+    """Blocks shown in a scope, including the shared framework for teams."""
+    if all_teams:
+        queryset = event.program_blocks.all()
+    elif selected_team is not None:
+        queryset = event.program_blocks.filter(
+            Q(team__isnull=True) | Q(team=selected_team)
+        )
+    else:
+        queryset = event.program_blocks.filter(team__isnull=True)
+    return (
+        queryset.select_related('team')
+        .prefetch_related('responsible')
+        .order_by('day', 'start_time', 'end_time', 'pk')
+    )
+
+
+def _program_scope_label(selected_team, all_teams) -> str:
+    if all_teams:
+        return 'Alle teams (overblik)'
+    if selected_team is not None:
+        return f'{selected_team.name} - teamprogram (inkl. fælles program)'
+    return 'Fælles rammeprogram'
+
+
+def build_program_context(
+    request,
+    event,
+    *,
+    scope_raw=None,
+    block_form=None,
+    editing_block=None,
+    modal_open=False,
+):
+    """Build the context shared by the programme page and its POST errors."""
+    user = request.user
+    scope, selected_team, all_teams = _resolve_program_scope(request, scope_raw)
+    event_days = _program_day_range(event)
+
+    can_manage_base = bool(user and user.is_authenticated and user.is_staff)
+    user_team_ids = team_ids_for(user)
+
+    def block_can_edit(block) -> bool:
+        if block.team_id is None:
+            return can_manage_base
+        return can_manage_base or block.team_id in user_team_ids
+
+    if all_teams:
+        can_create = False
+    elif selected_team is not None:
+        can_create = _can_edit_team_program(user, selected_team)
+    else:
+        can_create = can_manage_base
+
+    blocks = list(
+        _program_blocks_queryset(event, scope, selected_team, all_teams)
+    )
+
+    start_hour = PROGRAM_DEFAULT_START_HOUR
+    if blocks:
+        start_hour = min(start_hour, min(block.start_time.hour for block in blocks))
+    end_hour = PROGRAM_END_HOUR
+    if blocks:
+        latest_end = max(block.end_minutes for block in blocks)
+        end_hour = max(end_hour, ceil(latest_end / 60))
+    end_hour = max(start_hour + 1, end_hour)
+    hours = list(range(start_hour, end_hour))
+
+    blocks_by_day = {day: [] for day in event_days}
+    for block in blocks:
+        blocks_by_day.setdefault(block.day, []).append(block)
+
+    today = localdate()
+    days = []
+    for day in event_days:
+        chunks = _layout_day_blocks(blocks_by_day.get(day, []), start_hour, end_hour)
+        for chunk in chunks:
+            chunk['can_edit'] = block_can_edit(chunk['block'])
+        days.append(
+            {
+                'date': day,
+                'weekday': PROGRAM_WEEKDAYS[day.weekday()],
+                'is_today': day == today,
+                'blocks': chunks,
+            }
+        )
+
+    block_data = []
+    for block in blocks:
+        content = block.content
+        can_edit = block_can_edit(block)
+        block_data.append(
+            {
+                'id': block.pk,
+                'title': block.title,
+                'category': block.category,
+                'categoryLabel': PROGRAM_CATEGORY_LABELS.get(
+                    block.category, block.category
+                ),
+                'day': block.day.isoformat(),
+                'startTime': block.start_time.strftime('%H:%M'),
+                'endTime': block.end_time.strftime('%H:%M'),
+                'contentDoc': getattr(content, 'doc', None),
+                'contentHtml': str(getattr(content, 'html', '') or ''),
+                'responsibleNames': [str(v) for v in block.responsible.all()],
+                'responsibleIds': [v.pk for v in block.responsible.all()],
+                'teamId': block.team_id,
+                'teamName': block.team.short_name if block.team else '',
+                'canEdit': can_edit,
+                'updateUrl': (
+                    reverse(
+                        'organization_ProgramBlock_update',
+                        args=(event.pk, block.pk),
+                    )
+                    if can_edit
+                    else ''
+                ),
+                'deleteUrl': (
+                    reverse(
+                        'organization_ProgramBlock_delete',
+                        args=(event.pk, block.pk),
+                    )
+                    if can_edit
+                    else ''
+                ),
+            }
+        )
+
+    teams = list(Team.objects.order_by('name'))
+    team_options = [
+        {
+            'team': team,
+            'is_member': team.pk in user_team_ids,
+        }
+        for team in teams
+    ]
+
+    if all_teams:
+        history_url = ''
+    elif selected_team is not None:
+        history_url = (
+            reverse(
+                'organization_Event_program_team_history',
+                args=(event.pk, selected_team.pk),
+            )
+            if can_create or can_manage_base
+            else ''
+        )
+    else:
+        history_url = (
+            reverse('organization_Event_program_history', args=(event.pk,))
+            if can_manage_base
+            else ''
+        )
+
+    if block_form is None:
+        block_form = forms.ProgramBlockForm(event=event, team=selected_team)
+
+    return {
+        'event': event,
+        'scope': scope,
+        'selected_team': selected_team,
+        'all_teams': all_teams,
+        'team_options': team_options,
+        'can_create': can_create,
+        'can_manage_base': can_manage_base,
+        'days': days,
+        'hours': hours,
+        'start_hour': start_hour,
+        'end_hour': end_hour,
+        'hour_height': 48,
+        'block_data': block_data,
+        'block_form': block_form,
+        'editing_block': editing_block,
+        'modal_open': modal_open,
+        'create_url': reverse('organization_ProgramBlock_create', args=(event.pk,)),
+        'history_url': history_url,
+        'max_program_days': MAX_PROGRAM_DAYS,
+        'truncated_days': (event.end_date - event.start_date).days + 1 > MAX_PROGRAM_DAYS,
+    }
+
+
+class EventProgramView(LoginRequiredMixin, generic.DetailView):
+    """The calendar view: shared framework plus the selected team's programme."""
+
+    model = models.Event
+    template_name = 'organization/event_program.html'
+    context_object_name = 'event'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(build_program_context(self.request, self.object))
+        return context
+
+
+class ProgramEventListView(LoginRequiredMixin, generic.ListView):
+    """Index of events, so volunteers can find the programme to fill in."""
+
+    model = models.Event
+    template_name = 'organization/program_event_list.html'
+    context_object_name = 'events'
+    ordering = ['-start_date']
+
+
+@login_required
+def program_export(request, pk):
+    """Download the selected programme scope as an Excel workbook."""
+    event = get_object_or_404(models.Event, pk=pk)
+    scope, selected_team, all_teams = _resolve_program_scope(request)
+    blocks = list(
+        _program_blocks_queryset(event, scope, selected_team, all_teams)
+    )
+    payload = build_program_workbook(
+        event=event,
+        blocks=blocks,
+        days=_program_day_range(event),
+        scope_label=_program_scope_label(selected_team, all_teams),
+        include_team_names=all_teams,
+    )
+    response = HttpResponse(
+        payload,
+        content_type=(
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        ),
+    )
+    response['Content-Disposition'] = (
+        f'attachment; filename="{filename_for_export(event, selected_team, all_teams)}"'
+    )
+    response['Content-Length'] = str(len(payload))
+    response['Cache-Control'] = 'private, no-store'
+    return response
+
+
+@login_required
+@require_POST
+def program_block_create(request, pk):
+    event = get_object_or_404(models.Event, pk=pk)
+    scope = _program_scope_from_request(request, request.POST.get('scope'))
+    team = None
+    team_raw = (request.POST.get('team') or '').strip()
+    if team_raw:
+        team = get_object_or_404(Team, pk=team_raw)
+        if not _can_edit_team_program(request.user, team):
+            raise PermissionDenied('Du kan kun redigere dit eget teams program.')
+    elif not request.user.is_staff:
+        raise PermissionDenied('Kun administratorer kan redigere det fælles program.')
+
+    form = forms.ProgramBlockForm(request.POST, event=event, team=team)
+    if form.is_valid():
+        block = form.save(commit=False)
+        block.event = event
+        block.team = team
+        block.created_by = request.user
+        block.save()
+        form.save_m2m()
+        messages.success(request, 'Programpunktet blev oprettet.')
+        return _program_redirect(event, scope)
+
+    context = build_program_context(
+        request,
+        event,
+        scope_raw=scope,
+        block_form=form,
+        modal_open=True,
+    )
+    return render(request, 'organization/event_program.html', context)
+
+
+@login_required
+@require_POST
+def program_block_update(request, pk, block_pk):
+    event = get_object_or_404(models.Event, pk=pk)
+    block = get_object_or_404(ProgramBlock, pk=block_pk, event=event)
+    if not _can_edit_program_block(request.user, block):
+        raise PermissionDenied('Du kan ikke redigere dette programpunkt.')
+
+    scope = _program_scope_from_request(
+        request,
+        request.POST.get('scope')
+        or (str(block.team_id) if block.team_id else PROGRAM_SCOPE_BASE),
+    )
+    form = forms.ProgramBlockForm(
+        request.POST, instance=block, event=event, team=block.team
+    )
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Programpunktet blev opdateret.')
+        return _program_redirect(event, scope)
+
+    context = build_program_context(
+        request,
+        event,
+        scope_raw=scope,
+        block_form=form,
+        editing_block=block,
+        modal_open=True,
+    )
+    return render(request, 'organization/event_program.html', context)
+
+
+@login_required
+@require_POST
+def program_block_delete(request, pk, block_pk):
+    event = get_object_or_404(models.Event, pk=pk)
+    block = get_object_or_404(ProgramBlock, pk=block_pk, event=event)
+    if not _can_edit_program_block(request.user, block):
+        raise PermissionDenied('Du kan ikke slette dette programpunkt.')
+
+    scope = _program_scope_from_request(
+        request,
+        request.POST.get('scope')
+        or (str(block.team_id) if block.team_id else PROGRAM_SCOPE_BASE),
+    )
+    block.delete()
+    messages.success(request, 'Programpunktet blev slettet.')
+    return _program_redirect(event, scope)
+
+
+class ProgramHistoryMixin(LoginRequiredMixin):
+    """Shared list setup for the framework and team history pages."""
+
+    template_name = 'organization/event_program_history.html'
+    context_object_name = 'records'
+    paginate_by = 50
+
+    def dispatch(self, request, *args, **kwargs):
+        self.event = get_object_or_404(models.Event, pk=kwargs['pk'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self):
+        return (
+            models.HistoricalProgramBlock.objects.filter(**self.history_filter())
+            .select_related('history_user')
+            .order_by('-history_date', '-pk')
+        )
+
+    def history_filter(self):
+        raise NotImplementedError
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        for record in context['object_list']:
+            record.category_label = PROGRAM_CATEGORY_LABELS.get(
+                record.category, record.category
+            )
+            record.change_label = PROGRAM_HISTORY_TYPE_LABELS.get(
+                record.history_type, record.history_type
+            )
+            record.responsible_names = [
+                str(row.volunteer) for row in record.responsible.all()
+            ]
+        context.update(
+            {
+                'event': self.event,
+                'scope': self.get_scope(),
+                'scope_label': self.get_scope_label(),
+                'program_url': self.get_program_url(),
+            }
+        )
+        return context
+
+    def get_scope(self):
+        return PROGRAM_SCOPE_BASE
+
+    def get_scope_label(self):
+        return 'Fælles rammeprogram'
+
+    def get_program_url(self):
+        url = reverse('organization_Event_program', args=(self.event.pk,))
+        if self.get_scope() != PROGRAM_SCOPE_BASE:
+            return f'{url}?team={self.get_scope()}'
+        return url
+
+
+class EventProgramHistoryView(ProgramHistoryMixin, UserPassesTestMixin, generic.ListView):
+    """Version history of the administrators' shared framework."""
+
+    def test_func(self):
+        user = self.request.user
+        return bool(user and user.is_authenticated and user.is_staff)
+
+    def history_filter(self):
+        return {'event_id': self.event.pk, 'team__isnull': True}
+
+
+class TeamProgramHistoryView(ProgramHistoryMixin, UserPassesTestMixin, generic.ListView):
+    """Version history of one team's own programme."""
+
+    def dispatch(self, request, *args, **kwargs):
+        self.team = get_object_or_404(Team, pk=kwargs['team_pk'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def test_func(self):
+        user = self.request.user
+        return bool(
+            user
+            and user.is_authenticated
+            and (user.is_staff or self.team.pk in team_ids_for(user))
+        )
+
+    def history_filter(self):
+        return {'event_id': self.event.pk, 'team_id': self.team.pk}
+
+    def get_scope(self):
+        return str(self.team.pk)
+
+    def get_scope_label(self):
+        return f'{self.team.name} - teamprogram'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['team'] = self.team
+        return context
 
 
 class TeamListView(LoginRequiredMixin, generic.ListView):

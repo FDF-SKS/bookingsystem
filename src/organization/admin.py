@@ -1,14 +1,18 @@
 from collections import defaultdict
 from datetime import date, timedelta
 
+from django import forms
+from django.conf import settings
 from django.contrib import admin, messages
 from django.contrib.auth.models import Group
 from django.core.exceptions import PermissionDenied
 from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.shortcuts import redirect, render
-from django.urls import path
+from django.urls import path, reverse
+from django.utils.html import format_html
 from django.utils.timezone import localtime, now
 from django_tiptap_editor.admin.mixin import TipTapModelAdminMixin
+from django_tiptap_editor.widgets.tiptap_widget import TipTapWidget
 from import_export import fields, resources
 from import_export.admin import ImportExportModelAdmin
 from import_export.widgets import ForeignKeyWidget, ManyToManyWidget
@@ -24,6 +28,7 @@ from .models import (
     Event,
     EventMembership,
     Key,
+    ProgramBlock,
     SlutrengoringAssignment,
     Team,
     TeamEventMembership,
@@ -157,6 +162,37 @@ class TeamMembershipInline(TabularInline):
     model = TeamMembership
     extra = 1
 
+class ProgramBlockInlineForm(forms.ModelForm):
+    class Meta:
+        model = ProgramBlock
+        fields = ['title', 'category', 'day', 'start_time', 'end_time', 'content', 'responsible']
+        widgets = {
+            'content': TipTapWidget(
+                storage='json',
+                config={
+                    **dict(getattr(settings, 'TIPTAP_DEFAULT_CONFIG', {})),
+                    'height': '180px',
+                },
+            ),
+        }
+
+
+class ProgramBlockInline(TabularInline):
+    """The shared framework blocks, edited directly from the event."""
+
+    model = ProgramBlock
+    form = ProgramBlockInlineForm
+    fk_name = 'event'
+    extra = 0
+    fields = ['title', 'category', 'day', 'start_time', 'end_time', 'content', 'responsible']
+    autocomplete_fields = ['responsible']
+    show_change_link = True
+    verbose_name = 'Rammeprogram-blok'
+    verbose_name_plural = 'Rammeprogram (fælles blokke)'
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).filter(team__isnull=True)
+
 # --- Admin Classes ---
 
 
@@ -194,7 +230,38 @@ class TeamMembershipAdmin(ModelAdmin):
 @admin.register(Event)
 class EventAdmin(SimpleHistoryAdmin, ModelAdmin):
     list_display = ["name", "start_date", "end_date", "is_active", "last_updated", "created"]
-    readonly_fields = ["id", "last_updated", "created"]
+    readonly_fields = ["id", "last_updated", "created", "program_link"]
+    inlines = [ProgramBlockInline]
+
+    @admin.display(description='Rammeprogram')
+    def program_link(self, obj):
+        if not obj.pk:
+            return 'Gem eventet først'
+        url = reverse('organization_Event_program', args=(obj.pk,))
+        history_url = reverse('organization_Event_program_history', args=(obj.pk,))
+        export_url = reverse('organization_Event_program_export', args=(obj.pk,))
+        return format_html(
+            '<a href="{}">Åbn rammeprogram</a> &middot; '
+            '<a href="{}?team=base">Eksportér</a> &middot; '
+            '<a href="{}">Historik</a>',
+            url,
+            export_url,
+            history_url,
+        )
+
+
+@admin.register(ProgramBlock)
+class ProgramBlockAdmin(TipTapModelAdminMixin, SimpleHistoryAdmin, ModelAdmin):
+    tiptap_fields = ['content']
+    list_display = [
+        'title', 'event', 'team', 'category', 'day',
+        'start_time', 'end_time', 'last_updated',
+    ]
+    list_filter = ['event', 'team', 'category', 'day']
+    search_fields = ['title', 'event__name', 'team__name']
+    autocomplete_fields = ['responsible']
+    readonly_fields = ['id', 'last_updated', 'created']
+    ordering = ['event', 'day', 'start_time']
 
 @admin.register(EventMembership)
 class EventMembershipAdmin(ModelAdmin):

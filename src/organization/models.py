@@ -62,7 +62,145 @@ class Event(models.Model):
 
     def get_update_url(self):
         return reverse("organization_Event_update", args=(self.pk,))
-    
+
+
+class ProgramBlock(models.Model):
+    """A block in an event's framework programme ("rammeprogram").
+
+    A block with ``team`` set to NULL belongs to the shared framework that the
+    administrators maintain for the whole event. A block with ``team`` set is a
+    team's own addition to that framework; every member of the team may edit it.
+
+    ``category`` carries the meaning from the reference spreadsheet and is
+    rendered with a fixed colour in the calendar: fixed (orange), recommended
+    (blue), placeholder (red) and preparation (green).
+    """
+
+    CATEGORY_FIXED = 'fixed'
+    CATEGORY_RECOMMENDED = 'recommended'
+    CATEGORY_PLACEHOLDER = 'placeholder'
+    CATEGORY_PREPARATION = 'preparation'
+    CATEGORY_CHOICES = [
+        (CATEGORY_FIXED, 'Fast program'),
+        (CATEGORY_RECOMMENDED, 'Anbefaling'),
+        (CATEGORY_PLACEHOLDER, 'Plads til eget program'),
+        (CATEGORY_PREPARATION, 'Forberedelse'),
+    ]
+
+    event = models.ForeignKey(
+        'organization.Event',
+        on_delete=models.CASCADE,
+        related_name='program_blocks',
+        db_index=True,
+    )
+    team = models.ForeignKey(
+        'organization.Team',
+        on_delete=models.CASCADE,
+        related_name='program_blocks',
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text='Tom betyder, at blokken er en del af det fælles rammeprogram.',
+    )
+    category = models.CharField(
+        max_length=20,
+        choices=CATEGORY_CHOICES,
+        default=CATEGORY_FIXED,
+        db_index=True,
+    )
+    title = models.CharField(max_length=200)
+    content = TipTapJSONField(blank=True, default=dict)
+    day = models.DateField(db_index=True)
+    start_time = models.TimeField()
+    end_time = models.TimeField()
+    responsible = models.ManyToManyField(
+        'organization.Volunteer',
+        blank=True,
+        related_name='program_blocks',
+    )
+    created_by = models.ForeignKey(
+        'organization.Volunteer',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_program_blocks',
+    )
+    created = models.DateTimeField(auto_now_add=True, editable=False)
+    last_updated = models.DateTimeField(auto_now=True, editable=False)
+    history = HistoricalRecords(m2m_fields=['responsible'])
+
+    class Meta:
+        verbose_name = 'Rammeprogram-blok'
+        verbose_name_plural = 'Rammeprogram-blokke'
+        ordering = ['day', 'start_time', 'end_time', 'pk']
+        indexes = [
+            models.Index(fields=['event', 'day']),
+            models.Index(fields=['event', 'team', 'day']),
+        ]
+
+    def __str__(self):
+        return f'{self.title} ({self.day:%d/%m} {self.start_time:%H:%M}-{self.end_time:%H:%M})'
+
+    @property
+    def is_framework(self) -> bool:
+        """Whether the block is part of the administrators' shared framework."""
+        return self.team_id is None
+
+    @property
+    def start_minutes(self) -> int:
+        return self.start_time.hour * 60 + self.start_time.minute
+
+    @property
+    def end_minutes(self) -> int:
+        return self.end_time.hour * 60 + self.end_time.minute
+
+    def clean(self):
+        super().clean()
+        if self.start_time and self.end_time and self.start_time >= self.end_time:
+            raise ValidationError(
+                {'end_time': 'Sluttiden skal være efter starttiden.'}
+            )
+        if (
+            self.event_id
+            and self.day
+            and not (self.event.start_date <= self.day <= self.event.end_date)
+        ):
+            raise ValidationError(
+                {'day': 'Dagen skal ligge inden for eventets periode.'}
+            )
+
+    def save(self, *args, **kwargs):
+        # ``content`` is a NOT NULL JSON column. Forms (including the admin
+        # inline) submit an empty value when the editor was never opened, which
+        # would otherwise be saved as NULL; store an empty document instead.
+        if not self.content:
+            self.content = {
+                'doc': {'type': 'doc', 'content': [{'type': 'paragraph'}]},
+                'html': '',
+            }
+        return super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        url = reverse('organization_Event_program', args=(self.event_id,))
+        if self.team_id:
+            return f'{url}?team={self.team_id}'
+        return url
+
+    def get_update_url(self):
+        return reverse(
+            'organization_ProgramBlock_update',
+            args=(self.event_id, self.pk),
+        )
+
+    def get_history_url(self):
+        if self.team_id:
+            return reverse(
+                'organization_Event_program_team_history',
+                args=(self.event_id, self.team_id),
+            )
+        return reverse('organization_Event_program_history', args=(self.event_id,))
+
+
 # Create your models here.
 class Team(models.Model):
 

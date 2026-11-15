@@ -1,0 +1,286 @@
+{% extends "base.html" %}
+{% load static %}
+{% load django_bootstrap5 %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/program.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="program-page"
+     id="program-page"
+     data-program-page
+     data-scope="{{ scope }}"
+     data-team-id="{% if selected_team %}{{ selected_team.pk }}{% endif %}"
+     data-create-url="{{ create_url }}"
+     data-can-create="{% if can_create %}1{% else %}0{% endif %}"
+     data-editing-block="{% if editing_block %}{{ editing_block.pk }}{% endif %}"
+     data-modal-open="{% if modal_open %}1{% else %}0{% endif %}">
+
+    <nav aria-label="breadcrumb" class="d-none d-md-block">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'organization_Program_event_list' %}">Rammeprogram</a></li>
+            <li class="breadcrumb-item active">{{ event.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="program-header d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-3 mb-3">
+        <div class="program-header__intro flex-grow-1">
+            <h1 class="h2 mb-1">Rammeprogram</h1>
+            <p class="text-muted mb-0">
+                {{ event.name }} ·
+                {{ event.start_date|date:"j. F" }} – {{ event.end_date|date:"j. F Y" }}
+            </p>
+            {% if selected_team %}
+                <p class="mb-0 small">
+                    Viser <strong>{{ selected_team.name }}</strong> oven på det fælles rammeprogram.
+                    Det fælles program har stiplet kant.
+                    {% if can_create %}<span class="badge bg-success-subtle text-success-emphasis ms-1">Du kan redigere</span>
+                    {% else %}<span class="badge bg-secondary-subtle text-secondary-emphasis ms-1">Læseadgang</span>{% endif %}
+                </p>
+            {% elif all_teams %}
+                <p class="mb-0 small text-muted">Overblik: det fælles program og alle teams egne blokke.</p>
+            {% else %}
+                <p class="mb-0 small">
+                    Det fælles rammeprogram, som administratorerne vedligeholder.
+                    {% if can_create %}<span class="badge bg-success-subtle text-success-emphasis ms-1">Du kan redigere</span>
+                    {% else %}<span class="badge bg-secondary-subtle text-secondary-emphasis ms-1">Læseadgang</span>{% endif %}
+                </p>
+            {% endif %}
+        </div>
+
+        <div class="program-toolbar d-flex flex-wrap align-items-center gap-2 flex-shrink-0">
+            <form method="get" class="d-flex align-items-center gap-2">
+                <label class="small text-muted mb-0" for="program-scope">Vis</label>
+                <select id="program-scope" name="team" class="form-select form-select-sm program-scope-select" data-autosubmit>
+                    <option value="" {% if scope == 'base' %}selected{% endif %}>Fælles rammeprogram</option>
+                    {% for option in team_options %}
+                        <option value="{{ option.team.pk }}"
+                                {% if scope == option.team.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ option.team.name }}{% if option.is_member %} (dit team){% endif %}
+                        </option>
+                    {% endfor %}
+                    <option value="all" {% if scope == 'all' %}selected{% endif %}>Alle teams (overblik)</option>
+                </select>
+            </form>
+
+            {% if history_url %}
+                <a href="{{ history_url }}"
+                   class="btn btn-sm btn-outline-secondary program-tool-button"
+                   aria-label="Programhistorik"
+                   title="Programhistorik">
+                    <i class="bi bi-clock-history" aria-hidden="true"></i>
+                </a>
+            {% endif %}
+            <a href="{% url 'organization_Event_program_export' event.pk %}?team={{ scope|urlencode }}"
+               class="btn btn-sm btn-outline-success program-tool-button"
+               aria-label="Eksportér til Excel"
+               title="Eksportér til Excel">
+                <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>
+            </a>
+            {% if can_create %}
+                <button type="button"
+                        class="btn btn-sm btn-primary program-tool-button"
+                        data-program-new
+                        aria-label="Nyt programpunkt"
+                        title="Nyt programpunkt">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                </button>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if truncated_days %}
+        <div class="alert alert-warning py-2">
+            Eventet er længere end {{ max_program_days }} dage. Kalenderen viser de første {{ max_program_days }} dage.
+        </div>
+    {% endif %}
+
+    <div class="program-legend mb-3" aria-label="Forklaring af farver">
+        <span class="program-legend__item">
+            <span class="program-swatch program-block--fixed" aria-hidden="true"></span>Fast program
+        </span>
+        <span class="program-legend__item">
+            <span class="program-swatch program-block--recommended" aria-hidden="true"></span>Anbefaling
+        </span>
+        <span class="program-legend__item">
+            <span class="program-swatch program-block--placeholder" aria-hidden="true"></span>Plads til eget program
+        </span>
+        <span class="program-legend__item">
+            <span class="program-swatch program-block--preparation" aria-hidden="true"></span>Forberedelse
+        </span>
+        {% if selected_team or all_teams %}
+            <span class="program-legend__hint">
+                <i class="bi bi-lock" aria-hidden="true"></i>
+                Stiplet kant = fælles rammeprogram
+            </span>
+        {% endif %}
+        {% if can_create %}
+            <span class="program-legend__hint">
+                <i class="bi bi-hand-index-thumb" aria-hidden="true"></i>
+                Træk i kalenderen for at oprette en blok
+            </span>
+        {% endif %}
+    </div>
+
+    {% if days %}
+    <div class="program-calendar card border-0 shadow-sm"
+         data-program-calendar
+         data-start-hour="{{ start_hour }}"
+         data-end-hour="{{ end_hour }}"
+         data-can-create="{% if can_create %}1{% else %}0{% endif %}">
+        <div class="program-calendar__scroll">
+            <!-- djlint:off H021 -->
+            <div class="program-grid"
+                 style="--program-days: {{ days|length }}; --program-hours: {{ hours|length }}; --program-hour-height: {{ hour_height }}px;">
+                <div class="program-gutter" aria-hidden="true">
+                    <div class="program-day-header program-day-header--spacer"></div>
+                    {% for hour in hours %}
+                        <div class="program-hour">{{ hour|stringformat:"02d" }}:00</div>
+                    {% endfor %}
+                </div>
+
+                {% for day in days %}
+                    <div class="program-day">
+                        <div class="program-day-header{% if day.is_today %} program-day-header--today{% endif %}">
+                            <span class="program-day-header__weekday">{{ day.weekday }}</span>
+                            <span class="program-day-header__date">{{ day.date|date:"j. M" }}</span>
+                        </div>
+                        <div class="program-day-body"
+                             data-program-day="{{ day.date|date:'Y-m-d' }}">
+                            {% for chunk in day.blocks %}
+                                {% with block=chunk.block %}
+                                <button type="button"
+                                        class="program-block program-block--{{ block.category }}{% if not chunk.can_edit %} program-block--readonly{% endif %}{% if not block.team %} program-block--framework{% endif %}"
+                                        style="{{ chunk.style }}"
+                                        data-program-block="{{ block.pk }}"
+                                        title="{{ block.title }} ({{ block.start_time|time:'H:i' }}–{{ block.end_time|time:'H:i' }})">
+                                    <span class="program-block__time">{{ block.start_time|time:"H:i" }}–{{ block.end_time|time:"H:i" }}</span>
+                                    <span class="program-block__title">{{ block.title }}</span>
+                                    {% if selected_team or all_teams %}
+                                        <span class="program-block__origin">
+                                            {% if block.team %}{{ block.team.short_name }}{% else %}Fælles{% endif %}
+                                        </span>
+                                    {% endif %}
+                                    {% with people=block.responsible.all %}
+                                        {% if people %}
+                                            <span class="program-block__people">
+                                                <i class="bi bi-person" aria-hidden="true"></i>
+                                                {% for volunteer in people|slice:":3" %}{{ volunteer.first_name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% if people|length > 3 %}+{% endif %}
+                                            </span>
+                                        {% endif %}
+                                    {% endwith %}
+                                </button>
+                                {% endwith %}
+                            {% endfor %}
+                            <div class="program-selection" data-program-selection hidden></div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <!-- djlint:on -->
+        </div>
+    </div>
+    {% else %}
+        <div class="alert alert-warning">Eventet har ingen dage endnu. Ret start- og slutdato på eventet.</div>
+    {% endif %}
+
+    <p class="small text-muted mt-3 mb-0">
+        Klik på en blok for at se indhold og ansvarlige.
+        {% if can_create %}Træk et tidsrum for at oprette en ny blok.{% endif %}
+    </p>
+</div>
+
+{{ block_data|json_script:"program-block-data" }}
+
+{{ block_form.media }}
+
+<div class="modal fade" id="programBlockModal" tabindex="-1" aria-labelledby="programBlockModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="programBlockModalLabel">
+                    {% if modal_open and editing_block %}Ret programpunkt{% else %}Nyt programpunkt{% endif %}
+                </h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Luk"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" id="programBlockForm" action="{{ create_url }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="scope" id="programBlockScope" value="{{ scope }}">
+                    <input type="hidden" name="team" id="programBlockTeam" value="{% if selected_team %}{{ selected_team.pk }}{% endif %}">
+                    {% bootstrap_form_errors block_form type='non_fields' %}
+                    <div class="row g-3">
+                        <div class="col-12">{% bootstrap_field block_form.title %}</div>
+                        <div class="col-md-6">{% bootstrap_field block_form.category %}</div>
+                        <div class="col-md-6">{% bootstrap_field block_form.responsible %}</div>
+                        <div class="col-md-4">{% bootstrap_field block_form.day %}</div>
+                        <div class="col-md-4">{% bootstrap_field block_form.start_time %}</div>
+                        <div class="col-md-4">{% bootstrap_field block_form.end_time %}</div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold" for="{{ block_form.content.id_for_label }}">
+                                {{ block_form.content.label }}
+                            </label>
+                            {{ block_form.content }}
+                            {% for error in block_form.content.errors %}
+                                <div class="invalid-feedback d-block">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="submit"
+                        form="programBlockDeleteForm"
+                        class="btn btn-outline-danger"
+                        id="programBlockDeleteButton"
+                        hidden>
+                    <i class="bi bi-trash" aria-hidden="true"></i> Slet
+                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuller</button>
+                    <button type="submit" form="programBlockForm" class="btn btn-primary">Gem</button>
+                </div>
+            </div>
+            <form method="post" id="programBlockDeleteForm" action="" class="d-none">
+                {% csrf_token %}
+                <input type="hidden" name="scope" value="{{ scope }}">
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="programBlockViewModal" tabindex="-1" aria-labelledby="programBlockViewTitle" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title fs-5" id="programBlockViewTitle">Programpunkt</h2>
+                    <div class="small text-muted" data-program-view-meta></div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Luk"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <span class="badge" data-program-view-category></span>
+                    <span class="badge bg-secondary-subtle text-secondary-emphasis" data-program-view-origin></span>
+                </div>
+                <div class="mb-3" data-program-view-content></div>
+                <div>
+                    <h3 class="h6 text-uppercase text-muted">Ansvarlige</h3>
+                    <div data-program-view-responsible></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Luk</button>
+                <button type="button" class="btn btn-primary" data-program-edit-from-view hidden>Rediger</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/program.js' %}"></script>
+{% endblock %}
