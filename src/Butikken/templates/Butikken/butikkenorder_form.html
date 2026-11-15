@@ -29,6 +29,7 @@
         {{ initial_cart|json_script:"initial-cart" }}
         <!-- Hidden input used for form submission; populated from the in-memory cartItems state -->
         <input type="hidden" name="cart_items_json" id="cart_items_json" value='[]'>
+        <input type="hidden" name="new_items_json" id="new_items_json" value='[]'>
 
         <div class="row g-4">
             <!-- Left Main Column (Desktop & Mobile) -->
@@ -74,6 +75,44 @@
                             </div>
                             <div class="col-auto">
                                 <button type="button" id="btn-add-item" class="btn btn-navy px-4">Tilføj</button>
+                            </div>
+                        </div>
+
+                        <!-- Propose a new item that is not in the catalog yet -->
+                        <div class="mb-3">
+                            <button type="button" id="btn-toggle-proposal" class="btn btn-outline-primary btn-sm" aria-expanded="false" aria-controls="proposal-panel">
+                                <i class="bi bi-plus-circle"></i> Foreslå ny vare
+                            </button>
+                        </div>
+                        <div id="proposal-panel" class="border rounded bg-light p-3 mb-3 d-none">
+                            <p class="text-muted small mb-3">
+                                Kan du ikke finde varen i listen? Beskriv den her, så bliver den sendt med bestillingen som et forslag.
+                                Butikken tager stilling til forslaget og kan tilføje varen til sortimentet.
+                            </p>
+                            <div class="row g-2">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold" for="proposal-name">Varenavn</label>
+                                    <input type="text" id="proposal-name" class="form-control" maxlength="100" placeholder="Fx hakkede tomater">
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label small fw-bold" for="proposal-qty">Antal</label>
+                                    <input type="number" id="proposal-qty" class="form-control" min="0.01" step="0.01" value="1">
+                                </div>
+                                <div class="col-6 col-md-3">
+                                    <label class="form-label small fw-bold" for="proposal-unit">Enhed</label>
+                                    <input type="text" id="proposal-unit" class="form-control" maxlength="100" placeholder="stk">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold" for="proposal-description">Beskrivelse</label>
+                                    <textarea id="proposal-description" class="form-control" rows="2" maxlength="500" placeholder="Valgfri beskrivelse af varen"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <div id="proposal-error" class="text-danger small mb-2 d-none"></div>
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <button type="button" id="btn-cancel-proposal" class="btn btn-light btn-sm">Annuller</button>
+                                        <button type="button" id="btn-add-proposal" class="btn btn-navy btn-sm">Tilføj vareforslag</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -154,6 +193,7 @@
         const itemsData = itemsDataElement ? JSON.parse(itemsDataElement.textContent) : {};
         const initialCartEl = document.getElementById('initial-cart');
         const hiddenJsonInput = document.getElementById('cart_items_json');
+        const newItemsJsonInput = document.getElementById('new_items_json');
         let cartItems = [];
         if (initialCartEl) {
             try {
@@ -182,6 +222,93 @@
         const cartTableBody = document.getElementById('cart-table-body');
         const cartMobileList = document.getElementById('cart-mobile-list');
         const cartTotalCount = document.getElementById('cart-total-count');
+
+        // --- Item proposals ("Foreslå ny vare") ---
+        const btnToggleProposal = document.getElementById('btn-toggle-proposal');
+        const proposalPanel = document.getElementById('proposal-panel');
+        const btnAddProposal = document.getElementById('btn-add-proposal');
+        const btnCancelProposal = document.getElementById('btn-cancel-proposal');
+        const proposalName = document.getElementById('proposal-name');
+        const proposalQty = document.getElementById('proposal-qty');
+        const proposalUnit = document.getElementById('proposal-unit');
+        const proposalDescription = document.getElementById('proposal-description');
+        const proposalError = document.getElementById('proposal-error');
+        let proposalCounter = 0;
+
+        function setProposalPanelOpen(open) {
+            proposalPanel.classList.toggle('d-none', !open);
+            btnToggleProposal.setAttribute('aria-expanded', open ? 'true' : 'false');
+            if (open) {
+                proposalName.focus();
+            }
+        }
+
+        function resetProposalForm() {
+            proposalName.value = '';
+            proposalQty.value = '1';
+            proposalUnit.value = '';
+            proposalDescription.value = '';
+            proposalError.textContent = '';
+            proposalError.classList.add('d-none');
+        }
+
+        function showProposalError(message, field) {
+            proposalError.textContent = message;
+            proposalError.classList.remove('d-none');
+            if (field) {
+                field.focus();
+            }
+        }
+
+        btnToggleProposal.addEventListener('click', function() {
+            setProposalPanelOpen(proposalPanel.classList.contains('d-none'));
+        });
+
+        btnCancelProposal.addEventListener('click', function() {
+            resetProposalForm();
+            setProposalPanelOpen(false);
+        });
+
+        btnAddProposal.addEventListener('click', function() {
+            const name = proposalName.value.trim();
+            const qty = parseFloat(String(proposalQty.value).replace(',', '.'));
+            if (!name) {
+                showProposalError('Angiv et navn på varen.', proposalName);
+                return;
+            }
+            if (!isFinite(qty) || qty <= 0) {
+                showProposalError('Antal skal være større end 0.', proposalQty);
+                return;
+            }
+
+            const unit = proposalUnit.value.trim() || 'stk';
+            const description = proposalDescription.value.trim();
+
+            // Merge identical proposals instead of adding duplicate lines.
+            const existing = cartItems.find(
+                item => item.isNew && item.name.toLowerCase() === name.toLowerCase()
+            );
+            if (existing) {
+                existing.qty = (parseFloat(existing.qty) || 0) + qty;
+                if (description) {
+                    existing.description = description;
+                }
+            } else {
+                proposalCounter += 1;
+                cartItems.push({
+                    id: `new-${proposalCounter}-${Date.now()}`,
+                    name: name,
+                    qty: qty,
+                    unit: unit,
+                    description: description,
+                    isNew: true
+                });
+            }
+
+            resetProposalForm();
+            setProposalPanelOpen(false);
+            renderCart();
+        });
 
         // Add item to state
         btnAddItem.addEventListener('click', function() {
@@ -243,6 +370,31 @@
         };
 
         // Render function for desktop table & mobile cards
+        function appendNameWithBadge(parent, item) {
+            parent.append(item.name);
+            let label = null;
+            let badgeClass = null;
+            if (item.isNew) {
+                label = 'Ny vare';
+                badgeClass = 'bg-warning text-dark';
+            } else if (item.status === 'Pending') {
+                label = 'Afventer godkendelse';
+                badgeClass = 'bg-warning text-dark';
+            } else if (item.status === 'Special') {
+                label = 'Specialbestilling';
+                badgeClass = 'bg-info text-dark';
+            } else if (item.status === 'Rejected') {
+                label = 'Afvist';
+                badgeClass = 'bg-danger';
+            }
+            if (label) {
+                const badge = document.createElement('span');
+                badge.className = `badge ${badgeClass} ms-2`;
+                badge.textContent = label;
+                parent.appendChild(badge);
+            }
+        }
+
         function renderCart() {
             cartTableBody.innerHTML = '';
             cartMobileList.innerHTML = '';
@@ -253,7 +405,13 @@
 
                 const nameCell = document.createElement('td');
                 nameCell.className = 'fw-bold text-body';
-                nameCell.textContent = item.name;
+                appendNameWithBadge(nameCell, item);
+                if (item.description) {
+                    const description = document.createElement('div');
+                    description.className = 'small text-muted fw-normal';
+                    description.textContent = item.description;
+                    nameCell.appendChild(description);
+                }
                 tr.appendChild(nameCell);
 
                 const qtyCell = document.createElement('td');
@@ -295,7 +453,7 @@
 
                 const nameSpan = document.createElement('span');
                 nameSpan.className = 'fw-bold text-body';
-                nameSpan.textContent = item.name;
+                appendNameWithBadge(nameSpan, item);
                 header.appendChild(nameSpan);
 
                 const removeButtonMobile = document.createElement('button');
@@ -341,9 +499,11 @@
                 cartMobileList.appendChild(card);
             });
 
-            // Update Total Count Badge & JSON Form Input
+            // Update Total Count Badge & JSON Form Inputs
             cartTotalCount.textContent = `Total: ${cartItems.length} unikke varer tilføjet bestillingen`;
-            hiddenJsonInput.value = JSON.stringify(cartItems);
+            // Existing items are synced by id; proposals are created server-side.
+            hiddenJsonInput.value = JSON.stringify(cartItems.filter(item => !item.isNew));
+            newItemsJsonInput.value = JSON.stringify(cartItems.filter(item => item.isNew));
         }
 
         // Initial render from any existing bookings

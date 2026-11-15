@@ -1,163 +1,21 @@
-{% extends "base.html" %}
-{% load bootstrap_icons %}
-{% load django_bootstrap5 %}
-{% load static %}
+{% extends "components/booking_form.html" %}
 
-{% block title %}
-    Sjak Booking - {% if form.instance.pk %}Rediger{% else %}Ny{% endif %}
+{% block booking_form_page_title %}Sjak booking{% endblock %}
+{% block booking_form_title %}{% if form.instance.pk %}Rediger{% else %}Ny{% endif %} Sjak booking{% endblock %}
+{% block booking_form_breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'Sjak_SjakBooking_list' %}">Sjak bookinger</a></li>{% endblock %}
+{% block booking_form_breadcrumb_active %}{% if form.instance.pk %}Rediger #{{ form.instance.pk }}{% else %}Ny booking{% endif %}{% endblock %}
+
+{% block booking_form_deadline %}
+{% if user.is_authenticated and user.events.first %}
+<p class="text-muted">
+    <i class="bi bi-info-circle"></i> Deadline:
+    <span class="badge bg-warning text-dark">{{ user.events.first.deadline_sjak|default:"Ikke sat" }}</span>
+</p>
+{% endif %}
 {% endblock %}
 
-{% block extra_css %}
-<link href="{% static 'vendor/tom-select/tom-select.bootstrap5.min.css' %}" rel="stylesheet">
-<style>
-    /* Image Preview Styling in Form */
-    .form-image-preview {
-        max-height: 200px;
-        width: 100%;
-        object-fit: cover;
-        border-radius: 8px;
-        border: 1px solid #dee2e6;
-    }
+{% block booking_form_enctype %}enctype="multipart/form-data"{% endblock %}
 
-    /* Tom Select Integration */
-    .input-group > .ts-wrapper { flex: 1 1 auto; width: 1%; }
-    .input-group > .ts-wrapper .ts-control {
-        border-top-right-radius: 0 !important;
-        border-bottom-right-radius: 0 !important;
-        padding: 0.5rem 0.75rem !important;
-        min-height: calc(1.5em + 1rem + 2px); 
-        z-index: 1;
-    }
-    #clear-item-btn { border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; z-index: 4; }
-    .ts-wrapper.form-control { padding: 0 !important; border: none !important; }
-    .ts-control { border: 1px solid #dee2e6 !important; }
-    .ts-wrapper.focus .ts-control {
-        border-color: #86b7fe !important;
-        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
-    }
-    .ts-dropdown { z-index: 1050 !important; }
-</style>
+{% block booking_form_cancel %}
+<a href="{% url 'Sjak_SjakBooking_list' %}" class="btn btn-outline-secondary">Annuller</a>
 {% endblock %}
-
-{% block content %}
-<div class="container py-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'Sjak_SjakBooking_list' %}">Sjak bookinger</a></li>
-            <li class="breadcrumb-item active">
-                {% if form.instance.pk %}Rediger #{{ form.instance.pk }}{% else %}Ny booking{% endif %}
-            </li>
-        </ol>
-    </nav>
-
-    <div class="mb-4 mt-2">
-        <h1 class="display-5">{% if form.instance.pk %}Rediger{% else %}Ny{% endif %} Sjak booking</h1>
-        {% if user.is_authenticated and user.events.first %}
-            <p class="text-muted">
-                <i class="bi bi-info-circle"></i> Deadline: 
-                <span class="badge bg-warning text-dark">{{ user.events.first.deadline_sjak|default:"Ikke sat" }}</span>
-            </p>
-        {% endif %}
-    </div>
-
-    <form id="booking-form" role="form" method="post" enctype="multipart/form-data" class="needs-validation">
-        {% csrf_token %}
-        {% bootstrap_form_errors form type='non_fields' %}
-
-        <div class="row">
-            <div class="col-lg-8">
-                <div class="card card-custom mb-4">
-                    <div class="card-body p-4">
-                        <div class="mb-4">
-                            <label class="form-label" for="id_item">Vælg materiel</label>
-                            <div class="input-group">
-                                {% bootstrap_field form.item show_label=False wrapper_class="flex-grow-1 mb-0" %}
-                                <button class="btn btn-outline-secondary" type="button" id="clear-item-btn">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-                            </div>
-                            <div class="form-text">Begynd at skrive for at filtrere listen...</div>
-                        </div>
-
-                        <div class="row g-3 mb-4">
-                            <div class="col-md-6">{% bootstrap_field form.start_date %}</div>
-                            <div class="col-md-6">{% bootstrap_field form.start_time %}</div>
-                            <div class="col-md-6">{% bootstrap_field form.end_date %}</div>
-                            <div class="col-md-6">{% bootstrap_field form.end_time %}</div>
-                        </div>
-
-                        {% bootstrap_field form.quantity %}
-                    </div>
-                </div>
-
-                <div class="card card-custom mb-4">
-                    <div class="card-body p-4">
-                        <h5 class="card-title mb-3">Kontakt & Team</h5>
-                        <div class="row g-3">
-                            <div class="col-md-6">{% bootstrap_field form.team_contact %}</div>
-                            <div class="col-md-6">{% bootstrap_field form.team %}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="card card-custom mb-4">
-                    <div class="card-body p-4">
-                        <h5 class="card-title mb-3 h6 fw-bold text-uppercase">Dokumentation / Billede</h5>
-                        
-                        {% if form.instance.image %}
-                            <div class="mb-3 text-center">
-                                <img src="{{ form.instance.image.url }}" alt="Booking billede" class="form-image-preview">
-                                <p class="small text-muted mt-2">Nuværende billede</p>
-                            </div>
-                        {% endif %}
-                        
-                        {% bootstrap_field form.image show_label=False %}
-                        <div class="form-text small">Upload et billede af placering eller specifikke ønsker.</div>
-                    </div>
-                </div>
-
-                <div class="card card-custom mb-4 bg-light">
-                    <div class="card-body p-4">
-                        <h5 class="card-title mb-3 h6 fw-bold text-uppercase">Bemærkninger</h5>
-                        {% bootstrap_field form.remarks show_label=False %}
-                    </div>
-                </div>
-
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary btn-lg shadow-sm">
-                        <i class="bi bi-check2-circle"></i> Gem booking
-                    </button>
-                    <a href="{% url 'Sjak_SjakBooking_list' %}" class="btn btn-outline-secondary">Annuller</a>
-                </div>
-            </div>
-        </div>
-    </form>
-</div>
-
-<script src="{% static 'vendor/tom-select/tom-select.complete.min.js' %}"></script>
-<script nonce="{{ csp_nonce }}">
-    document.addEventListener("DOMContentLoaded", function() {
-        const itemSelect = document.querySelector('select[name="item"]');
-        if (itemSelect) {
-            const itemControl = new TomSelect(itemSelect, {
-                create: false,
-                placeholder: "Søg efter ting...",
-                allowEmptyOption: true,
-                sortField: { field: "text", direction: "asc" }
-            });
-
-            const clearBtn = document.getElementById('clear-item-btn');
-            if (clearBtn) {
-                clearBtn.addEventListener('click', function() {
-                    itemControl.clear();
-                    itemControl.focus();
-                });
-            }
-        }
-    });
-</script>
-{% endblock %}
-

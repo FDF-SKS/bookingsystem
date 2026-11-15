@@ -1,136 +1,145 @@
-{% extends "base.html" %}
-{% load static %}
-{% load django_bootstrap5 %}
-{% load bootstrap_icons %}
+{% extends "components/booking_detail.html" %}
 
-{% block content %}
-<div class="container py-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'organization_VolunteerAppointment_list' %}">Legeaftaler</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Detaljer</li>
-        </ol>
-    </nav>
+{% block title %}Legeaftale: {{ object.requester }} → {{ object.receiver_display }}{% endblock %}
 
-    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
-        <div>
-            <h1 class="display-5">Legeaftale Detaljer</h1>
-            <p class="text-muted">Oprettet {{ object.created|date:"d. M Y" }}</p>
-        </div>
-        <div>
-            {% if object.status == 'accepted' %}
-                <span class="badge bg-success fs-5 px-4 py-2"><i class="bi bi-check-circle"></i> {{ object.get_status_display }}</span>
-            {% elif object.status == 'rejected' %}
-                <span class="badge bg-danger fs-5 px-4 py-2"><i class="bi bi-x-circle"></i> {{ object.get_status_display }}</span>
+{% block booking_detail_breadcrumb_active %}Detaljer{% endblock %}
+{% block booking_detail_kicker %}Legeaftale{% endblock %}
+{% block booking_detail_title %}Legeaftale{% endblock %}
+{% block booking_detail_subtitle %}
+Mellem {{ object.requester.get_full_name|default:object.requester.username }} og {{ object.receiver_display }}
+{% endblock %}
+
+{% block booking_detail_info_heading %}Information om aftalen{% endblock %}
+{% block booking_detail_start_label %}Start{% endblock %}
+{% block booking_detail_end_label %}Slut{% endblock %}
+
+{% block booking_detail_header_actions %}
+{% if user_can_edit %}
+<div class="d-flex gap-2">
+    <a href="{{ object.get_update_url }}" class="btn btn-outline-primary rounded-pill px-4">
+        <i class="bi bi-pencil"></i> Rediger
+    </a>
+    <a href="{% url 'organization_VolunteerAppointment_delete' object.pk %}" class="btn btn-outline-danger rounded-pill px-4">
+        <i class="bi bi-trash"></i> Slet
+    </a>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block booking_detail_main_extra %}
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="detail-label">Afsender</div>
+        <div class="d-flex align-items-center gap-2 mt-2">
+            {% if object.requester.image_thumbnail %}
+            <img src="{{ object.requester.image_thumbnail.url }}" alt="{{ object.requester.get_full_name }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" loading="lazy">
+            {% elif object.requester.image %}
+            <img src="{{ object.requester.image.url }}" alt="{{ object.requester.get_full_name }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" loading="lazy">
             {% else %}
-                <span class="badge bg-warning text-dark fs-5 px-4 py-2"><i class="bi bi-clock"></i> {{ object.get_status_display }}</span>
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px; font-size: 0.8rem;">
+                {{ object.requester.first_name|slice:":1" }}{{ object.requester.last_name|slice:":1" }}
+            </div>
             {% endif %}
+            <div>
+                <span class="detail-value"><i class="bi bi-person"></i> {{ object.requester.get_full_name|default:object.requester.username }}</span>
+                {% with object.requester.teams.first as team %}
+                {% if team %}<small class="text-muted d-block">({{ team.short_name }})</small>{% endif %}
+                {% endwith %}
+            </div>
         </div>
     </div>
-
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-4">
-            
-            <h5 class="border-bottom pb-2 mb-3 mt-3">Deltagere</h5>
-            <div class="row mb-4">
-                <div class="col-md-6 mb-3">
-                    <label class="text-muted small d-block">Afsender</label>
-                    <div class="d-flex align-items-center gap-2">
-                        {% if object.requester.image_thumbnail %}
-                            <img src="{{ object.requester.image_thumbnail.url }}" alt="{{ object.requester.get_full_name }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" loading="lazy">
-                        {% elif object.requester.image %}
-                            <img src="{{ object.requester.image.url }}" alt="{{ object.requester.get_full_name }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" loading="lazy">
-                        {% else %}
-                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px; font-size: 0.8rem;">
-                                {{ object.requester.first_name|slice:":1" }}{{ object.requester.last_name|slice:":1" }}
-                            </div>
-                        {% endif %}
-                        <div>
-                            <span class="fs-5"><i class="bi bi-person"></i> {{ object.requester.get_full_name|default:object.requester.username }}</span>
-                            {% with object.requester.teams.first as team %}
-                                {% if team %}<small class="text-muted d-block">({{ team.short_name }})</small>{% endif %}
-                            {% endwith %}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="text-muted small d-block">Modtager</label>
-                    <div class="d-flex align-items-center gap-2">
-                        {% if object.receiver.image_thumbnail %}
-                            <img src="{{ object.receiver.image_thumbnail.url }}" alt="{{ object.receiver.get_full_name }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" loading="lazy">
-                        {% elif object.receiver.image %}
-                            <img src="{{ object.receiver.image.url }}" alt="{{ object.receiver.get_full_name }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" loading="lazy">
-                        {% else %}
-                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px; font-size: 0.8rem;">
-                                {{ object.receiver.first_name|slice:":1" }}{{ object.receiver.last_name|slice:":1" }}
-                            </div>
-                        {% endif %}
-                        <div>
-                            <span class="fs-5"><i class="bi bi-person-fill"></i> {{ object.receiver.get_full_name|default:object.receiver.username }}</span>
-                            {% with object.receiver.teams.first as team %}
-                                {% if team %}<small class="text-muted d-block">({{ team.short_name }})</small>{% endif %}
-                            {% endwith %}
-                        </div>
-                    </div>
-                </div>
+    <div class="col-md-6">
+        <div class="detail-label">Modtager</div>
+        {% if object.receiver %}
+        <div class="d-flex align-items-center gap-2 mt-2">
+            {% if object.receiver.image_thumbnail %}
+            <img src="{{ object.receiver.image_thumbnail.url }}" alt="{{ object.receiver.get_full_name }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" loading="lazy">
+            {% elif object.receiver.image %}
+            <img src="{{ object.receiver.image.url }}" alt="{{ object.receiver.get_full_name }}" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;" loading="lazy">
+            {% else %}
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px; font-size: 0.8rem;">
+                {{ object.receiver.first_name|slice:":1" }}{{ object.receiver.last_name|slice:":1" }}
             </div>
-
-            <h5 class="border-bottom pb-2 mb-3 mt-3">Tidspunkt</h5>
-            <div class="row mb-4">
-                <div class="col-md-6 mb-3">
-                    <label class="text-muted small d-block">Start</label>
-                    <span class="fs-5">{{ object.start_date|date:"l d. M Y" }} kl. {{ object.start_time|time:"H:i" }}</span>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="text-muted small d-block">Slut</label>
-                    <span class="fs-5">{{ object.end_date|date:"l d. M Y" }} kl. {{ object.end_time|time:"H:i" }}</span>
-                </div>
-            </div>
-
-            <h5 class="border-bottom pb-2 mb-3 mt-3">Aftalens indhold</h5>
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="p-3 border rounded bg-light">
-                        {{ object.description|linebreaks|default:"Ingen beskrivelse angivet." }}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Comments Section -->
-            {% include "components/comments_section.html" with object=object comments=comments user_can_comment=user_can_comment comment_form_url=comment_form_url show_no_permission_message=True %}
-
-            <div class="d-flex flex-wrap gap-2 mt-5">
-                {% if user == object.requester %}
-                    <a href="{{ object.get_update_url }}" class="btn btn-warning btn-lg px-4">
-                        <i class="bi bi-pencil"></i> Rediger
-                    </a>
-                    <a href="{% url 'organization_VolunteerAppointment_delete' object.pk %}" class="btn btn-danger btn-lg px-4">
-                        <i class="bi bi-trash"></i> Slet
-                    </a>
-                {% endif %}
-
-                {% if user == object.receiver %}
-                    <form action="{% url 'appointment_status_update' object.pk 'accepted' %}" method="post" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-success btn-lg px-4"><i class="bi bi-check-lg"></i> Ja</button>
-                    </form>
-                    <form action="{% url 'appointment_status_update' object.pk 'rejected' %}" method="post" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-danger btn-lg px-4"><i class="bi bi-x-lg"></i> Nej</button>
-                    </form>
-                    <form action="{% url 'appointment_status_update' object.pk 'pending' %}" method="post" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-outline-secondary btn-lg px-4">Måske</button>
-                    </form>
-                {% endif %}
-
-                <a href="{% url 'organization_VolunteerAppointment_list' %}" class="btn btn-outline-secondary btn-lg px-4 ms-md-auto">
-                    <i class="bi bi-arrow-left"></i> Tilbage
-                </a>
+            {% endif %}
+            <div>
+                <span class="detail-value"><i class="bi bi-person-fill"></i> {{ object.receiver.get_full_name|default:object.receiver.username }}</span>
+                {% with object.receiver.teams.first as team %}
+                {% if team %}<small class="text-muted d-block">({{ team.short_name }})</small>{% endif %}
+                {% endwith %}
             </div>
         </div>
+        {% else %}
+        <div class="d-flex align-items-center gap-2 mt-2">
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div>
+                <span class="detail-value"><i class="bi bi-people-fill"></i> {{ object.receiver_team.name }}</span>
+                <small class="text-muted d-block">Åben for alle på teamet</small>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if object.shared_with_team or object.resolved_by %}
+<div class="row g-4 mb-4">
+    {% if object.shared_with_team %}
+    <div class="col-md-6">
+        <div class="detail-label">Deling</div>
+        <div class="detail-value">
+            <i class="bi bi-people"></i> Delt med afsenderens team
+        </div>
+    </div>
+    {% endif %}
+    {% if object.resolved_by %}
+    <div class="col-md-6">
+        <div class="detail-label">Besvaret af</div>
+        <div class="detail-value">
+            <i class="bi bi-person-check"></i> {{ object.resolved_by.get_full_name|default:object.resolved_by.username }}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block booking_detail_notes_label %}Aftalens indhold{% endblock %}
+{% block booking_detail_notes %}
+{{ object.description|linebreaks|default:"Ingen beskrivelse angivet." }}
+{% endblock %}
+
+{% block booking_detail_comments %}
+<div class="card card-custom mb-5">
+    <div class="card-body p-4">
+        {% include "components/comments_section.html" with object=object comments=comments user_can_comment=user_can_comment comment_form_url=comment_form_url show_no_permission_message=True %}
     </div>
 </div>
 {% endblock %}
 
+{% block booking_detail_sidebar_extra %}
+{% if user_can_respond %}
+<div class="card card-custom mb-4">
+    <div class="card-body p-4">
+        <h5 class="card-title mb-3 border-bottom pb-2">Besvar aftale</h5>
+        {% if object.is_team_appointment and not user.is_staff %}
+        <p class="small text-muted">Du svarer på vegne af <strong>{{ object.receiver_team.name }}</strong>.</p>
+        {% endif %}
+        <div class="d-grid gap-2">
+            <form action="{% url 'appointment_status_update' object.pk 'accepted' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success w-100"><i class="bi bi-check-lg"></i> Ja</button>
+            </form>
+            <form action="{% url 'appointment_status_update' object.pk 'rejected' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger w-100"><i class="bi bi-x-lg"></i> Nej</button>
+            </form>
+            <form action="{% url 'appointment_status_update' object.pk 'pending' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-secondary w-100">Måske</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

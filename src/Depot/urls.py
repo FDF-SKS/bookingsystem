@@ -16,6 +16,8 @@ urlpatterns = [
     path('bookings/new/', views.DepotBookingCreateView.as_view(), name='Depot_DepotBooking_create'),
     path('bookings/<int:pk>/edit/', views.DepotBookingUpdateView.as_view(), name='Depot_DepotBooking_update'),
     path('bookings/<int:pk>/delete/', views.DepotBookingDeleteView.as_view(), name='Depot_DepotBooking_delete'),
+    path('bookings/<int:pk>/approve/', views.approve_booking, name='Depot_DepotBooking_approve'),
+    path('bookings/<int:pk>/reject/', views.reject_booking, name='Depot_DepotBooking_reject'),
 ]
 
 

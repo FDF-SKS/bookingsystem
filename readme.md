@@ -135,6 +135,31 @@ Nu skulle siden gerne være oppe på `http://127.0.0.1:8000`, og du kan logge in
 
 > 🔑 Login foregår med **email** – ikke brugernavn. Passkeys og engangskoder via email er også understøttet, og kan sættes op under kontoindstillingerne.
 
+### 7. Fyld systemet med demo-data
+Når databasen er tom, kan du oprette et demo-event med hold, brugere, varer og bookinger til alle bookingtyper med én kommando (kør fra `src`-mappen):
+```bash
+python manage.py generate_dummy_data
+```
+Kommandoen opretter bl.a.:
+- et aktivt event (`[demo] Event`) med deadlines i fremtiden – andre events sættes til inaktive
+- hold og brugere (`demo1`, `demo2`, ...). Antallet følger `--per-model`
+- tjanser, slutrengøringsopgaver og tildelinger
+- varer og bookinger pr. bookingmodel (Butikken, AktivitetsTeam, Løb, SOS, Foto, Sjak, Teknik og Depot)
+
+Alle rækker er markeret med `[demo]`, så de er nemme at kende og fjerne igen. Kommandoen kan køres flere gange uden at lave dubletter. Administratorer uden et hold bliver tilknyttet det første demo-hold, så teamafgrænsede sider også viser data.
+
+| Kommando | Betydning |
+|---|---|
+| `python manage.py generate_dummy_data` | Opret det der mangler (5 pr. model) |
+| `python manage.py generate_dummy_data --per-model 3` | Vælg antal varer/bookinger pr. model |
+| `python manage.py generate_dummy_data --reset` | Slet alt demo-data og opret det forfra |
+
+> 🔐 Ved lokal kørsel (`DEBUG=True`) kan du logge ind som `demo1@example.com` med adgangskoden `demo12345`.
+
+> ⚠️ Kommandoen nægter at køre i produktion (`ENVIRONMENT=production`), medmindre du tilføjer `--force`.
+
+**Tilføj en ny bookingtype:** Læg en `demo.py` i appen med en `DemoFactory`-subklasse og `FACTORY = DinFactory`. Kommandoen finder selv modulet, så du skal ikke ændre kommandoen. Se `src/Butikken/demo.py` som skabelon, og `src/utils/demo.py` for de hjælpefunktioner, alle factories deler.
+
 
 ## ✅ Tests
 Kør fra `src`-mappen – samme kommando på alle platforme:
@@ -233,22 +258,59 @@ docker buildx build --platform linux/amd64,linux/arm64 -f dockerfile -t mglavind
 Har du ikke Docker Hub-adgang, kan du i stedet bygge lokalt uden `--push` og få imaget overført på anden vis.
 
 ### Trin B: Udrulning på serveren
-Udrulningen sker automatisk: `.github/workflows/hetzner.yml` logger på serveren via SSH ved hvert push til `main` og kører
+CI får **ingen shell** på serveren. `.github/workflows/hetzner.yml` logger ind som brugeren `deploy`, hvis SSH-nøgle er låst til én kommando (`forced command`). Den starter systemd-unit'en `booking-deploy.service`, som kører det root-ejede script `/usr/local/sbin/booking-deploy`:
 
 1. `docker compose pull web` – henter det nyeste image fra Docker Hub
-2. `docker compose up -d` – genstarter containere uden nedetid
+2. `docker compose up -d` – genstarter containere
 3. `python manage.py migrate --noinput` – opdaterer databaseskemaet
 4. `python manage.py collectstatic --noinput` – indsamler statiske filer (essentielt for **Unfold** admin-temaet)
 5. `docker image prune -f` – rydder op i gamle images
 
-Vil du deploye manuelt, kan du gøre det samme på serveren (samme kommandoer uanset om du SSH'er fra Windows eller macOS/Linux):
+Scriptet ligger fast på serveren (root-ejet, `0755`), så en ændring i workflowet kan ikke ændre *hvad* der køres med root-rettigheder – kun *hvornår* det udløses. Loggen vises i Actions-runnet og i `journalctl -u booking-deploy`.
+
+#### Engangsopsætning på serveren
+```bash
+# 1) Fra din egen maskine: kopiér opsætningsfilerne op på serveren
+scp scripts/server/booking-deploy scripts/server/booking-deploy-ssh \
+    scripts/server/setup-deploy-user.sh root@<server-ip>:/tmp/
+```
+```bash
+# 2) På serveren, som root – med din nye deploy-nøgles .pub-fil
+ssh root@<server-ip>
+bash /tmp/setup-deploy-user.sh /sti/til/deploy_key.pub
+```
+
+Scriptet opretter:
+- brugeren `deploy` – uden shell og **uden** docker-gruppe (docker-adgang er reelt root-adgang)
+- `/usr/local/sbin/booking-deploy` og `booking-deploy-ssh` (root-ejede)
+- systemd-unit'en `booking-deploy.service`
+- sudo-regel for **kun** `booking-deploy-ssh`
+- `~deploy/.ssh/authorized_keys` med `restrict,command="..."`
+
+Repository-secrets bagefter:
+
+| Secret | Indhold |
+|--------|---------|
+| `HETZNER_HOST` | serverens hostname/IP |
+| `HETZNER_SSH_KEY` | den **private** deploy-nøgle (ikke root-nøglen) |
+| `HETZNER_HOST_FINGERPRINT` | `SHA256:...` for serverens host key |
+
+#### Rotér deploy-nøglen
+1. `ssh-keygen -t ed25519 -C "gh-actions-deploy" -f deploy_key -N ""`
+2. Kør `setup-deploy-user.sh /sti/deploy_key.pub` igen på serveren (idempotent).
+3. Opdatér `HETZNER_SSH_KEY` i GitHub.
+4. Kør **Deploy to Hetzner** manuelt og bekræft at det virker.
+5. Slet den gamle nøgle fra `/root/.ssh/authorized_keys` og fra GitHub.
+
+#### Hærdning af repoet
+- **Environment approvals:** jobbet bruger `environment: production`. Tilføj *required reviewers* under Settings → Environments, så et deploy kræver godkendelse.
+- **Branch protection** på `main`: kræv PR-review, og brug gerne `CODEOWNERS` på `.github/workflows/`, så workflow-ændringer ikke kan merges uden review.
+- **Vær opmærksom på den reelle tillid:** selv med denne opsætning er den største risiko stadig, at en angriber kan pushe et ondsindet image til Docker Hub eller ændre CI. Det image kører ved næste deploy. Derfor: beskyttede environments, branch protection og rotation af `DOCKERHUB_TOKEN`.
+
+Vil du deploye manuelt som root (fx ved fejlfinding), kan du stadig:
 ```bash
 ssh root@<server-ip>
-cd /root/booking-system
-docker compose pull web
-docker compose up -d
-docker compose exec -T web python manage.py migrate --noinput
-docker compose exec -T web python manage.py collectstatic --noinput
+/usr/local/sbin/booking-deploy
 ```
 
 > 🔐 Huskeseddel: produktionens `.env` ligger **kun** på serveren. Den er ikke i repoet og må ikke kopieres til din lokale maskine eller til staging.

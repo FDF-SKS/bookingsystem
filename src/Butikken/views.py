@@ -1,23 +1,31 @@
 import contextlib
 import json
 import logging
+from collections import defaultdict
 from datetime import time
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.admin.models import LogEntry
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.contenttypes.models import ContentType
 from django.forms import modelformset_factory
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import generic
+from django.views.decorators.http import require_POST
 
-from organization.models import Event
+from organization.models import Event, Team
 from organization.permissions import StaffRequiredMixin, TeamQuerysetMixin
+from utils.ui import (
+    BookingDetailContextMixin,
+    BookingListContextMixin,
+    ItemDetailContextMixin,
+    ItemListContextMixin,
+)
 
 from . import forms, models
 from .forms import BulkMealForm, TeamMealPlanForm
@@ -25,15 +33,345 @@ from .models import MealBooking, TeamMealPlan
 
 logger = logging.getLogger(__name__)
 
+# Safety cap for the JSON payload accepted from the order form.
+MAX_ITEM_PROPOSALS_PER_ORDER = 50
 
-class ButikkenItemListView(LoginRequiredMixin, generic.ListView):
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def approve_booking(request, pk):
+    """Approve a Butikken booking."""
+    booking = get_object_or_404(models.ButikkenBooking, pk=pk)
+    booking.status = 'Approved'
+    booking.save()
+    return redirect(request.GET.get('next', 'Butikken_ButikkenBooking_list'))
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def reject_booking(request, pk):
+    """Reject a Butikken booking."""
+    booking = get_object_or_404(models.ButikkenBooking, pk=pk)
+    booking.status = 'Rejected'
+    booking.save()
+    return redirect(request.GET.get('next', 'Butikken_ButikkenBooking_list'))
+
+
+def _active_items():
+    """Catalog items that may be picked in an order."""
+    return models.ButikkenItem.objects.filter(status=models.ButikkenItem.STATUS_ACTIVE)
+
+
+def _parse_cart_qty(raw) -> Decimal:
+    """Parse a posted quantity, tolerating commas and invalid input."""
+    try:
+        value = Decimal(str(raw)) if raw not in (None, "") else Decimal("1")
+    except (InvalidOperation, TypeError, ValueError):
+        try:
+            value = Decimal(str(raw).replace(",", "."))
+        except Exception:
+            value = Decimal("1")
+    return value if value > 0 else Decimal("1")
+
+
+def _format_qty(quantity: Decimal) -> str:
+    return format(quantity.normalize(), "f")
+
+
+def _upsert_order_booking(order, item, quantity, unit, user):
+    """Create or update the single booking for ``item`` on ``order``."""
+    booking = (
+        models.ButikkenBooking.objects.filter(order=order, item=item)
+        .order_by("pk")
+        .first()
+    )
+    if booking is None:
+        return models.ButikkenBooking.objects.create(
+            order=order,
+            item=item,
+            team=order.team,
+            team_contact=(order.team_contact or user),
+            start_date=(order.pickup_date or timezone.now().date()),
+            start_time=time(8, 0),
+            quantity=quantity,
+            unit=(unit or item.content_unit or ""),
+        )
+    booking.quantity = quantity
+    booking.unit = unit or booking.unit
+    booking.start_date = booking.start_date or order.pickup_date or timezone.now().date()
+    booking.start_time = booking.start_time or time(8, 0)
+    booking.save(
+        update_fields=["quantity", "unit", "start_date", "start_time", "last_updated"]
+    )
+    return booking
+
+
+def _create_item_proposals(order, raw_json, user) -> list[int]:
+    """Turn submitted item proposals into pending catalog items + bookings.
+
+    A proposal whose name matches an existing active item reuses that item, so
+    users cannot accidentally create duplicates of catalog entries. Otherwise
+    an existing *pending* item with the same name is reused across orders, which
+    aggregates demand for the same proposed item. Anything else becomes a new
+    ``Pending`` :class:`ButikkenItem` that staff can approve or reject in the
+    admin.
+
+    Returns the item ids that now have a booking on ``order`` so callers can
+    keep them when syncing the rest of the cart.
+    """
+    try:
+        raw_proposals = json.loads(raw_json or "[]")
+    except (TypeError, ValueError):
+        return []
+    if not isinstance(raw_proposals, list):
+        return []
+
+    item_ids: list[int] = []
+    for raw in raw_proposals[:MAX_ITEM_PROPOSALS_PER_ORDER]:
+        if not isinstance(raw, dict):
+            continue
+        form = forms.ButikkenItemProposalForm(
+            data={
+                "name": raw.get("name"),
+                "quantity": raw.get("qty", raw.get("quantity")),
+                "unit": raw.get("unit"),
+                "description": raw.get("description"),
+            }
+        )
+        if not form.is_valid():
+            logger.info("Ignoring invalid item proposal: %s", form.errors.as_json())
+            continue
+
+        name = form.cleaned_data["name"]
+        quantity = form.cleaned_data["quantity"] or Decimal("1")
+        unit = form.cleaned_data["unit"]
+        description = form.cleaned_data["description"]
+
+        item = models.ButikkenItem.objects.filter(
+            status=models.ButikkenItem.STATUS_ACTIVE, name__iexact=name
+        ).first()
+        if item is None:
+            # Reuse an existing proposal for the same item (possibly from another
+            # order) instead of creating near-duplicates in the review queue.
+            item = models.ButikkenItem.objects.filter(
+                status=models.ButikkenItem.STATUS_PENDING, name__iexact=name
+            ).first()
+        if item is None:
+            item = models.ButikkenItem.objects.create(
+                name=name,
+                type=models.ButikkenItem.PROPOSAL_TYPE,
+                status=models.ButikkenItem.STATUS_PENDING,
+                content_normal=_format_qty(quantity),
+                content_unit=unit,
+                description=description,
+                proposed_by=user if getattr(user, "pk", None) else None,
+                source_order=order,
+            )
+        elif item.status == models.ButikkenItem.STATUS_PENDING:
+            # Enrich an existing proposal with details the first reporter omitted.
+            changed = []
+            if description and not item.description:
+                item.description = description
+                changed.append("description")
+            if unit and not item.content_unit:
+                item.content_unit = unit
+                changed.append("content_unit")
+            if changed:
+                item.save(update_fields=[*changed, "last_updated"])
+
+        _upsert_order_booking(order, item, quantity, unit, user)
+        item_ids.append(item.pk)
+
+    return item_ids
+
+
+def _order_form_context(context, order=None):
+    """Shared context for the create/update order form."""
+    active_items = list(_active_items().order_by("name"))
+    context["items"] = active_items
+    context["available_items"] = [
+        {"id": it.pk, "name": it.name, "unit": it.content_unit or ""}
+        for it in active_items
+    ]
+    context["items_data"] = {
+        str(it.pk): {
+            "unit": it.content_unit or "",
+            "normal": it.content_normal or "",
+        }
+        for it in active_items
+    }
+    context["unit_map"] = {str(it.pk): (it.content_unit or "") for it in active_items}
+    context["initial_cart"] = []
+    context["bookings"] = []
+
+    if order is not None and order.pk:
+        bookings = list(order.bookings.select_related("item", "team_contact"))
+        context["bookings"] = bookings
+        context["initial_cart"] = [
+            {
+                "id": str(b.item_id),
+                "name": b.item.name,
+                "qty": float(b.quantity),
+                "unit": b.unit,
+                "description": b.item.description,
+                "proposal": b.item.status != models.ButikkenItem.STATUS_ACTIVE,
+                "status": b.item.status,
+            }
+            for b in bookings
+        ]
+    return context
+
+
+class ButikkenDashboardView(LoginRequiredMixin, generic.TemplateView):
+    """Overview of meal bookings, orders and pending item proposals per team."""
+
+    template_name = 'Butikken/dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        today = timezone.now().date()
+
+        active_event = Event.objects.filter(is_active=True).first()
+        if active_event is None:
+            active_event = (
+                Event.objects.filter(start_date__gte=today)
+                .order_by('start_date')
+                .first()
+            )
+
+        # "Relevante dage" are the meal plans for the active event. Without an
+        # event we fall back to all meal plans.
+        meal_plans = models.MealPlan.objects.all()
+        if active_event:
+            meal_plans = meal_plans.filter(
+                meal_date__range=(active_event.start_date, active_event.end_date)
+            )
+        meal_plans = list(meal_plans.order_by('meal_date'))
+
+        teams = Team.objects.all().order_by('name')
+        if not user.is_staff:
+            teams = teams.filter(teammembership__member=user).distinct()
+        teams = list(teams)
+        team_ids = [team.pk for team in teams]
+
+        meal_bookings = models.TeamMealPlan.objects.filter(
+            team_id__in=team_ids,
+            meal_plan_id__in=[plan.pk for plan in meal_plans],
+        )
+        meal_map = {
+            (booking.team_id, booking.meal_plan_id): booking
+            for booking in meal_bookings
+        }
+
+        orders_by_team = defaultdict(list)
+        for order in models.ButikkenOrder.objects.filter(
+            team_id__in=team_ids
+        ).order_by('-created'):
+            orders_by_team[order.team_id].append(order)
+
+        rows = []
+        for team in teams:
+            meal_days = []
+            missing_days = 0
+            for plan in meal_plans:
+                booking = meal_map.get((team.pk, plan.pk))
+                if booking is None or booking.status == 'Rejected':
+                    missing_days += 1
+                meal_days.append({'plan': plan, 'booking': booking})
+
+            team_orders = orders_by_team.get(team.pk, [])
+            rows.append({
+                'team': team,
+                'meal_days': meal_days,
+                'missing_days': missing_days,
+                'meals_complete': bool(meal_plans) and missing_days == 0,
+                'orders': team_orders,
+                'order_count': len(team_orders),
+                'latest_order': team_orders[0] if team_orders else None,
+            })
+
+        pending_items = []
+        if user.is_staff:
+            pending_items = list(
+                models.ButikkenItem.objects.filter(
+                    status=models.ButikkenItem.STATUS_PENDING
+                ).select_related('proposed_by', 'source_order').order_by('created')
+            )
+
+        context.update({
+            'rows': rows,
+            'meal_plans': meal_plans,
+            'active_event': active_event,
+            'pending_items': pending_items,
+            'pending_count': len(pending_items),
+            'team_count': len(rows),
+            'order_count': sum(row['order_count'] for row in rows),
+            'teams_missing_meals': sum(1 for row in rows if row['missing_days']),
+            'teams_without_orders': sum(1 for row in rows if not row['order_count']),
+            'today': today,
+        })
+        return context
+
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+@require_POST
+def review_item_proposal(request, pk):
+    """Approve or reject a pending item proposal from the dashboard."""
+    item = get_object_or_404(models.ButikkenItem, pk=pk)
+    decision = request.POST.get('decision')
+
+    if item.status != models.ButikkenItem.STATUS_PENDING:
+        messages.warning(request, f"'{item.name}' er allerede behandlet.")
+    elif decision == 'catalog':
+        item.approve()
+        messages.success(
+            request, f"'{item.name}' er godkendt som butiksvare."
+        )
+    elif decision == 'special':
+        item.approve_as_special()
+        messages.info(
+            request, f"'{item.name}' er godkendt som specialbestilling."
+        )
+    elif decision == 'reject':
+        removed = models.ButikkenBooking.objects.filter(item=item).count()
+        item.reject()
+        if removed:
+            messages.warning(
+                request,
+                f"'{item.name}' er afvist og fjernet fra "
+                f"{removed} bestillingslinje(r). Teamet er underrettet.",
+            )
+        else:
+            messages.warning(request, f"'{item.name}' er afvist.")
+    else:
+        messages.error(request, 'Ukendt handling.')
+
+    return redirect('Butikken_dashboard')
+
+
+class ButikkenItemListView(ItemListContextMixin, LoginRequiredMixin, generic.ListView):
     model = models.ButikkenItem
     context_object_name = 'object_list'
     ordering = ['name']
 
+    item_list_title = "Vareoversigt"
+    item_list_subtitle = "Gennemse sortimentet i butikken."
+    item_list_create_url_name = "Butikken_ButikkenItem_create"
+    item_list_create_label = "Tilføj vare"
+    item_list_detail_url_name = "Butikken_ButikkenItem_detail"
+    item_list_update_url_name = "Butikken_ButikkenItem_update"
+    item_list_delete_url_name = "Butikken_ButikkenItem_delete"
+    item_list_icon = "bi-shop"
+    item_list_show_location = False
+    item_list_empty_title = "Ingen varer fundet"
+    item_list_empty_message = "Der er endnu ingen varer i butikken."
+
     def get_queryset(self):
-        queryset = models.ButikkenItem.objects.all().order_by('name')  # Order by the 'name' field
-        return queryset
+        # The catalog only shows approved items; pending proposals are reviewed
+        # in the admin.
+        return _active_items().order_by('name')
 
 
 class ButikkenItemCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateView):
@@ -41,9 +379,16 @@ class ButikkenItemCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.Cre
     form_class = forms.ButikkenItemForm
 
 
-class ButikkenItemDetailView(LoginRequiredMixin, generic.DetailView):
+class ButikkenItemDetailView(ItemDetailContextMixin, LoginRequiredMixin, generic.DetailView):
     model = models.ButikkenItem
     form_class = forms.ButikkenItemForm
+
+    item_detail_catalog_label = "Butikken"
+    item_detail_list_url_name = "Butikken_ButikkenItem_list"
+    item_detail_badge_label = "Vare nr."
+    item_detail_icon = "bi-shop"
+    item_detail_quantity_label = "Indhold"
+    item_detail_footer_text = "Information fra Butikken"
 
 
 class ButikkenItemUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
@@ -57,11 +402,20 @@ class ButikkenItemDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.Del
     success_url = reverse_lazy("Butikken_ButikkenItem_list")
 
 
-class ButikkenBookingListView(LoginRequiredMixin, generic.ListView):
+class ButikkenBookingListView(BookingListContextMixin, LoginRequiredMixin, generic.ListView):
     model = models.ButikkenBooking
     form_class = forms.ButikkenBookingForm
     context_object_name = 'object_list'
     template_name = 'Butikken/butikkenbooking_list.html'
+
+    booking_list_title = "Butikken bookinger"
+    booking_list_create_url_name = "Butikken_ButikkenBooking_create"
+    booking_list_create_label = "Ny booking"
+    booking_list_mobile_create_label = "Ny butiksbestilling"
+    booking_list_approve_url_name = "Butikken_ButikkenBooking_approve"
+    booking_list_reject_url_name = "Butikken_ButikkenBooking_reject"
+    booking_list_update_url_name = "Butikken_ButikkenBooking_update"
+    booking_list_delete_url_name = "Butikken_ButikkenBooking_delete"
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
@@ -111,6 +465,14 @@ class ButikkenBookingListView(LoginRequiredMixin, generic.ListView):
         context['current_sort'] = self.request.GET.get('sort', 'item')
         
         return context
+
+    def get_booking_list_subtitle(self) -> str:
+        membership = self.request.user.teammembership_set.select_related('team').first()
+        return f"Team: {membership.team.name}" if membership else ""
+
+    def get_booking_list_deadline(self) -> str:
+        event = Event.objects.filter(is_active=True).first()
+        return str(event.deadline_mad) if event and event.deadline_mad else ""
 
 
 class ButikkenBookingCreateView(LoginRequiredMixin, generic.CreateView):
@@ -173,8 +535,19 @@ class ButikkenBookingUpdateView(TeamQuerysetMixin, LoginRequiredMixin, generic.U
         return context
 
 
-class ButikkenBookingDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
+class ButikkenBookingDetailView(BookingDetailContextMixin, TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     model = models.ButikkenBooking
+
+    booking_detail_kicker = "Butikken bestilling"
+    booking_detail_list_url_name = "Butikken_ButikkenBooking_list"
+    booking_detail_list_label = "Butikken bookinger"
+    booking_detail_approve_url_name = "Butikken_ButikkenBooking_approve"
+    booking_detail_reject_url_name = "Butikken_ButikkenBooking_reject"
+    booking_detail_show_comments = False
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('item', 'team', 'team_contact', 'order')
+
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
         return super().dispatch(*args, **kwargs)
@@ -406,6 +779,13 @@ class ButikkenOrderCreateView(LoginRequiredMixin, generic.CreateView):
             order.status = 'Afventer'
         order.save()
 
+        # Item proposals are created first so their bookings can be kept below.
+        _create_item_proposals(
+            order,
+            self.request.POST.get('new_items_json', '[]'),
+            self.request.user,
+        )
+
         # Persist cart items from client JSON
         cart_json = self.request.POST.get('cart_items_json', '[]')
         try:
@@ -413,36 +793,20 @@ class ButikkenOrderCreateView(LoginRequiredMixin, generic.CreateView):
         except Exception:
             cart_items = []
 
-        from .models import ButikkenBooking, ButikkenItem
         for ci in cart_items:
             try:
                 item_id = int(ci.get('id'))
             except Exception:
                 continue
-            # Parse quantity as Decimal, tolerant to commas and invalid input
-            qty_raw = ci.get('qty')
-            try:
-                qty = Decimal(str(qty_raw)) if qty_raw is not None else Decimal('1')
-            except (InvalidOperation, TypeError, ValueError):
-                try:
-                    qty = Decimal(str(qty_raw).replace(',', '.'))
-                except Exception:
-                    qty = Decimal('1')
-            unit = ci.get('unit') or ''
-            item_obj = ButikkenItem.objects.filter(pk=item_id).first()
+            item_obj = models.ButikkenItem.objects.filter(pk=item_id).first()
             if not item_obj:
                 continue
-            start_date = order.pickup_date or timezone.now().date()
-            start_time = time(8, 0)
-            ButikkenBooking.objects.create(
-                order=order,
-                item=item_obj,
-                team=order.team,
-                team_contact=(order.team_contact or self.request.user),
-                start_date=start_date,
-                start_time=start_time,
-                quantity=qty,
-                unit=(unit or item_obj.content_unit or ''),
+            _upsert_order_booking(
+                order,
+                item_obj,
+                _parse_cart_qty(ci.get('qty')),
+                ci.get('unit') or '',
+                self.request.user,
             )
 
         return redirect('Butikken_ButikkenOrder_update', pk=order.pk)
@@ -450,19 +814,7 @@ class ButikkenOrderCreateView(LoginRequiredMixin, generic.CreateView):
     def get_context_data(self, **kwargs):
         # Provide the same context the update view expects so the single template works
         context = super().get_context_data(**kwargs)
-        from .models import ButikkenItem
-        context['items'] = ButikkenItem.objects.all()
-        context['bookings'] = []
-        items_qs = ButikkenItem.objects.all().values('id', 'content_unit', 'content_normal')
-        items_data = {str(i['id']): {'unit': i['content_unit'] or '', 'normal': i['content_normal'] or ''} for i in items_qs}
-        context['items_data'] = items_data
-        context['available_items'] = [
-            {'id': it.pk, 'name': it.name, 'unit': it.content_unit or ''}
-            for it in ButikkenItem.objects.all()
-        ]
-        context['unit_map'] = {str(it.pk): (it.content_unit or '') for it in ButikkenItem.objects.all()}
-        context['initial_cart'] = []
-        return context
+        return _order_form_context(context)
 
 
 class ButikkenOrderDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
@@ -504,26 +856,7 @@ class ButikkenOrderUpdateView(TeamQuerysetMixin, LoginRequiredMixin, generic.Upd
         with contextlib.suppress(Exception):
             # Fallback: keep the existing form if construction fails.
             context['form'] = self.get_form()
-        from .models import ButikkenItem
-        context['items'] = ButikkenItem.objects.all()
-        context['bookings'] = self.object.bookings.select_related('item', 'team_contact')
-        # Provide items metadata (unit and normal quantity) as JSON-friendly dict
-        items_qs = ButikkenItem.objects.all().values('id', 'content_unit', 'content_normal')
-        items_data = {str(i['id']): {'unit': i['content_unit'] or '', 'normal': i['content_normal'] or ''} for i in items_qs}
-        context['items_data'] = items_data
-        # Provide available_items for the template (id, name, unit)
-        context['available_items'] = [
-            {'id': it.pk, 'name': it.name, 'unit': it.content_unit or ''}
-            for it in ButikkenItem.objects.all()
-        ]
-        # unit_map for older templates that expect it
-        context['unit_map'] = {str(it.pk): (it.content_unit or '') for it in ButikkenItem.objects.all()}
-        # Initial cart items based on existing bookings (id=item.id)
-        initial_cart = []
-        for b in context['bookings']:
-            initial_cart.append({'id': str(b.item.pk), 'name': b.item.name, 'qty': int(b.quantity), 'unit': b.unit})
-        context['initial_cart'] = initial_cart
-        return context
+        return _order_form_context(context, self.object)
 
     def form_valid(self, form):
         # Save the order fields first (enforce Pending for non-staff)
@@ -531,6 +864,14 @@ class ButikkenOrderUpdateView(TeamQuerysetMixin, LoginRequiredMixin, generic.Upd
         if not self.request.user.is_staff:
             self.object.status = 'Afventer'
         self.object.save()
+
+        # Proposals are created before syncing the cart, and their bookings are
+        # excluded from the "removed from cart" cleanup below.
+        proposal_item_ids = _create_item_proposals(
+            self.object,
+            self.request.POST.get('new_items_json', '[]'),
+            self.request.user,
+        )
 
         # Process posted cart JSON (list of {id, name, qty, unit})
         cart_json = self.request.POST.get('cart_items_json', '[]')
@@ -546,48 +887,31 @@ class ButikkenOrderUpdateView(TeamQuerysetMixin, LoginRequiredMixin, generic.Upd
                 item_id = int(ci.get('id'))
             except Exception:
                 continue
-            qty_raw = ci.get('qty')
-            try:
-                qty = Decimal(str(qty_raw)) if qty_raw is not None else Decimal('1')
-            except (InvalidOperation, TypeError, ValueError):
-                try:
-                    qty = Decimal(str(qty_raw).replace(',', '.'))
-                except Exception:
-                    qty = Decimal('1')
-            unit = ci.get('unit') or ''
-            desired[item_id] = {'qty': qty, 'unit': unit}
+            desired[item_id] = {
+                'qty': _parse_cart_qty(ci.get('qty')),
+                'unit': ci.get('unit') or '',
+            }
 
         # Existing bookings mapped by item id
         existing = {b.item_id: b for b in self.object.bookings.all()}
 
         # Create or update bookings from desired
-        from .models import ButikkenBooking, ButikkenItem
         for item_id, data in desired.items():
-            item_obj = ButikkenItem.objects.filter(pk=item_id).first()
+            item_obj = models.ButikkenItem.objects.filter(pk=item_id).first()
             if not item_obj:
                 continue
-            if item_id in existing:
-                b = existing[item_id]
-                b.quantity = data['qty']
-                b.unit = data['unit'] or b.unit
-                # ensure start_date/time exist
-                if not b.start_date:
-                    b.start_date = self.object.pickup_date or timezone.now().date()
-                if not b.start_time:
-                    b.start_time = time(8, 0)
-                b.save()
-                del existing[item_id]
-            else:
-                ButikkenBooking.objects.create(
-                    order=self.object,
-                    item=item_obj,
-                    team=self.object.team,
-                    team_contact=(self.object.team_contact or self.request.user),
-                    start_date=(self.object.pickup_date or timezone.now().date()),
-                    start_time=time(8, 0),
-                    quantity=data['qty'],
-                    unit=(data['unit'] or item_obj.content_unit or ''),
-                )
+            _upsert_order_booking(
+                self.object,
+                item_obj,
+                data['qty'],
+                data['unit'],
+                self.request.user,
+            )
+            existing.pop(item_id, None)
+
+        # Keep bookings created for proposals in this request.
+        for item_id in proposal_item_ids:
+            existing.pop(item_id, None)
 
         # Any remaining in existing were removed from cart -> delete them
         for rem in existing.values():

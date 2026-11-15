@@ -12,6 +12,12 @@ from django.views import generic
 
 from organization.models import Event
 from organization.permissions import StaffRequiredMixin, TeamQuerysetMixin
+from utils.ui import (
+    BookingDetailContextMixin,
+    BookingListContextMixin,
+    ItemDetailContextMixin,
+    ItemGalleryContextMixin,
+)
 
 from . import forms, models
 
@@ -19,9 +25,25 @@ logger = logging.getLogger(__name__)
 
 
 # views.py
-class AktivitetsTeamItemListView(LoginRequiredMixin, generic.ListView):
+class AktivitetsTeamItemListView(ItemGalleryContextMixin, LoginRequiredMixin, generic.ListView):
     model = models.AktivitetsTeamItem
     context_object_name = 'object_list'
+
+    item_list_title = "Aktivitetskatalog"
+    item_list_subtitle = "Udforsk vores spændende aktiviteter og find den rette til dit team."
+    item_list_category_url_name = "AktivitetsTeam_AktivitetsTeamItem_list"
+    item_list_book_url_name = "AktivitetsTeam_AktivitetsTeamBooking_create_with_item"
+    item_list_book_label = "Book mig!"
+    item_list_book_icon = ""
+    item_list_book_button_class = "btn-secondary"
+    item_list_show_detail = True
+    item_list_detail_label = "Se mere"
+    item_list_icon = "bi-image"
+    item_list_image_height = 220
+    item_list_empty_icon = "bi-search"
+    item_list_empty_title = "Ingen aktiviteter fundet"
+    item_list_empty_message = "Prøv at nulstille filteret eller tjek tilbage senere."
+    item_list_empty_reset_label = "Vis alle aktiviteter"
 
     def get_queryset(self):
         # Use select_related to join the category table efficiently
@@ -47,9 +69,16 @@ class AktivitetsTeamItemCreateView(StaffRequiredMixin, LoginRequiredMixin, gener
     form_class = forms.AktivitetsTeamItemForm
 
 
-class AktivitetsTeamItemDetailView(LoginRequiredMixin, generic.DetailView):
+class AktivitetsTeamItemDetailView(ItemDetailContextMixin, LoginRequiredMixin, generic.DetailView):
     model = models.AktivitetsTeamItem
     form_class = forms.AktivitetsTeamItemForm
+
+    item_detail_catalog_label = "Aktivitetskatalog"
+    item_detail_list_url_name = "AktivitetsTeam_AktivitetsTeamItem_list"
+    item_detail_badge_label = "Aktivitet nr."
+    item_detail_icon = "bi-image"
+    item_detail_footer_text = "Information fra Aktivitetskataloget"
+    item_detail_show_sidebar = True
 
 
 class AktivitetsTeamItemUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):
@@ -139,7 +168,7 @@ logger = logging.getLogger(__name__)
 class AktivitetsTeamBookingListView(LoginRequiredMixin, generic.ListView):
     model = models.AktivitetsTeamBooking
     context_object_name = 'object_list'
-    template_name = 'AktivitetsTeam/AktivitetsTeamBooking_list.html'
+    template_name = 'AktivitetsTeam/aktivitetsteambooking_list.html'
     paginate_by = 16
 
     def get_queryset(self):
@@ -346,9 +375,18 @@ class AktivitetsTeamBookingUpdateView(TeamQuerysetMixin, LoginRequiredMixin, Tim
 
 
 
-class AktivitetsTeamBookingDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
+class AktivitetsTeamBookingDetailView(BookingDetailContextMixin, TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     model = models.AktivitetsTeamBooking
     form_class = forms.AktivitetsTeamBookingForm
+
+    booking_detail_kicker = "Aktivitets booking"
+    booking_detail_list_url_name = "AktivitetsTeam_AktivitetsTeamBooking_list"
+    booking_detail_list_label = "AktivitetsTeam bookinger"
+    booking_detail_approve_url_name = "AktivitetsTeam_AktivitetsTeamBooking_approve"
+    booking_detail_reject_url_name = "AktivitetsTeam_AktivitetsTeamBooking_reject"
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('item', 'team', 'team_contact')
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
@@ -382,14 +420,20 @@ class AktivitetsTeamBookingDeleteView(TeamQuerysetMixin, LoginRequiredMixin, gen
         return super().dispatch(*args, **kwargs)
 
 
-class AktivitetsTeamBookingTeamListView(LoginRequiredMixin, generic.ListView):
-    """List view showing bookings for the user's team only ("Mine bookinger").
-    This is an additional view; the existing list view remains unchanged.
-    """
+class AktivitetsTeamBookingTeamListView(BookingListContextMixin, LoginRequiredMixin, generic.ListView):
+    """List view showing bookings for the user's team only ("Mine bookinger")."""
     model = models.AktivitetsTeamBooking
     context_object_name = 'object_list'
     template_name = 'AktivitetsTeam/AktivitetsTeamBooking_mine_list.html'
     paginate_by = 16
+
+    booking_list_title = "Mine bookinger"
+    booking_list_create_url_name = "AktivitetsTeam_AktivitetsTeamBooking_create"
+    booking_list_create_label = "Ny booking"
+    booking_list_mobile_create_label = "Ny booking"
+    booking_list_approve_url_name = "AktivitetsTeam_AktivitetsTeamBooking_approve"
+    booking_list_reject_url_name = "AktivitetsTeam_AktivitetsTeamBooking_reject"
+    booking_list_update_url_name = "AktivitetsTeam_AktivitetsTeamBooking_update"
 
     def get_queryset(self):
         user = self.request.user
@@ -402,32 +446,13 @@ class AktivitetsTeamBookingTeamListView(LoginRequiredMixin, generic.ListView):
         ).order_by('start_date', 'start_time')
         return queryset
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
+    def get_booking_list_subtitle(self) -> str:
+        membership = self.request.user.teammembership_set.select_related('team').first()
+        return f"Team: {membership.team.name}" if membership else ""
 
-        # Team membership and staff flag
-        user_team_membership = user.teammembership_set.select_related('team').first()
-        is_staff = user.is_staff
-
-        # The queryset is already filtered to the user's teams, but keep the
-        # same context structure as other list views
-        filtered_object_list = context.get('object_list', [])
-
-        # Fetch user events (deadline field for aktivitetsteam)
-        user_events = list(user.events.filter(is_active=True).values('name', 'deadline_aktivitetsteam'))
-
-        # Volunteer team memberships for display
-        volunteer_team_memberships = list(user.teammembership_set.select_related('team').values('team__name'))
-
-        context.update({
-            'filtered_object_list': filtered_object_list,
-            'is_staff': is_staff,
-            'user_team_membership': user_team_membership,
-            'user_events': user_events,
-            'volunteer_team_memberships': volunteer_team_memberships,
-        })
-        return context
+    def get_booking_list_deadline(self) -> str:
+        event = Event.objects.filter(is_active=True).first()
+        return str(event.deadline_aktivitetsteam) if event and event.deadline_aktivitetsteam else ""
     
 
 

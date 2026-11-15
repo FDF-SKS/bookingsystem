@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% load static django_bootstrap5 bootstrap_icons %}
+
+{% block title %}{% block booking_form_page_title %}{{ booking_form_title|default:"Booking" }}{% endblock %}{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'vendor/tom-select/tom-select.bootstrap5.min.css' %}" rel="stylesheet">
+{% block booking_form_extra_css %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+{{ form.media }}
+
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
+            {% block booking_form_breadcrumb %}
+            {% if booking_form_list_url_name %}
+            <li class="breadcrumb-item"><a href="{% url booking_form_list_url_name %}">{{ booking_form_list_label|default:"Bookinger" }}</a></li>
+            {% endif %}
+            {% endblock %}
+            <li class="breadcrumb-item active" aria-current="page">
+                {% block booking_form_breadcrumb_active %}{% if form.instance.pk %}Rediger{% else %}Ny{% endif %}{% endblock %}
+            </li>
+        </ol>
+    </nav>
+
+    <div class="mb-4 mt-2">
+        <h1 class="display-5">{% block booking_form_title %}{{ booking_form_title|default:"Booking" }}{% endblock %}</h1>
+        {% block booking_form_deadline %}
+        {% if booking_form_deadline %}
+        <p class="text-muted">
+            <i class="bi bi-info-circle"></i> {{ booking_form_deadline_label|default:"Deadline" }}:
+            <span class="badge bg-warning text-dark">{{ booking_form_deadline }}</span>
+        </p>
+        {% endif %}
+        {% endblock %}
+    </div>
+
+    <form id="booking-form" role="form" method="post" class="needs-validation" {% block booking_form_enctype %}{% endblock %}>
+        {% csrf_token %}
+        {% bootstrap_form_errors form type='non_fields' %}
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card card-custom mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title border-bottom pb-2 mb-3">{% block booking_form_details_heading %}Vare &amp; tid{% endblock %}</h5>
+
+                        {% if form.recipient %}
+                        <div class="mb-4">{% bootstrap_field form.recipient %}</div>
+                        {% endif %}
+
+                        {% if form.receiver %}
+                        <div class="mb-4">{% bootstrap_field form.receiver %}</div>
+                        {% endif %}
+
+                        {% if form.receiver_team or form.shared_with_team %}
+                        <div class="row g-3 mb-4">
+                            {% if form.receiver_team %}<div class="col-md-6">{% bootstrap_field form.receiver_team %}</div>{% endif %}
+                            {% if form.shared_with_team %}<div class="col-md-6">{% bootstrap_field form.shared_with_team %}</div>{% endif %}
+                        </div>
+                        {% endif %}
+
+                        {% if form.item %}
+                        <div class="mb-4">
+                            <label class="form-label" for="{{ form.item.id_for_label }}">{{ form.item.label|default:"Vælg vare" }}</label>
+                            <div class="input-group">
+                                {% bootstrap_field form.item show_label=False wrapper_class="flex-grow-1 mb-0" %}
+                                <button class="btn btn-outline-secondary" type="button" id="clear-item-btn" title="Ryd valg">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="row g-3">
+                            {% if form.quantity %}<div class="col-md-6">{% bootstrap_field form.quantity %}</div>{% endif %}
+                            {% if form.unit %}<div class="col-md-6">{% bootstrap_field form.unit %}</div>{% endif %}
+                            {% if form.start_date %}<div class="col-md-6">{% bootstrap_field form.start_date %}</div>{% endif %}
+                            {% if form.start_time %}<div class="col-md-6">{% bootstrap_field form.start_time %}</div>{% endif %}
+                            {% if form.end_date %}<div class="col-md-6">{% bootstrap_field form.end_date %}</div>{% endif %}
+                            {% if form.end_time %}<div class="col-md-6">{% bootstrap_field form.end_time %}</div>{% endif %}
+                            {% if form.date_used %}<div class="col-md-6">{% bootstrap_field form.date_used %}</div>{% endif %}
+                            {% if form.for_meal %}<div class="col-md-6">{% bootstrap_field form.for_meal %}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                {% if form.team or form.team_contact %}
+                <div class="card card-custom mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title border-bottom pb-2 mb-3">Kontakt &amp; team</h5>
+                        <div class="row g-3">
+                            {% if form.team %}<div class="col-md-6">{% bootstrap_field form.team %}</div>{% endif %}
+                            {% if form.team_contact %}<div class="col-md-6">{% bootstrap_field form.team_contact %}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if form.assistance_needed or form.delivery_needed %}
+                <div class="card card-custom mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title border-bottom pb-2 mb-3">Behov</h5>
+                        <div class="row g-3">
+                            {% if form.assistance_needed %}<div class="col-md-6">{% bootstrap_field form.assistance_needed %}</div>{% endif %}
+                            {% if form.delivery_needed %}<div class="col-md-6">{% bootstrap_field form.delivery_needed %}</div>{% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if form.location %}
+                <div class="card card-custom mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title border-bottom pb-2 mb-3">Lokation</h5>
+                        <label class="form-label fw-bold small text-uppercase">Vælg placering på kortet</label>
+                        <div class="map-container">
+                            {% bootstrap_field form.location show_label=False %}
+                        </div>
+                        <small class="text-muted">Klik på kortet eller træk i markøren for at angive placeringen.</small>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if form.description %}
+                <div class="card card-custom mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title border-bottom pb-2 mb-3">Detaljer</h5>
+                        {% bootstrap_field form.description %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% block booking_form_main_extra %}{% endblock %}
+            </div>
+
+            <div class="col-lg-4">
+                {% block booking_form_sidebar_extra %}{% endblock %}
+
+                {% if form.image %}
+                <div class="card card-custom mb-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-3 h6 fw-bold text-uppercase">Dokumentation / Billede</h5>
+                        {% if form.instance.image %}
+                        <div class="mb-3 text-center">
+                            <img src="{{ form.instance.image.url }}" alt="Booking billede" class="form-image-preview">
+                            <p class="small text-muted mt-2">Nuværende billede</p>
+                        </div>
+                        {% endif %}
+                        {% bootstrap_field form.image show_label=False %}
+                        <div class="form-text small">Upload et billede af placering eller specifikke ønsker.</div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if form.remarks %}
+                <div class="card card-custom mb-4 bg-light">
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-3 h6 fw-bold text-uppercase">Bemærkninger</h5>
+                        {% bootstrap_field form.remarks show_label=False %}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% block booking_form_actions %}
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                        <i class="bi {{ booking_form_submit_icon|default:"bi-check2-circle" }}"></i>
+                        {% block booking_form_submit_label %}Gem booking{% endblock %}
+                    </button>
+                    {% block booking_form_cancel %}
+                    {% if booking_form_list_url_name %}
+                    <a href="{% url booking_form_list_url_name %}" class="btn btn-outline-secondary">Annuller</a>
+                    {% endif %}
+                    {% endblock %}
+                </div>
+                {% endblock %}
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="{% static 'vendor/tom-select/tom-select.complete.min.js' %}"></script>
+{% block booking_form_scripts %}
+<script nonce="{{ csp_nonce }}">
+    document.addEventListener("DOMContentLoaded", function() {
+        if (typeof TomSelect === 'undefined') return;
+
+        let itemControl = null;
+        document.querySelectorAll('select[name="item"], select[name="recipient"], select[name="receiver"]').forEach(function(select) {
+            if (select.tomselect) return;
+            const placeholders = {
+                item: 'Søg efter ting...',
+                recipient: 'Søg person eller team...',
+                receiver: 'Søg efter person...'
+            };
+            const control = new TomSelect(select, {
+                create: false,
+                placeholder: placeholders[select.name] || 'Søg...',
+                allowEmptyOption: true,
+                sortField: { field: "text", direction: "asc" }
+            });
+            if (select.name === 'item') itemControl = control;
+        });
+
+        const clearBtn = document.getElementById('clear-item-btn');
+        if (clearBtn && itemControl) {
+            clearBtn.addEventListener('click', function() {
+                itemControl.clear();
+                itemControl.focus();
+            });
+        }
+    });
+</script>
+{% endblock %}
+
+<script nonce="{{ csp_nonce }}">
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            window.dispatchEvent(new Event('resize'));
+
+            var map = window.map_location;
+            if (!map && typeof L !== 'undefined' && L.Map && L.Map.eachExistingInstance) {
+                L.Map.eachExistingInstance(function(instance) { map = instance; });
+            }
+
+            if (map) {
+                map.invalidateSize();
+                map.on('click', function(e) {
+                    var input = document.getElementById('id_location');
+                    if (input) {
+                        input.value = e.latlng.lat.toFixed(6) + "," + e.latlng.lng.toFixed(6);
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                    var marker = window.marker_location;
+                    if (marker) { marker.setLatLng(e.latlng); }
+                });
+            }
+
+            if (typeof L !== 'undefined') {
+                document.querySelectorAll('.leaflet-container').forEach(function(container) {
+                    if (container._leaflet_map) {
+                        container._leaflet_map.invalidateSize();
+                    }
+                });
+            }
+        }, 500);
+    });
+</script>
+{% endblock %}

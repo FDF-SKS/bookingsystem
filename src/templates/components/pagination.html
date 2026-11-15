@@ -1,0 +1,13 @@
+{% if is_paginated %}
+<nav aria-label="Page navigation" class="mt-4 mb-5">
+    <ul class="pagination pagination-sm justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Forrige</a></li>
+        {% endif %}
+        <li class="page-item active"><span class="page-link bg-primary border-primary text-white px-3">{{ page_obj.number }}</span></li>
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Næste</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}

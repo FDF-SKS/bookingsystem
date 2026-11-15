@@ -2,14 +2,28 @@
 
 <h2>Hvor godkender jeg hvad?</h2>
 <ul>
-    <li><strong>Sjak, Teknik, Foto og AktivitetsTeam</strong> – åbn bookingen, og tryk <strong>Godkend bestilling</strong> eller <strong>Afvis bestilling</strong> på detaljsiden.</li>
+    <li><strong>Sjak, Teknik, Foto, AktivitetsTeam, SOS og Depot</strong> – åbn bookingen, og tryk <strong>Godkend bestilling</strong> eller <strong>Afvis bestilling</strong> på detaljsiden. Administratorer kan også godkende eller afvise direkte fra listen, når bookingen afventer.</li>
     <li><strong>Butikken</strong> – åbn ordren, tryk <strong>Rediger</strong>, og vælg status: Afventer, Godkendt, Afvist, Pakket eller Udleveret.</li>
-    <li><strong>SOS og Depot</strong> – åbn bookingen i administrationspanelet, og ret <strong>status</strong> til Approved eller Rejected.</li>
+    <li><strong>Butikkens vareforslag</strong> – behandles på <strong>Butikken &rarr; Overblik</strong> (se nedenfor).</li>
 </ul>
 
 <p><img src="/static/wiki/guides/admin-godkend.png" alt="Detaljsiden for en booking med knapperne Godkend bestilling og Afvis bestilling"></p>
 
 <p><em>På bookingens detaljside står godkendelsesknapperne, når bookingen afventer svar.</em></p>
+
+<h2>Vareforslag i Butikken</h2>
+<p>Når et team foreslår en vare, der ikke findes i kataloget, dukker den op på <strong>Butikken &rarr; Overblik</strong> under <em>Vareforslag der mangler godkendelse</em>. I kan også finde forslagene i administrationspanelet under <strong>Butikken &rarr; Butiksvarer</strong> med status <em>Afventer godkendelse</em>.</p>
+<p>For hvert forslag vælger I en af tre handlinger:</p>
+<ul>
+    <li><strong>Godkend som butiksvare</strong> – varen bliver en del af det fælles varekatalog og kan vælges af alle teams til fremtidige ordrer.</li>
+    <li><strong>Godkend som specialbestilling</strong> – varen bliver på den aktuelle ordre, men kommer <em>ikke</em> i kataloget. Den kan ikke vælges af andre teams eller til nye ordrer.</li>
+    <li><strong>Afvis</strong> – varen fjernes fra ordren, og teamet får besked på email og i Discord. Selve forslaget gemmes som <em>Afvist</em> til historik.</li>
+</ul>
+<p>I administrationspanelet kan I også bruge handlingerne <strong>Godkend som butiksvare</strong>, <strong>Godkend som specialbestilling</strong> og <strong>Afvis valgte vareforslag</strong>. Status kan desuden rettes direkte på varen eller i ordrens inline-liste.</p>
+
+<blockquote>
+    <p><strong>Butiksvare eller specialbestilling?</strong> Vælg <em>butiksvare</em>, hvis I gerne vil kunne bestille varen igen. Vælg <em>specialbestilling</em>, hvis det er et engangskøb, som ikke skal fylde i kataloget.</p>
+</blockquote>
 
 <h2>Deadlines</h2>
 <p>Hvert område har sin egen frist, som sættes på eventet. Kommer en booking ind efter fristen, kan du afvise den – eller godkende den, hvis I kan nå det.</p>
@@ -21,6 +35,10 @@
     <p><strong>Skriv i bemærkningerne, når du afviser.</strong> En afvisning uden forklaring skaber telefonopkald. Begrundelsen hjælper teamet med at booke om.</p>
 </blockquote>
 
+<h2>Legeaftaler</h2>
+<p>Legeaftaler er ikke bookinger, og de skal ikke godkendes af en administrator. Modtageren – eller en fra modtagerteamet – svarer <strong>Ja</strong>, <strong>Nej</strong> eller <strong>Måske</strong> på aftalen. Læs mere i <a href="/wiki/legeaftaler/">guiden til legeaftaler</a>.</p>
+<p>Som administrator kan du se og rette alle aftaler i administrationspanelet under <strong>Organization &rarr; Aftaler</strong>. Her kan du også se og ændre modtagerteam, om aftalen er delt med afsenderens team, og hvem der har svaret.</p>
+
 <h2>Udlevering</h2>
 <ul>
     <li><strong>Sjak</strong> – brug kanban-tavlen til at flytte bestillinger mellem Afventer, Igang, Klar og Afsluttet.</li>
@@ -29,6 +47,6 @@
 </ul>
 
 <h2>Overblik</h2>
-<p>De frivillige ser deres bookinger på forsiden. Som administrator kan du se alle bookinger under det enkelte område og i administrationspanelet – og bruge <strong>Eksport</strong> til at trække lister ud.</p>
+<p>De frivillige ser deres bookinger på forsiden. Som administrator kan du se alle bookinger under det enkelte område og i administrationspanelet – og bruge <strong>Eksport</strong> til at trække lister ud. Butikkens <strong>Overblik</strong> samler måltidsbestillinger, varebestillinger og vareforslag for alle teams på én side.</p>
 
 <p>Tilbage til <a href="/wiki/administrator/">For administratorer</a>.</p>

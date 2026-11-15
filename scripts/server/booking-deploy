@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+#
+# Root-owned deploy runner for booking-system.
+#
+# Kører som root via systemd-unit'en booking-deploy.service. Scriptet her er
+# bevidst det ENESTE, en CI-deploy kan udløse – der kan ikke sendes kommandoer
+# med fra CI. Se scripts/server/setup-deploy-user.sh for opsætningen.
+#
+# Miljøvariabler (valgfrie):
+#   APP_DIR       – hvor docker-compose.yaml ligger (default /root/booking-system)
+#   COMPOSE_FILE  – compose-fil (default docker-compose.yaml)
+set -euo pipefail
+
+APP_DIR="${APP_DIR:-/root/booking-system}"
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yaml}"
+
+log() { printf '[booking-deploy] %s\n' "$*"; }
+
+if [ ! -d "$APP_DIR" ]; then
+    log "FEJL: $APP_DIR findes ikke"
+    exit 1
+fi
+
+cd "$APP_DIR"
+
+if [ ! -f "$COMPOSE_FILE" ]; then
+    log "FEJL: $COMPOSE_FILE findes ikke i $APP_DIR"
+    exit 1
+fi
+
+log "Henter nyt image fra Docker Hub..."
+docker compose -f "$COMPOSE_FILE" pull web
+
+log "Genstarter services..."
+docker compose -f "$COMPOSE_FILE" up -d
+
+log "Kører database-migreringer..."
+docker compose -f "$COMPOSE_FILE" exec -T web python manage.py migrate --noinput
+
+log "Indsamler statiske filer..."
+docker compose -f "$COMPOSE_FILE" exec -T web python manage.py collectstatic --noinput
+
+log "Rydder ubrugte images..."
+docker image prune -f
+
+log "Deploy gennemført."

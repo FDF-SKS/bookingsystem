@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% load static %}
+{% load bootstrap_icons %}
+
+{% block title %}Butikken - Overblik{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none">Hjem</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Butikken</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h1 class="fw-bold mb-1 text-primary">Butikken overblik</h1>
+            <p class="text-muted mb-0">
+                Måltidsbestillinger, varebestillinger og vareforslag på tværs af teams.
+                {% if active_event %}
+                    <span class="d-block small mt-1">
+                        <i class="bi bi-calendar-event"></i>
+                        Relevante dage: {{ active_event.start_date|date:"j. F" }} – {{ active_event.end_date|date:"j. F Y" }}
+                    </span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'Butikken_ButikkenOrder_create' %}" class="btn btn-navy">
+                <i class="bi bi-cart-plus"></i> Ny varebestilling
+            </a>
+            <a href="{% url 'Butikken_ButikkenOrder_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-receipt"></i> Varebestillinger
+            </a>
+            <a href="{% url 'Butikken_TeamMealPlan_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-egg-fried"></i> Måltidsbestillinger
+            </a>
+            <a href="{% url 'Butikken_ButikkenItem_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-shop"></i> Varekatalog
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card card-custom h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase fw-bold">Teams</div>
+                    <div class="display-6 fw-bold text-primary">{{ team_count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card card-custom h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase fw-bold">Mangler måltider</div>
+                    <div class="display-6 fw-bold {% if teams_missing_meals %}text-warning{% else %}text-success{% endif %}">{{ teams_missing_meals }}</div>
+                    <div class="small text-muted">teams med manglende dage</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card card-custom h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase fw-bold">Uden varebestilling</div>
+                    <div class="display-6 fw-bold {% if teams_without_orders %}text-warning{% else %}text-success{% endif %}">{{ teams_without_orders }}</div>
+                    <div class="small text-muted">teams uden ordrer</div>
+                </div>
+            </div>
+        </div>
+        {% if user.is_staff %}
+        <div class="col-6 col-lg-3">
+            <a href="#pending-proposals" class="text-decoration-none">
+                <div class="card card-custom h-100 {% if pending_count %}border-warning{% endif %}">
+                    <div class="card-body">
+                        <div class="text-muted small text-uppercase fw-bold">Mangler godkendelse</div>
+                        <div class="display-6 fw-bold {% if pending_count %}text-warning{% else %}text-success{% endif %}">{{ pending_count }}</div>
+                        <div class="small text-muted">vareforslag</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if user.is_staff %}
+    <div class="card card-custom mb-4" id="pending-proposals">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>Vareforslag der mangler godkendelse
+                </h5>
+                <span class="badge {% if pending_count %}bg-warning text-dark{% else %}bg-success{% endif %} fs-6">{{ pending_count }}</span>
+            </div>
+
+            {% if pending_items %}
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="bg-light text-muted">
+                        <tr>
+                            <th class="ps-3">Vare</th>
+                            <th>Foreslået af</th>
+                            <th>Bestilling</th>
+                            <th>Oprettet</th>
+                            <th class="text-end pe-3">Handling</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in pending_items %}
+                        <tr>
+                            <td class="ps-3">
+                                <div class="fw-bold text-dark">{{ item.name }}</div>
+                                {% if item.content_normal or item.content_unit %}
+                                <div class="small text-muted">{{ item.content_normal }} {{ item.content_unit }}</div>
+                                {% endif %}
+                                {% if item.description %}
+                                <div class="small text-muted fst-italic">{{ item.description|truncatewords:20 }}</div>
+                                {% endif %}
+                            </td>
+                            <td class="small">{{ item.proposed_by|default:"–" }}</td>
+                            <td class="small">
+                                {% if item.source_order %}
+                                <a href="{% url 'Butikken_ButikkenOrder_detail' item.source_order.pk %}" class="text-decoration-none">
+                                    #{{ item.source_order.pk }}{% if item.source_order.name %} – {{ item.source_order.name }}{% endif %}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">–</span>
+                                {% endif %}
+                            </td>
+                            <td class="small text-muted">{{ item.created|date:"d.m.Y H:i" }}</td>
+                            <td class="text-end pe-3">
+                                <div class="d-flex flex-wrap justify-content-end gap-2">
+                                    <form method="post" action="{% url 'Butikken_ButikkenItem_review' item.pk %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="decision" value="catalog">
+                                        <button type="submit" class="btn btn-sm btn-success" title="Føj varen til det fælles sortiment">
+                                            <i class="bi bi-shop"></i> Godkend som butiksvare
+                                        </button>
+                                    </form>
+                                    <form method="post" action="{% url 'Butikken_ButikkenItem_review' item.pk %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="decision" value="special">
+                                        <button type="submit" class="btn btn-sm btn-info text-dark" title="Behold kun varen på denne bestilling">
+                                            <i class="bi bi-star"></i> Godkend som specialbestilling
+                                        </button>
+                                    </form>
+                                    <form method="post" action="{% url 'Butikken_ButikkenItem_review' item.pk %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="decision" value="reject">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Afvis og fjern varen fra bestillingen">
+                                            <i class="bi bi-x-circle"></i> Afvis
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-success mb-0">
+                <i class="bi bi-check-circle me-2"></i>Der er ingen vareforslag, der mangler godkendelse.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card card-custom">
+        <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-people me-2"></i>Teams</h5>
+                {% if meal_plans %}
+                <span class="small text-muted">
+                    Måltidsdage: {{ meal_plans|length }}
+                </span>
+                {% endif %}
+            </div>
+
+            {% if rows %}
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead class="bg-light text-muted">
+                        <tr>
+                            <th class="ps-3">Team</th>
+                            <th>Måltidsbestillinger</th>
+                            <th>Varebestillinger</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                        <tr>
+                            <td class="ps-3">
+                                <div class="fw-bold text-dark">{{ row.team.name }}</div>
+                                {% if row.team.short_name %}
+                                <div class="small text-muted">{{ row.team.short_name }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if meal_plans %}
+                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                    {% for day in row.meal_days %}
+                                    <span class="badge {% if day.booking.status == 'Approved' %}bg-success{% elif day.booking.status == 'Pending' %}bg-warning text-dark{% elif day.booking.status == 'Rejected' %}bg-danger{% else %}bg-light text-muted border{% endif %}"
+                                          title="{{ day.plan.meal_date|date:'l d.m.' }} – {{ day.plan.name }}{% if day.booking %} – {{ day.booking.get_status_display }}{% else %} – ingen booking{% endif %}">
+                                        {{ day.plan.meal_date|date:"D" }}
+                                        {% if day.booking.status == 'Approved' %}
+                                        <i class="bi bi-check-lg"></i>
+                                        {% elif day.booking.status == 'Pending' %}
+                                        <i class="bi bi-hourglass-split"></i>
+                                        {% elif day.booking.status == 'Rejected' %}
+                                        <i class="bi bi-x-lg"></i>
+                                        {% else %}
+                                        <i class="bi bi-dash"></i>
+                                        {% endif %}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                                {% if row.meals_complete %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                    <i class="bi bi-check-circle"></i> Alle dage booket
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">
+                                    <i class="bi bi-exclamation-circle"></i> Mangler {{ row.missing_days }} dag{{ row.missing_days|pluralize:"e" }}
+                                </span>
+                                {% endif %}
+                                {% else %}
+                                <span class="text-muted small fst-italic">Ingen relevante måltidsdage</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.order_count %}
+                                <div class="fw-bold text-dark">{{ row.order_count }} bestilling{{ row.order_count|pluralize:"er" }}</div>
+                                {% with order=row.latest_order %}
+                                <div class="small">
+                                    <a href="{% url 'Butikken_ButikkenOrder_detail' order.pk %}" class="text-decoration-none">
+                                        #{{ order.pk }}{% if order.name %} – {{ order.name }}{% endif %}
+                                    </a>
+                                </div>
+                                <span class="badge {% if order.status == 'Godkendt' %}bg-success{% elif order.status == 'Afvist' %}bg-danger{% elif order.status == 'Pakket' %}bg-info text-dark{% elif order.status == 'Udleveret' %}bg-secondary{% else %}bg-warning text-dark{% endif %}">
+                                    {{ order.status }}
+                                </span>
+                                {% endwith %}
+                                {% else %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle">
+                                    <i class="bi bi-x-circle"></i> Ingen bestilling
+                                </span>
+                                <a href="{% url 'Butikken_ButikkenOrder_create' %}" class="btn btn-sm btn-outline-primary ms-2">
+                                    Opret
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info mb-0">
+                <i class="bi bi-info-circle me-2"></i>Der er ingen teams at vise.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

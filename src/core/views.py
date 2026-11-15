@@ -188,14 +188,11 @@ def index(request):
             'url': f"/butikken/Butikken/ButikkenOrder/detail/{order.pk}/",
         })
     
-    # VolunteerAppointments
+    # VolunteerAppointments (own, shared with the team, or for the team)
     from organization.models import VolunteerAppointment
-    appointments = VolunteerAppointment.objects.filter(
-        requester=user
-    ) | VolunteerAppointment.objects.filter(
-        receiver=user
-    )
-    appointments = appointments.select_related('requester', 'receiver').exclude(
+    appointments = VolunteerAppointment.objects.visible_to(user).select_related(
+        'requester', 'receiver', 'receiver_team'
+    ).exclude(
         start_date__lt=now.date()
     )
     for appointment in appointments:
@@ -207,7 +204,10 @@ def index(request):
             'status_color': get_status_color(appointment.status),
             'start': datetime.combine(appointment.start_date, appointment.start_time),
             'end': datetime.combine(appointment.end_date, appointment.end_time),
-            'title': f"{appointment.requester.get_full_name()} → {appointment.receiver.get_full_name()}",
+            'title': (
+                f"{appointment.requester.get_full_name()} "
+                f"→ {appointment.receiver_display}"
+            ),
             'url': f"/organization/appointment/{appointment.pk}/",
         })
     

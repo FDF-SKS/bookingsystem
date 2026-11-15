@@ -8,12 +8,19 @@ class ButikkenItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.ButikkenItem
         fields = [
+            "id",
             "description",
             "last_updated",
             "name",
             "created",
             "type",
+            "content_normal",
+            "content_unit",
+            "status",
+            "proposed_by",
+            "source_order",
         ]
+        read_only_fields = ["status", "proposed_by", "source_order", "created", "last_updated"]
 
 class ButikkenBookingSerializer(serializers.ModelSerializer):
     class Meta:
@@ -120,6 +127,7 @@ class TeamMealPlanSerializer(serializers.ModelSerializer):
 
 class ButikkenOrderSerializer(serializers.ModelSerializer):
     bookings = ButikkenBookingSerializer(many=True, read_only=True)
+    proposed_items = ButikkenItemSerializer(many=True, read_only=True)
 
     class Meta:
         model = models.ButikkenOrder
@@ -132,6 +140,7 @@ class ButikkenOrderSerializer(serializers.ModelSerializer):
             "remarks",
             "order_date",
             "bookings",
+            "proposed_items",
         ]
 
 

@@ -1,125 +1,44 @@
-{% extends "base.html" %}
-{% load static %}
-{% load django_bootstrap5 %}
-{% load bootstrap_icons %}
-{% load l10n %}
+{% extends "components/booking_form.html" %}
 
-{# Keeping styles and links outside the block as per your working setup #}
-{% block content %}
-{{ form.media }}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+{% block booking_form_page_title %}Aktivitetsteam booking{% endblock %}
+{% block booking_form_title %}{% if form.instance.pk %}Rediger{% else %}Ny{% endif %} aktivitetsteam booking{% endblock %}
+{% block booking_form_breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_list' %}">AktivitetsTeam bookinger</a></li>{% endblock %}
+{% block booking_form_breadcrumb_active %}{% if form.instance.pk %}Rediger{% else %}Ny{% endif %} booking{% endblock %}
 
-{# Timeline + map styles moved to custom.css; keep micro styles in-template only if necessary #}
+{% block booking_form_deadline %}
+{% if user.is_authenticated and user.events.first %}
+<p class="text-muted">
+    <i class="bi bi-info-circle"></i> Deadline for Aktivitetsteam bestillinger:
+    <span class="badge bg-warning text-dark">{{ user.events.first.deadline_aktivitetsteam }}</span>
+</p>
+{% endif %}
+{% endblock %}
 
-<div class="container py-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_list' %}">AktivitetsTeam bookinger</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Booking</li>
-        </ol>
-    </nav>
-
-    <div class="mb-4 mt-2">
-        <h1 class="display-5">Aktivitetsteam booking</h1>
-        {% if user.is_authenticated and user.events.first %}
-            <p class="text-muted">
-                <i class="bi bi-info-circle"></i> Deadline for Aktivitetsteam bestillinger: 
-                <span class="badge bg-warning text-dark">{{ user.events.first.deadline_aktivitetsteam }}</span>
-            </p>
-        {% endif %}
+{% block booking_form_main_extra %}
+<div class="card card-custom mb-4">
+    <div class="card-body p-4">
+        <h5 class="card-title border-bottom pb-2 mb-3">Bookinger for valgte aktivitet</h5>
+        <div id="timeline-scroll-container" class="timeline-wrapper position-relative overflow-x-auto border rounded bg-white"
+             style="--hour-width: 40px; height: 120px; margin-bottom: 0;">
+            <div id="label-layer" class="timeline-label-layer" style="width: 5000px;"></div>
+            <div id="ghost-bar" class="booking-box bg-primary shadow" style="display:none; opacity: 0.9; z-index: 10; top: 40px; height: 40px;">
+                <span class="ps-1"><i class="bi bi-plus-circle"></i> Din booking</span>
+            </div>
+            <div id="existing-bookings-layer"></div>
+            <div style="background-image: linear-gradient(to right, var(--bs-border-color) 1px, transparent 1px); background-size: 40px 100%; height: 100%; width: 5000px; position: absolute; top: 0; left: 0;"></div>
+        </div>
     </div>
-
-    <form id="form" role="form" method="post" class="needs-validation">
-        {% csrf_token %}
-        
-        {% bootstrap_form_errors form type='non_fields' %}
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                {% bootstrap_field form.item %}
-            </div>
-            <div class="col-md-6 mb-3">
-                {% bootstrap_field form.team %}
-            </div>
-            
-            <div class="col-md-6 mb-3">
-                {% bootstrap_field form.team_contact %}
-            </div>
-
-            <div class="col-12 mb-3">
-                {% bootstrap_field form.remarks %}
-            </div>
-
-            <hr class="my-4">
-                <div class="col-12 mb-4">
-                    <div class="card bg-light border-dashed">
-                        <div class="card-body">
-                            <h6 class="card-title d-flex justify-content-between">
-                                <small class="text-muted">Viser bookinger for valgte aktivitet</small>
-                            </h6>
-                            <div id="timeline-scroll-container" class="timeline-wrapper position-relative overflow-x-auto border rounded bg-white" 
-                                style="--hour-width: 40px; height: 120px;">
-                                
-                                <div id="label-layer" class="timeline-label-layer" style="width: 5000px;"></div>
-
-                                <div id="ghost-bar" class="booking-box bg-primary shadow" style="display:none; opacity: 0.9; z-index: 10; top: 40px; height: 40px;">
-                                    <span class="ps-1"><i class="bi bi-plus-circle"></i> Din booking</span>
-                                </div>
-
-                                <div id="existing-bookings-layer"></div>
-
-                                <div style="background-image: linear-gradient(to right, var(--bs-border-color) 1px, transparent 1px); background-size: 40px 100%; height: 100%; width: 5000px; position: absolute; top: 0; left: 0;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-
-            <div class="col-md-6 mb-3">
-                {% bootstrap_field form.start_date %}
-            </div>
-            <div class="col-md-6 mb-3">
-                {% bootstrap_field form.start_time %}
-            </div>
-
-            <div class="col-md-6 mb-3">
-                {% bootstrap_field form.end_date %}
-            </div>
-            <div class="col-md-6 mb-3">
-                {% bootstrap_field form.end_time %}
-            </div>
-            
-
-            <h5 class="fw-bold border-bottom pb-2 mb-3 mt-4">
-                <i class="bi bi-geo-alt me-2"></i>Lokation
-            </h5>
-            <div class="row">
-                <div class="col-12 mb-4">
-                    <label class="form-label fw-bold small text-uppercase">Vælg placering på kortet</label>
-                    <div class="map-container">
-                        {# This field will now correctly turn into a map thanks to form.media #}
-                        {% bootstrap_field form.location show_label=False %}
-                    </div>
-                    <small class="text-muted">Klik på kortet eller træk i markøren for at angive placeringen.</small>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-5">
-            <button type="submit" class="btn btn-primary btn-lg px-5">
-                <i class="bi bi-save"></i> Gem booking
-            </button>
-            <a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_list' %}" class="btn btn-outline-secondary btn-lg">Annuller</a>
-        </div>
-
-        {{ object_dict|json_script:"object_json" }}
-        {{ existing_bookings|json_script:"existing-bookings" }}
-    </form>
 </div>
+{{ existing_bookings|json_script:"existing-bookings" }}
+{% endblock %}
 
+{% block booking_form_cancel %}
+<a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_list' %}" class="btn btn-outline-secondary">Annuller</a>
+{% endblock %}
+
+{% block booking_form_scripts %}
+{{ block.super }}
 <script nonce="{{ csp_nonce }}">
-    // 1. TIMELINE LOGIC
     document.addEventListener('DOMContentLoaded', function() {
         const timelineStart = new Date("{{ timeline_start_iso }}");
         const existingBookingsEl = document.getElementById('existing-bookings');
@@ -130,7 +49,9 @@
         const ghostBar = document.getElementById('ghost-bar');
         const existingLayer = document.getElementById('existing-bookings-layer');
         const labelLayer = document.getElementById('label-layer');
-        
+
+        if (!itemSelect || !ghostBar || !existingLayer || !labelLayer) return;
+
         const inputs = {
             sd: document.querySelector('[name="start_date"]'),
             st: document.querySelector('[name="start_time"]'),
@@ -138,34 +59,24 @@
             et: document.querySelector('[name="end_time"]')
         };
 
-        // Create time labels (0-72 hours)
-        const labelContainer = document.getElementById('label-layer');
-        labelContainer.innerHTML = ''; // Clear existing
-
-        // Generate labels for 7 days (168 hours)
-        for (let i = 0; i < 168; i += 2) { 
+        labelLayer.innerHTML = '';
+        for (let i = 0; i < 168; i += 2) {
             const labelDate = new Date(timelineStart.getTime() + (i * 3600000));
-            
             const lbl = document.createElement('div');
             lbl.className = 'time-label';
             lbl.style.left = (i * hourWidth) + 'px';
-            
-            // Format: "Mon 06:00" or "27. Jan 06:00"
             const dateStr = labelDate.toLocaleDateString('da-DK', { day: 'numeric', month: 'short' });
             const timeStr = labelDate.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' });
-            
-            // Show date only at midnight, otherwise show time
             if (labelDate.getHours() === 0) {
                 lbl.innerHTML = `<strong>${dateStr}</strong>`;
                 lbl.style.color = '#000';
             } else {
                 lbl.innerText = timeStr;
             }
-            
-            labelContainer.appendChild(lbl);
+            labelLayer.appendChild(lbl);
         }
 
-        let currentItemBookings = []; // To store filtered bookings for collision check
+        let currentItemBookings = [];
 
         function renderExisting() {
             existingLayer.innerHTML = '';
@@ -182,21 +93,16 @@
 
                 const div = document.createElement('div');
                 const isApproved = b.status === 'approved';
-                const statusClass = isApproved ? 'status-approved-preview' : 'status-pending-preview';
-                const statusText = isApproved ? 'Godkendt' : 'Afventer';
-                
-                div.className = `booking-box ${statusClass}`;
-                // Set height to 44px and top to 40px to align with the labels
+                div.className = `booking-box ${isApproved ? 'status-approved-preview' : 'status-pending-preview'}`;
                 div.style.cssText = `left: ${offset * hourWidth}px; width: ${width * hourWidth}px; top: 40px; height: 44px; position: absolute;`;
-                
-                // NEW STRUCTURE: Uses the 'booking-content' wrapper for vertical centering
+
                 const content = document.createElement('div');
                 content.className = 'booking-content';
                 content.style.pointerEvents = 'none';
 
                 const label = document.createElement('div');
                 label.className = 'booking-label';
-                label.textContent = statusText;
+                label.textContent = isApproved ? 'Godkendt' : 'Afventer';
                 content.appendChild(label);
 
                 const teamLine = document.createElement('div');
@@ -205,12 +111,11 @@
                 content.appendChild(teamLine);
 
                 div.appendChild(content);
-
                 div.title = `${b.team}: ${isApproved ? 'Godkendt' : 'Afventer'}`;
                 existingLayer.appendChild(div);
             });
-            
-            updateGhostBar(); 
+
+            updateGhostBar();
         }
 
         function updateGhostBar() {
@@ -229,15 +134,11 @@
                     ghostBar.style.left = (offset * hourWidth) + 'px';
                     ghostBar.style.width = (width * hourWidth) + 'px';
 
-                    // COLLISION DETECTION
                     let hasConflict = false;
                     currentItemBookings.forEach(b => {
                         const bStart = new Date(b.start);
                         const bEnd = new Date(b.end);
-                        // Standard overlap formula: (StartA < EndB) and (EndA > StartB)
-                        if (start < bEnd && end > bStart) {
-                            hasConflict = true;
-                        }
+                        if (start < bEnd && end > bStart) hasConflict = true;
                     });
 
                     ghostBar.style.height = '44px';
@@ -245,49 +146,20 @@
 
                     if (hasConflict) {
                         ghostBar.classList.add('conflict');
-                        ghostBar.innerHTML = `
-                            <div class="booking-content">
-                                <span><i class="bi bi-exclamation-triangle"></i> KONFLIKT</span>
-                            </div>`;
+                        ghostBar.innerHTML = `<div class="booking-content"><span><i class="bi bi-exclamation-triangle"></i> KONFLIKT</span></div>`;
                     } else {
                         ghostBar.classList.remove('conflict');
-                        ghostBar.innerHTML = `
-                            <div class="booking-content">
-                                <span><i class="bi bi-plus-circle"></i> Din booking</span>
-                            </div>`;
+                        ghostBar.innerHTML = `<div class="booking-content"><span><i class="bi bi-plus-circle"></i> Din booking</span></div>`;
                     }
                 }
             }
         }
 
         itemSelect.addEventListener('change', renderExisting);
-        Object.values(inputs).forEach(i => i.addEventListener('change', updateGhostBar));
-        
+        Object.values(inputs).forEach(i => i && i.addEventListener('change', updateGhostBar));
+
         renderExisting();
         updateGhostBar();
     });
-
-    window.addEventListener('load', function() {
-        // Slightly longer delay to ensure LocationField scripts have finished building the map
-        setTimeout(function() {
-            window.dispatchEvent(new Event('resize'));
-            
-            // Handle the specific map instance if it exists
-            if (window.map_location) {
-                window.map_location.invalidateSize();
-            }
-            
-            // Generic Leaflet fix for all containers found
-            if (typeof L !== 'undefined') {
-                var maps = document.querySelectorAll('.leaflet-container');
-                maps.forEach(function(m) {
-                    if (m._leaflet_map) {
-                        m._leaflet_map.invalidateSize();
-                    }
-                });
-            }
-        }, 500);
-    });
 </script>
 {% endblock %}
-

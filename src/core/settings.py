@@ -445,20 +445,14 @@ UNFOLD = {
                         "icon": "event",
                         "link": reverse_lazy("admin:organization_event_changelist"),
                     },
-                    {
-                        "title": _("Tjanseoversigt"),
-                        "icon": "calendar_view_week",
-                        "link": reverse_lazy("admin:organization_tjanseownership_overview"),
-                        "active": lambda request: request.resolver_match is not None
-                        and request.resolver_match.url_name == "organization_tjanseownership_overview",
-                    },
-                    {
-                        "title": _("Tjanse-status"),
-                        "icon": "fact_check",
-                        "link": reverse_lazy("admin:organization_tjanseownership_status_overview"),
-                        "active": lambda request: request.resolver_match is not None
-                        and request.resolver_match.url_name == "organization_tjanseownership_status_overview",
-                    },
+                ],
+            },
+            {
+                "title": _("Tjanser"),
+                "separator": True,
+                "collapsible": True,
+                "default_open": True,
+                "items": [
                     {
                         "title": _("Tjanser"),
                         "icon": "task_alt",
@@ -469,7 +463,8 @@ UNFOLD = {
                         "icon": "assignment",
                         "link": reverse_lazy("admin:organization_tjanseownership_changelist"),
                         "active": lambda request: request.resolver_match is not None
-                        and request.resolver_match.url_name in {
+                        and request.resolver_match.url_name
+                        in {
                             "organization_tjanseownership_changelist",
                             "organization_tjanseownership_add",
                             "organization_tjanseownership_change",
@@ -480,6 +475,66 @@ UNFOLD = {
                         "title": _("Tjanse-bytter"),
                         "icon": "swap_horiz",
                         "link": reverse_lazy("admin:organization_tjanseswaprequest_changelist"),
+                    },
+                    {
+                        "title": _("Tjanseoversigt"),
+                        "icon": "calendar_view_week",
+                        "link": reverse_lazy("admin:organization_tjanseownership_overview"),
+                        "active": lambda request: request.resolver_match is not None
+                        and request.resolver_match.url_name
+                        == "organization_tjanseownership_overview",
+                    },
+                    {
+                        "title": _("Tjanse-status"),
+                        "icon": "fact_check",
+                        "link": reverse_lazy("admin:organization_tjanseownership_status_overview"),
+                        "active": lambda request: request.resolver_match is not None
+                        and request.resolver_match.url_name
+                        == "organization_tjanseownership_status_overview",
+                    },
+                ],
+            },
+            {
+                "title": _("Slutrengøring"),
+                "separator": True,
+                "collapsible": True,
+                "default_open": True,
+                "items": [
+                    {
+                        "title": _("Statusoversigt"),
+                        "icon": "space_dashboard",
+                        "link": reverse_lazy(
+                            "admin:organization_slutrengoringassignment_board"
+                        ),
+                        "active": lambda request: request.resolver_match is not None
+                        and request.resolver_match.url_name
+                        == "organization_slutrengoringassignment_board",
+                    },
+                    {
+                        "title": _("Tildelinger"),
+                        "icon": "assignment",
+                        "link": reverse_lazy(
+                            "admin:organization_slutrengoringassignment_changelist"
+                        ),
+                        "active": lambda request: request.resolver_match is not None
+                        and request.resolver_match.url_name
+                        in {
+                            "organization_slutrengoringassignment_changelist",
+                            "organization_slutrengoringassignment_add",
+                            "organization_slutrengoringassignment_change",
+                            "organization_slutrengoringassignment_history",
+                            "organization_slutrengoringassignment_delete",
+                        },
+                    },
+                    {
+                        "title": _("Opret / tildel"),
+                        "icon": "add_task",
+                        "link": reverse_lazy(
+                            "admin:organization_slutrengoringassignment_tools"
+                        ),
+                        "active": lambda request: request.resolver_match is not None
+                        and request.resolver_match.url_name
+                        == "organization_slutrengoringassignment_tools",
                     },
                 ],
             },

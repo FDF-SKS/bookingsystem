@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#
+# Det eneste entry point CI kan udløse over SSH.
+#
+# Kaldes som root via sudo fra deploy-brugerens forced command:
+#   sudo -n /usr/local/sbin/booking-deploy-ssh
+#
+# Starter systemd-unit'en og viser dens log, så deploy-output kan læses i
+# GitHub Actions. Der tages ingen argumenter – argumenter ignoreres bevidst.
+set -uo pipefail
+
+SYSTEMCTL="${SYSTEMCTL:-/usr/bin/systemctl}"
+JOURNALCTL="${JOURNALCTL:-/usr/bin/journalctl}"
+
+"$SYSTEMCTL" start --wait booking-deploy.service
+status=$?
+
+# Vis altid loggen, også ved fejl, så CI-runnet er selvforklarende.
+"$JOURNALCTL" -u booking-deploy.service --no-pager -o cat -n 200 || true
+
+exit "$status"

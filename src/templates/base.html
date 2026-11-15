@@ -87,17 +87,19 @@
 
                         {% if config.APP_ENABLE_BUTIKKEN %}
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Butikken
+                            <a class="nav-link d-inline-block" href="{% url 'Butikken_dashboard' %}">Butikken</a>
+                            <a class="nav-link d-inline-block dropdown-toggle dropdown-toggle-split ps-0" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="visually-hidden">Vis Butikken-undermenu</span>
                             </a>
                             <ul class="dropdown-menu shadow">
+                                <li><a class="dropdown-item" href="{% url 'Butikken_dashboard' %}">Overblik</a></li>
                                 <li><a class="dropdown-item" href="{% url 'Butikken_ButikkenItem_list' %}">Varekatalog</a></li>
                                 <li><a class="dropdown-item" href="{% url 'Butikken_ButikkenOrder_list' %}">Varebestillinger</a></li>
-                                <li><a class="dropdown-item" href="{% url 'Butikken_TeamMealPlan_list' %}">Måltidsbestillinger</a><li>                                
-                                
+                                <li><a class="dropdown-item" href="{% url 'Butikken_TeamMealPlan_list' %}">Måltidsbestillinger</a></li>
+
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'Butikken_ButikkenOrder_create' %}"> Ny varebestilling </a></li>
-                                
+
 
                             </ul>
                         </li>

@@ -1,142 +1,20 @@
-{% extends "base.html" %}
-{% load static %}
-{% load django_bootstrap5 %}
-{% load l10n %}
+{% extends "components/booking_form.html" %}
 
-{# Standard Leaflet CSS for the map #}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+{% block booking_form_page_title %}Foto booking{% endblock %}
+{% block booking_form_title %}{% if form.instance.pk %}Rediger{% else %}Ny{% endif %} Foto booking{% endblock %}
+{% block booking_form_breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'Foto_FotoBooking_list' %}">Foto bookinger</a></li>{% endblock %}
+{% block booking_form_breadcrumb_active %}{% if form.instance.pk %}Rediger{% else %}Ny{% endif %} booking{% endblock %}
 
-<style>
-    /* Consistency with your other forms */
-    .map-container { 
-        border-radius: 1rem; 
-        overflow: hidden; 
-        border: 1px solid #dee2e6;
-        margin-bottom: 1.5rem;
-        height: 400px !important; 
-    }
-
-    .location-map, .leaflet-container { 
-        height: 400px !important; 
-        width: 100% !important; 
-        display: block !important;
-    }
-
-    .breadcrumb-item + .breadcrumb-item::before { content: "›"; font-size: 1.2rem; vertical-align: middle; }
-</style>
-
-{% block content %}
-{# Necessary for the LocationField map to load #}
-{{ form.media }}
-
-<div class="container py-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb bg-light p-3 rounded-pill shadow-sm px-4">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none text-muted">Hjem</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'Foto_FotoBooking_list' %}" class="text-decoration-none text-muted">Foto bookinger</a></li>
-            <li class="breadcrumb-item active fw-bold text-secondary" aria-current="page">
-                {% if object %}Rediger{% else %}Ny{% endif %} booking
-            </li>
-        </ol>
-    </nav>
-
-    <div class="mb-4 mt-2">
-        <h1 class="display-5 fw-bold">{% if object %}Rediger{% else %}Ny{% endif %} Foto booking</h1>
-        {% if user.is_authenticated and user.events.first %}
-        <div class="alert alert-light border shadow-sm rounded-4" role="alert">
-            <i class="bi bi-clock-history me-2 text-danger"></i>
-            Deadline for Foto bestillinger: 
-            <span class="badge bg-danger rounded-pill">{{ user.events.first.deadline_foto }}</span>
-        </div>
-        {% endif %}
-    </div>
-
-    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
-        <div class="card-body p-4 p-md-5">
-            <form id="form" role="form" method="post" enctype="multipart/form-data" class="needs-validation">
-                {% csrf_token %}
-                {% bootstrap_form_errors form type='non_fields' %}
-
-                <h5 class="fw-bold border-bottom pb-2 mb-3 mt-3">
-                    <i class="bi bi-camera me-2"></i>Udstyr & Team
-                </h5>
-                <div class="row">
-                    <div class="col-md-8 mb-3">{% bootstrap_field form.item %}</div>
-                    <div class="col-md-6 mb-3">{% bootstrap_field form.team %}</div>
-                    <div class="col-md-6 mb-3">{% bootstrap_field form.team_contact %}</div>
-                </div>
-
-                <h5 class="fw-bold border-bottom pb-2 mb-3 mt-4">
-                    <i class="bi bi-calendar-range me-2"></i>Tidsperiode
-                </h5>
-                <div class="row">
-                    <div class="col-md-3 mb-3">{% bootstrap_field form.start_date %}</div>
-                    <div class="col-md-3 mb-3">{% bootstrap_field form.start_time %}</div>
-                    <div class="col-md-3 mb-3">{% bootstrap_field form.end_date %}</div>
-                    <div class="col-md-3 mb-3">{% bootstrap_field form.end_time %}</div>
-                </div>
-
-                {% if form.location %}
-                <h5 class="fw-bold border-bottom pb-2 mb-3 mt-4">
-                    <i class="bi bi-geo-alt me-2"></i>Lokation
-                </h5>
-                <div class="row">
-                    <div class="col-12 mb-4">
-                        <label class="form-label fw-bold small text-uppercase">Vælg placering på kortet</label>
-                        <div class="map-container">
-                            {% bootstrap_field form.location show_label=False %}
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-
-                <h5 class="fw-bold border-bottom pb-2 mb-3 mt-4">
-                    <i class="bi bi-chat-dots me-2"></i>Yderligere Information
-                </h5>
-                <div class="row">
-                    <div class="col-12 mb-4">
-                        {% bootstrap_field form.remarks %}
-                    </div>
-                </div>
-
-                <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-3">
-                    <button type="submit" class="btn btn-primary btn-lg px-5 rounded-pill shadow-sm">
-                        <i class="bi bi-send me-2"></i>Indsend booking
-                    </button>
-                    <a href="{% url 'Foto_FotoBooking_list' %}" class="btn btn-outline-secondary btn-lg rounded-pill">Annuller</a>
-                </div>
-            </form>
-        </div>
-    </div>
+{% block booking_form_deadline %}
+{% if user.is_authenticated and user.events.first %}
+<div class="alert alert-light border shadow-sm rounded-4" role="alert">
+    <i class="bi bi-clock-history me-2 text-danger"></i>
+    Deadline for Foto bestillinger:
+    <span class="badge bg-danger rounded-pill">{{ user.events.first.deadline_foto }}</span>
 </div>
-
-<script nonce="{{ csp_nonce }}">
-    window.addEventListener('load', function() {
-        setTimeout(function() {
-            window.dispatchEvent(new Event('resize'));
-            
-            var map;
-            if (window.map_location) {
-                map = window.map_location;
-            } else if (typeof L !== 'undefined') {
-                L.Map.eachExistingInstance(function(instance) { map = instance; });
-            }
-
-            if (map) {
-                map.invalidateSize();
-                // Click-to-move functionality
-                map.on('click', function(e) {
-                    var input = document.getElementById('id_location');
-                    if (input) {
-                        input.value = e.latlng.lat.toFixed(6) + "," + e.latlng.lng.toFixed(6);
-                        input.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                    var marker = window.marker_location;
-                    if (marker) { marker.setLatLng(e.latlng); }
-                });
-            }
-        }, 500);
-    });
-</script>
+{% endif %}
 {% endblock %}
 
+{% block booking_form_cancel %}
+<a href="{% url 'Foto_FotoBooking_list' %}" class="btn btn-outline-secondary">Annuller</a>
+{% endblock %}

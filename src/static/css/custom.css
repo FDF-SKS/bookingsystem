@@ -415,6 +415,17 @@ a:hover {
     overflow: hidden;
     border: 1px solid var(--bs-card-border);
     margin-bottom: 1.5rem;
+    height: 400px;
+    min-height: 400px;
+}
+
+.map-container .location-map,
+.map-container .map_location-map,
+.map-container .leaflet-container {
+    height: 400px !important;
+    min-height: 400px !important;
+    width: 100% !important;
+    display: block !important;
 }
 
 /* Date header in timeline (use brand orange) */
@@ -577,6 +588,82 @@ a:hover {
 /* Clickable table rows */
 .clickable-row { cursor: pointer; transition: background-color 0.15s ease-in-out; }
 .clickable-row:hover { background-color: rgba(var(--bs-primary-rgb), 0.04) !important; }
+
+/* Reusable catalog card gallery (Teknik/AktivitetsTeam) */
+.object-fit-cover { object-fit: cover; }
+.item-hover-effect {
+    transition: all 0.3s ease-in-out;
+    border: 1px solid rgba(0, 0, 0, 0.05) !important;
+    background: var(--bs-card-bg);
+}
+.item-hover-effect:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.12) !important;
+}
+[data-bs-theme="dark"] .item-hover-effect {
+    background-color: var(--bs-surface-5) !important;
+    border-color: var(--bs-card-border) !important;
+}
+
+.item-gallery .btn-outline-secondary:hover {
+    background-color: var(--bs-secondary);
+    color: #fff;
+}
+.item-gallery .badge {
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+/* Image preview used by booking forms */
+.form-image-preview {
+    max-height: 200px;
+    width: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--bs-card-border);
+}
+
+/* Sidebar image preview on booking detail pages */
+.sidebar-img-preview {
+    object-fit: cover;
+    height: 200px;
+    width: 100%;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.sidebar-img-preview:hover { opacity: 0.9; }
+
+/* Shared item detail card */
+.item-detail-card { border-radius: 15px; }
+.item-image-container {
+    border-bottom: 1px solid var(--bs-card-border);
+    background-color: var(--bs-surface-1);
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+}
+
+/* Tom Select inside Bootstrap input groups (shared booking forms) */
+.input-group > .ts-wrapper { flex: 1 1 auto; width: 1%; }
+.input-group > .ts-wrapper .ts-control {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    padding: 0.5rem 0.75rem !important;
+    min-height: calc(1.5em + 1rem + 2px);
+    z-index: 1;
+}
+#clear-item-btn {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    z-index: 4;
+}
+.ts-wrapper.form-control { padding: 0 !important; border: none !important; }
+.ts-control { border: 1px solid var(--bs-border-color) !important; }
+.ts-wrapper.focus .ts-control {
+    border-color: #86b7fe !important;
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25) !important;
+}
+.ts-dropdown { z-index: 1050 !important; }
 
 /* Large form controls */
 .form-control-lg { padding: 0.75rem 1.5rem; font-size: 1rem; border-radius: 10px; }

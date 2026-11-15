@@ -209,33 +209,41 @@ class AppointmentForm(forms.ModelForm):
         widget=TextInput(attrs={"type": "time", "class": "form-control"}),
         label="Slut tidspunkt"
     )
-    
+    # One dropdown for both choices: a single person or a whole team. The value
+    # is ``person:<pk>`` or ``team:<pk>``; groups keep the list readable.
+    recipient = forms.ChoiceField(
+        label="Modtager",
+        required=True,
+        help_text="Vælg en person eller et helt team - ikke begge.",
+    )
+
     class Meta:
         model = models.VolunteerAppointment
         fields = [
-            'receiver', 
-            'start_date', 'start_time', 
-            'end_date', 'end_time', 
+            'shared_with_team',
+            'start_date', 'start_time',
+            'end_date', 'end_time',
             'description'
         ]
-        
+        labels = {
+            'shared_with_team': 'Del aftalen med dit team',
+            'description': 'Aftalens indhold',
+        }
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        # 1. Setup Querysets
-        # We order by first_name to make the dropdown readable
-        self.fields["receiver"].queryset = models.Volunteer.objects.all().order_by("first_name")
-        
-        # Customize the receiver field display to show team short_name
-        self.fields["receiver"].label_from_instance = self._label_from_instance
+        self.user = user
 
-        # 2. Intelligent Initial Values (Don't override if instance exists)
+        self.fields["recipient"].choices = self._recipient_choices(user)
+
         instance = kwargs.get('instance')
-        
+
         if instance and instance.pk:
-            # When updating, values come from the database
-            pass 
+            # Show who the appointment currently points at.
+            if instance.receiver_id:
+                self.fields["recipient"].initial = f"person:{instance.receiver_id}"
+            elif instance.receiver_team_id:
+                self.fields["recipient"].initial = f"team:{instance.receiver_team_id}"
         else:
             # For NEW appointments, find the active or next event
             active_event = models.Event.objects.filter(is_active=True).first()
@@ -243,19 +251,72 @@ class AppointmentForm(forms.ModelForm):
                 active_event = models.Event.objects.filter(
                     start_date__gt=timezone.now()
                 ).order_by('start_date').first()
-            
+
             if active_event:
                 self.fields["start_date"].initial = active_event.start_date
                 self.fields["end_date"].initial = active_event.start_date # Default to same day
                 self.fields["start_time"].initial = time(12, 0)
                 self.fields["end_time"].initial = time(13, 0)
-    
-    def _label_from_instance(self, obj):
-        """Customize how each volunteer is displayed in the dropdown."""
-        team = obj.teams.first()
-        if team:
-            return f"{obj.get_full_name()} ({team.short_name})"
-        return obj.get_full_name()
+
+    def _recipient_choices(self, user):
+        """Return grouped choices: a person or a whole team."""
+        receivers = models.Volunteer.objects.prefetch_related('teams').order_by(
+            "first_name", "last_name"
+        )
+        if user and user.is_authenticated:
+            receivers = receivers.exclude(pk=user.pk)
+
+        person_choices = []
+        for person in receivers:
+            team = next(iter(person.teams.all()), None)
+            label = person.get_full_name() or person.username
+            if team:
+                label = f"{label} ({team.short_name})"
+            person_choices.append((f"person:{person.pk}", label))
+
+        # The requester's own teams are left out: a legeaftale is meant to
+        # reach another group.
+        teams = models.Team.objects.order_by("name")
+        if user and user.is_authenticated and not user.is_staff:
+            teams = teams.exclude(pk__in=user.teams.values('pk'))
+        team_choices = [(f"team:{team.pk}", f"{team.name} (team)") for team in teams]
+
+        return [
+            ("", "Vælg person eller team"),
+            ("Personer", person_choices),
+            ("Teams", team_choices),
+        ]
+
+    def clean(self):
+        cleaned_data = super().clean()
+        value = cleaned_data.get('recipient')
+        if not value:
+            return cleaned_data
+
+        kind, _, raw_pk = value.partition(':')
+        try:
+            pk = int(raw_pk)
+        except (TypeError, ValueError):
+            raise forms.ValidationError("Vælg en gyldig modtager.") from None
+
+        if kind == 'person':
+            receiver = models.Volunteer.objects.filter(pk=pk).first()
+            if receiver is None:
+                raise forms.ValidationError("Den valgte person findes ikke længere.")
+            if self.user and receiver.pk == self.user.pk:
+                self.add_error('recipient', "Du kan ikke lave en aftale med dig selv.")
+            self.instance.receiver = receiver
+            self.instance.receiver_team = None
+        elif kind == 'team':
+            team = models.Team.objects.filter(pk=pk).first()
+            if team is None:
+                raise forms.ValidationError("Det valgte team findes ikke længere.")
+            self.instance.receiver_team = team
+            self.instance.receiver = None
+        else:
+            raise forms.ValidationError("Vælg en gyldig modtager.")
+
+        return cleaned_data
 
     def save(self, commit=True):
         instance = super().save(commit=False)

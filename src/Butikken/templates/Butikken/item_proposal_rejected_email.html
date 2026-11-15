@@ -1,0 +1,34 @@
+{% extends "emailing/base_email.html" %}
+{% block title %}Vareforslag afvist{% endblock %}
+{% block content %}
+<p style="margin:0 0 16px 0;">
+  Butikken har afvist jeres vareforslag <strong>{{ item.name }}</strong>.
+  Varen er derfor fjernet fra jeres bestilling.
+</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px 0;">
+  <tr>
+    <td style="background-color:#f1f4f7;border-left:4px solid #E74C3C;border-radius:8px;padding:16px;">
+      <p style="margin:0;font-weight:700;color:#003255;">{{ item.name }}</p>
+      {% if item.description %}
+      <p style="margin:8px 0 0 0;">{{ item.description }}</p>
+      {% endif %}
+      {% if quantity %}
+      <p style="margin:8px 0 0 0;"><strong>Antal:</strong> {{ quantity }} {{ item.content_unit }}</p>
+      {% endif %}
+    </td>
+  </tr>
+</table>
+{% if orders %}
+<p style="margin:0 0 8px 0;"><strong>Berørte bestillinger:</strong></p>
+<ul style="margin:0 0 16px 18px;padding:0;">
+  {% for order in orders %}
+  <li>
+    <a href="{{ site_url }}/butikken/Butikken/ButikkenOrder/detail/{{ order.pk }}/">
+      Bestilling #{{ order.pk }}{% if order.name %} – {{ order.name }}{% endif %}
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+{% include "emailing/_button.html" with url=orders_url label="Se jeres bestillinger" %}
+{% endblock %}

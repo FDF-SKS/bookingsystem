@@ -1,149 +1,58 @@
-{% extends "base.html" %}
-{% load static %}
-{% load django_bootstrap5 %}
-{% load bootstrap_icons %}
+{% extends "components/booking_form.html" %}
 
-{% block title %}Butikken - Ny bestilling{% endblock %}
+{% block booking_form_page_title %}Butikken bestilling{% endblock %}
+{% block booking_form_title %}{% if form.instance.pk %}Rediger{% else %}Ny{% endif %} bestilling til Butikken{% endblock %}
+{% block booking_form_breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'Butikken_ButikkenBooking_list' %}">Butikken bookinger</a></li>{% endblock %}
+{% block booking_form_breadcrumb_active %}{% if form.instance.pk %}Rediger{% else %}Ny{% endif %} bestilling{% endblock %}
 
-{% block extra_css %}
-<link href="{% static 'vendor/tom-select/tom-select.bootstrap5.min.css' %}" rel="stylesheet">
-{# TomSelect integration moved to src/static/css/custom.css #}
+{% block booking_form_deadline %}
+{% if user.is_authenticated and user.events.first %}
+<p class="text-muted">
+    <i class="bi bi-clock"></i> Deadline for madbestillinger:
+    <span class="badge bg-danger">{{ user.events.first.deadline_mad }}</span>
+</p>
+{% endif %}
 {% endblock %}
 
-{% block content %}
-<div class="container py-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'Butikken_ButikkenBooking_list' %}">Butikken bookinger</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{% if form.instance.pk %}Rediger{% else %}Ny{% endif %} bestilling</li>
-        </ol>
-    </nav>
+{% block booking_form_cancel %}
+<a href="{% url 'Butikken_ButikkenBooking_list' %}" class="btn btn-outline-secondary">Annuller</a>
+{% endblock %}
 
-    <div class="mb-4 mt-2">
-        <h1 class="display-5">Bestilling til Butikken</h1>
-        {% if user.is_authenticated and user.events.first %}
-            <p class="text-muted">
-                <i class="bi bi-clock"></i> Deadline for madbestillinger: 
-                <span class="badge bg-danger">{{ user.events.first.deadline_mad }}</span>
-            </p>
-        {% endif %}
-    </div>
-
-    <form id="form" role="form" method="post" class="needs-validation">
-        {% csrf_token %}
-        {% bootstrap_form_errors form type='non_fields' %}
-
-        <div class="row">
-            <div class="col-lg-8">
-                <div class="card card-custom mb-4">
-                    <div class="card-body p-4">
-                        <h5 class="card-title border-bottom pb-2 mb-3">Vare detaljer</h5>
-                        
-                        <div class="mb-4">
-                            <label class="form-label">Vælg vare</label>
-                            <div class="input-group">
-                                {% bootstrap_field form.item show_label=False wrapper_class="flex-grow-1 mb-0" %}
-                                <button class="btn btn-outline-secondary" type="button" id="clear-item-btn">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-                            </div>
-                            <div class="form-text">Mængde skal passe til 2 personer</div>
-                        </div>
-
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                {% bootstrap_field form.quantity %}
-                            </div>
-                            <div class="col-md-6">
-                                {% bootstrap_field form.unit %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card card-custom mb-4">
-                    <div class="card-body p-4">
-                        <h5 class="card-title border-bottom pb-2 mb-3">Afhentning & Brug</h5>
-                        <div class="row g-3">
-                            <div class="col-md-6">{% bootstrap_field form.start_date %}</div>
-                            <div class="col-md-6">{% bootstrap_field form.start_time %}</div>
-                            <div class="col-md-6">{% bootstrap_field form.date_used %}</div>
-                            <div class="col-md-6">{% bootstrap_field form.for_meal %}</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card card-custom mb-4">
-                    <div class="card-body p-4">
-                        <h5 class="card-title border-bottom pb-2 mb-3">Ansvarlig</h5>
-                        <div class="row g-3">
-                            <div class="col-md-6">{% bootstrap_field form.team %}</div>
-                            <div class="col-md-6">{% bootstrap_field form.team_contact %}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="card card-custom mb-4 bg-light">
-                    <div class="card-body p-4">
-                        <h5 class="card-title mb-3">Bemærkninger</h5>
-                        {% bootstrap_field form.remarks show_label=False %}
-                    </div>
-                </div>
-
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary btn-lg shadow-sm">
-                        <i class="bi bi-cart-plus"></i> Gem bestilling
-                    </button>
-                    <a href="{% url 'Butikken_ButikkenBooking_list' %}" class="btn btn-outline-secondary">Annuller</a>
-                </div>
-            </div>
-        </div>
-    </form>
-</div>
-
-<script src="{% static 'vendor/tom-select/tom-select.complete.min.js' %}"></script>
+{% block booking_form_scripts %}
 {{ unit_map|json_script:"unit-data" }}
-
 <script nonce="{{ csp_nonce }}">
     document.addEventListener("DOMContentLoaded", function() {
         const dataElement = document.getElementById('unit-data');
-        if (!dataElement) return;
+        if (!dataElement || typeof TomSelect === 'undefined') return;
 
         const unitMap = JSON.parse(dataElement.textContent);
         const unitField = document.getElementById('id_unit');
 
-        const itemControl = new TomSelect(".tom-select", {
+        const itemControl = new TomSelect('select[name="item"]', {
             create: false,
             placeholder: "Søg efter vare...",
             allowEmptyOption: true,
             sortField: { field: "text", direction: "asc" },
             onChange: function(value) {
-                // If a value is selected and exists in our map
+                if (!unitField) return;
                 if (value && unitMap[value]) {
                     unitField.value = unitMap[value];
-                    
-                    // Visual feedback
                     unitField.classList.add('is-valid');
                     setTimeout(() => unitField.classList.remove('is-valid'), 800);
                 } else {
-                    unitField.value = ""; // Clear if nothing selected
+                    unitField.value = "";
                 }
             }
         });
 
-        // Clear button logic
         const clearBtn = document.getElementById('clear-item-btn');
         if (clearBtn) {
             clearBtn.addEventListener('click', function() {
                 itemControl.clear();
-                unitField.value = '';
+                if (unitField) unitField.value = '';
                 itemControl.focus();
             });
         }
     });
 </script>
 {% endblock %}
-

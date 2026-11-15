@@ -26,6 +26,16 @@
 <h2>Import og eksport</h2>
 <p>På lister med knapperne <strong>Import</strong> og <strong>Eksport</strong> kan du hente data som regneark eller uploade en fil. Eksport er god til at tjekke data, og import er god til store opdateringer – men tag en eksport først, så du har en kopi.</p>
 
+<h2>Demo-data til test og træning</h2>
+<p>På et udviklings- eller testmiljø kan I fylde systemet med et komplet demo-event, teams, brugere, varer og bookinger med kommandoen <code>python manage.py generate_dummy_data</code> (kør fra <code>src</code>-mappen).</p>
+<ul>
+    <li>Alle rækker markeres med <code>[demo]</code>, så de er nemme at kende og fjerne igen.</li>
+    <li><code>--per-model 3</code> styrer, hvor mange varer og bookinger der oprettes pr. område.</li>
+    <li><code>--reset</code> sletter demo-data og opretter det forfra.</li>
+    <li>Kommandoen nægter at køre i produktion uden <code>--force</code>.</li>
+</ul>
+<p>Se <code>readme.md</code> i repositoryet for den fulde liste over, hvad kommandoen opretter, og hvordan I tilføjer en ny bookingtype.</p>
+
 <blockquote>
     <p><strong>Vær forsigtig med sletning.</strong> Sletning i panelet er endelig. Skal noget blot være inaktivt, så brug <em>is_active</em> i stedet.</p>
 </blockquote>

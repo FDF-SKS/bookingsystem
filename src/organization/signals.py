@@ -61,11 +61,11 @@ def notify_appointment_comment(sender, instance, created, **kwargs):
     # Build notification message
     commenter = instance.user.get_full_name() or instance.user.username
     appointment_link = f"{settings.SITE_URL}/organization/appointment/{appointment.pk}/"
-    
+
     message_text = (
         f"💬 **Ny kommentar på legeaftale**\n"
         f"**Kommentator:** {commenter}\n"
-        f"**Aftale:** {appointment.requester.get_full_name()} → {appointment.receiver.get_full_name()}\n"
+        f"**Aftale:** {appointment.requester.get_full_name()} → {appointment.receiver_display}\n"
         f"**Dato:** {appointment.start_date}\n"
         f"**Kommentar:** {instance.comment}\n"
         f"[Vis aftale]({appointment_link})"

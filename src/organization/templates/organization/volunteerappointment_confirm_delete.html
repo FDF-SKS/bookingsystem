@@ -3,7 +3,7 @@
 <div class="container mt-4">
     <div class="alert alert-danger">
         <h3>Er du sikker?</h3>
-        <p>Er du sikker på at du vil slette aftalen med <strong>{{ object.receiver }}</strong> den {{ object.start_time|date:"d. M" }}?</p>
+        <p>Er du sikker på at du vil slette aftalen med <strong>{{ object.receiver_display }}</strong> den {{ object.start_time|date:"d. M" }}?</p>
         <form method="post">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger">Ja, slet aftale</button>

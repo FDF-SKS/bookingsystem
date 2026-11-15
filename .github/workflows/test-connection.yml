@@ -1,7 +1,13 @@
-name: Test Connection Dry-Run
+name: Test Docker Hub Login
 
-on: 
+# SSH-delen er fjernet med vilje: deploy-nøglen er nu låst til én forced
+# command, så enhver SSH-forbindelse ville starte et rigtigt deploy. Vil du
+# teste forbindelsen, så kør "Deploy to Hetzner" manuelt i stedet.
+on:
   workflow_dispatch: # This allows you to trigger it manually for testing
+
+permissions:
+  contents: read
 
 jobs:
   test-dockerhub:
@@ -14,17 +20,3 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Success Message
         run: echo "Docker Hub Login Successful!"
-
-  test-ssh:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Test SSH Connection to Hetzner
-        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
-        with:
-          host: ${{ secrets.HETZNER_HOST }}
-          username: root
-          key: ${{ secrets.HETZNER_SSH_KEY }}
-          script: |
-            echo "SSH Connection Successful!"
-            docker --version
-            uptime

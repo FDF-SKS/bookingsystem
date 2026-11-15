@@ -1,22 +1,47 @@
+{% extends "components/item_detail.html" %}
 
-{% extends "base.html" %}
-{% load static %}
-{% block content %}
-    
-<p>
-    <a class="btn btn-light" href="{% url 'Butikken_ButikkenItem_list' %}">
-    ButikkenItem Listing
-    </a>
-</p>
-    
-<table class="table">
-    <tr><td>description</td><td>{{ object.description }}</td></tr>
-    <tr><td>last_updated</td><td>{{ object.last_updated }}</td></tr>
-    <tr><td>name</td><td>{{ object.name }}</td></tr>
-    <tr><td>created</td><td>{{ object.created }}</td></tr>
-    <tr><td>type</td><td>{{ object.type }}</td></tr>
-</table>
-<a class="btn btn-primary" href="{{object.get_update_url}}">Edit</a>
-
+{% block item_detail_alert %}
+{% if object.is_pending %}
+<div class="alert alert-warning d-flex align-items-center gap-2" role="alert">
+    <i class="bi bi-hourglass-split"></i>
+    <div>
+        <strong>Vareforslag</strong> – denne vare er ikke en del af sortimentet endnu og afventer godkendelse i butikken.
+    </div>
+</div>
+{% elif object.is_special %}
+<div class="alert alert-info d-flex align-items-center gap-2" role="alert">
+    <i class="bi bi-star"></i>
+    <div>
+        <strong>Godkendt specialbestilling</strong> – varen er godkendt til de bestillinger, den indgår i, men er ikke en del af det fælles sortiment.
+    </div>
+</div>
+{% elif object.is_rejected %}
+<div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+    <i class="bi bi-x-circle"></i>
+    <div>
+        <strong>Afvist vareforslag</strong> – varen er afvist og fjernet fra de bestillinger, den indgik i.
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
+{% block item_detail_meta_extra %}
+{% if object.proposed_by %}
+<div class="d-flex align-items-center mb-3">
+    <div class="bg-light p-2 rounded me-3"><i class="bi bi-person"></i></div>
+    <div>
+        <small class="text-muted d-block">Foreslået af</small>
+        <span class="fw-medium">{{ object.proposed_by }}</span>
+    </div>
+</div>
+{% endif %}
+{% if object.source_order %}
+<div class="d-flex align-items-center mb-3">
+    <div class="bg-light p-2 rounded me-3"><i class="bi bi-cart"></i></div>
+    <div>
+        <small class="text-muted d-block">Foreslået i ordre</small>
+        <a href="{% url 'Butikken_ButikkenOrder_detail' object.source_order.pk %}" class="fw-medium">Bestilling #{{ object.source_order.pk }}</a>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

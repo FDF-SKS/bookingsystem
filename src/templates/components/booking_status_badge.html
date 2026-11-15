@@ -1,0 +1,31 @@
+{% if object.status|lower == "accepted" %}
+<span class="badge bg-success rounded-pill px-3 py-2 d-flex align-items-center gap-1">
+    <i class="bi bi-check-lg"></i>
+    <span class="d-none d-md-inline small text-uppercase">Accepteret</span>
+</span>
+{% elif object.status|lower == "approved" %}
+<span class="badge bg-success rounded-pill px-3 py-2 d-flex align-items-center gap-1">
+    <i class="bi bi-check-lg"></i>
+    <span class="d-none d-md-inline small text-uppercase">Godkendt</span>
+</span>
+{% elif object.status|lower == "rejected" %}
+<span class="badge bg-danger rounded-pill px-3 py-2 d-flex align-items-center gap-1">
+    <i class="bi bi-x-lg"></i>
+    <span class="d-none d-md-inline small text-uppercase">Afvist</span>
+</span>
+{% elif object.status|lower == "udleveret" %}
+<span class="badge bg-info rounded-pill px-3 py-2 d-flex align-items-center gap-1">
+    <i class="bi bi-box-arrow-up"></i>
+    <span class="d-none d-md-inline small text-uppercase">Udleveret</span>
+</span>
+{% elif object.status|lower == "cancelled" %}
+<span class="badge bg-secondary rounded-pill px-3 py-2 d-flex align-items-center gap-1">
+    <i class="bi bi-slash-circle"></i>
+    <span class="d-none d-md-inline small text-uppercase">Annulleret</span>
+</span>
+{% else %}
+<span class="badge bg-warning text-dark rounded-pill px-3 py-2 d-flex align-items-center gap-1 border">
+    <i class="bi bi-hourglass-split"></i>
+    <span class="d-none d-md-inline small text-uppercase">Afventer</span>
+</span>
+{% endif %}

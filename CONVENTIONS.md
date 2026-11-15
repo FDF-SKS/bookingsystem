@@ -22,6 +22,18 @@
 - Side effects via Django signals (`signals.py`) and Celery tasks
 - Model changes require migrations in the app's `migrations/`
 
+### Shared UI modules
+Booking and catalog pages share a set of template components and view mixins. Prefer extending/reusing these over copying markup into an app template:
+
+- `src/templates/components/booking_list.html` – Sjak-style booking list (used by Sjak, Teknik, Depot, Foto, SOS, Butikken, AktivitetsTeam "mine" and Legeaftaler)
+- `src/templates/components/booking_detail.html` – Sjak-style booking detail page with blocks for app-specific information, actions and scripts (used by all booking modules)
+- `src/templates/components/booking_form.html` – shared booking form layout with blocks for app-specific fields/scripts
+- `src/templates/components/item_list_table.html` – Depot-style searchable item table (Sjak, Foto, SOS, Butikken, Depot)
+- `src/templates/components/item_list_gallery.html` – card gallery for item catalogs (Teknik, AktivitetsTeam)
+- `src/templates/components/item_detail.html` – shared catalog item detail page with blocks for app-specific alerts, metadata, extras and sidebar content (used by all item catalogs)
+- `src/templates/components/booking_status_badge.html` and `pagination.html` – small shared partials
+- `src/utils/ui.py` – `BookingListContextMixin`, `BookingDetailContextMixin`, `ItemListContextMixin`, `ItemDetailContextMixin` and `ItemGalleryContextMixin`, which supply the component labels/URL names from each view
+
 ## Coding Style
 - PEP 8, type hints on new/changed functions
 - Templates linted with djlint

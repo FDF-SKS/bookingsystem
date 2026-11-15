@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% load comments %}
+
+{% block title %}{{ booking_list_title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4 pb-5 pb-lg-4">
+    <nav aria-label="breadcrumb" class="d-none d-md-block">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
+            <li class="breadcrumb-item active">{% block booking_list_breadcrumb_label %}{{ booking_list_title }}{% endblock %}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="h2 mb-1 text-primary">{% block booking_list_title %}{{ booking_list_title }}{% endblock %}</h1>
+            {% block booking_list_subtitle %}
+            {% if booking_list_subtitle %}<p class="text-muted mb-0">{{ booking_list_subtitle }}</p>{% endif %}
+            {% endblock %}
+        </div>
+
+        {% block booking_list_actions %}
+        {% if booking_list_kanban_url_name or booking_list_create_url_name %}
+        <div class="d-none d-md-block">
+            {% if booking_list_kanban_url_name %}
+            <a href="{% url booking_list_kanban_url_name %}" class="btn btn-outline-secondary d-flex align-items-center gap-2 shadow-sm px-4 py-2 me-2">
+                <i class="bi bi-kanban"></i>
+                <span>{{ booking_list_kanban_label|default:"Kanban" }}</span>
+            </a>
+            {% endif %}
+            {% if booking_list_create_url_name %}
+            <a href="{% url booking_list_create_url_name %}" class="btn btn-primary d-flex align-items-center gap-2 shadow-sm px-4 py-2">
+                <i class="bi bi-plus-lg"></i>
+                <span>{{ booking_list_create_label|default:"Ny booking" }}</span>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% endblock %}
+
+        {% block booking_list_deadline %}
+        {% if booking_list_deadline %}
+        <div class="text-md-end w-100 w-md-auto">
+            <div class="badge bg-light text-dark border p-2 fw-normal w-100 w-md-auto">
+                <i class="bi bi-clock-history me-1"></i>
+                Deadline: {{ booking_list_deadline }}
+            </div>
+        </div>
+        {% endif %}
+        {% endblock %}
+    </div>
+
+    {% block booking_list_toolbar %}{% endblock %}
+
+    <div class="list-group shadow-sm border-0 rounded-3 overflow-hidden">
+        {% for object in object_list %}
+        <div class="list-group-item p-3 border-start-0 border-end-0 border-top-0 border-bottom">
+            <div class="d-flex w-100 justify-content-between align-items-center flex-wrap gap-3">
+                <div class="d-flex align-items-center flex-grow-1">
+                    <div class="text-center me-3 border-end pe-3 d-none d-sm-block" style="min-width: 65px;">
+                        <div class="fw-bold text-primary" style="line-height: 1; font-size: 1.25rem;">{{ object.start_date|date:"d" }}</div>
+                        <small class="text-uppercase text-muted" style="font-size: 0.75rem;">{{ object.start_date|date:"M" }}</small>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark mb-0">
+                            {% block booking_row_primary %}
+                            <a href="{{ object.get_absolute_url }}" class="text-decoration-none text-primary">{{ object.item }}</a>
+                            {% if booking_list_show_quantity != False %}
+                            {% firstof object.quantity as quantity %}
+                            {% if quantity %}
+                            <span class="ms-1 badge rounded-pill bg-light text-dark border small">
+                                {{ quantity|floatformat:-2 }} {% if object.unit %}{{ object.unit }}{% else %}stk{% endif %}
+                            </span>
+                            {% endif %}
+                            {% endif %}
+                            {% endblock %}
+                        </div>
+                        <div class="small text-muted d-flex align-items-center flex-wrap gap-2 mt-1">
+                            {% block booking_row_meta %}
+                            {% if booking_list_show_team_contact != False %}
+                            <span><i class="bi bi-person"></i> {{ object.team_contact }}</span>
+                            {% endif %}
+                            {% if object.team %}<span><i class="bi bi-people"></i> {{ object.team.name }}</span>{% endif %}
+                            <span class="d-sm-none"><i class="bi bi-calendar3"></i> {{ object.start_date|date:"d/m" }}</span>
+                            {% if object.end_date and object.end_date != object.start_date %}
+                            <span><i class="bi bi-calendar-range"></i> til {{ object.end_date|date:"d/m" }}</span>
+                            {% endif %}
+                            <span>
+                                <i class="bi bi-clock"></i> {{ object.start_time|time:"H:i" }}{% if object.end_time %} - {{ object.end_time|time:"H:i" }}{% endif %}
+                            </span>
+                            {% endblock %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 gap-md-3">
+                    <div class="status-box">
+                        {% include "components/booking_status_badge.html" %}
+                    </div>
+                    {% block booking_row_actions %}
+                    <div class="d-flex align-items-center gap-2 gap-md-3">
+                        {% if user.is_staff and object.status|lower == "pending" and booking_list_approve_url_name and booking_list_reject_url_name %}
+                        <div class="d-flex gap-2 border-start ps-2 ps-md-3">
+                            <form method="post" action="{% url booking_list_reject_url_name object.pk %}?next={{ request.path }}" class="m-0">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-danger btn-circle shadow-sm" title="Afvis">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </form>
+                            <form method="post" action="{% url booking_list_approve_url_name object.pk %}?next={{ request.path }}" class="m-0">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-outline-success btn-circle shadow-sm" title="Godkend">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex gap-1 align-items-center border-start ps-2 ps-md-3">
+                            {% if booking_list_update_url_name %}
+                            <a href="{% url booking_list_update_url_name object.pk %}" class="btn btn-light btn-circle text-muted" title="Rediger">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            {% endif %}
+                            {% if booking_list_delete_url_name %}
+                            <a href="{% url booking_list_delete_url_name object.pk %}" class="btn btn-light btn-circle text-danger" title="Slet">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                            {% endif %}
+                            {% if booking_list_show_comments != False %}
+                            {% get_comment_count for object as comment_count %}
+                            <a href="{{ object.get_absolute_url }}" class="btn btn-light btn-circle text-muted position-relative" title="Kommentarer">
+                                <i class="bi bi-chat-dots"></i>
+                                {% if comment_count %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-white" style="font-size: 0.65rem; padding: 0.35em 0.55em; z-index: 2;">
+                                    {{ comment_count }}
+                                </span>
+                                {% endif %}
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endblock %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="list-group-item text-center py-5 bg-light">
+            <p class="text-muted mb-0">{% block booking_list_empty_message %}{{ booking_list_empty_message|default:"Du har ingen bookinger endnu." }}{% endblock %}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if booking_list_create_url_name %}
+    <div class="d-md-none fixed-bottom bg-white border-top p-3 shadow-lg">
+        <a href="{% url booking_list_create_url_name %}" class="btn btn-primary btn-lg w-100 d-flex align-items-center justify-content-center gap-2 py-3 rounded-pill shadow">
+            <i class="bi bi-plus-lg"></i>
+            <span class="fw-bold">{{ booking_list_mobile_create_label|default:booking_list_create_label|default:"Ny booking" }}</span>
+        </a>
+    </div>
+    {% endif %}
+
+    {% include "components/pagination.html" %}
+</div>
+{% endblock %}

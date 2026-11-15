@@ -1,104 +1,42 @@
-{% extends "base.html" %}
-{% load static %}
-{% load bootstrap_icons %}
-{% load django_bootstrap5 %}
+{% extends "components/booking_list.html" %}
 
+{% block booking_list_title %}Mine legeaftaler{% endblock %}
+{% block booking_list_breadcrumb_label %}Legeaftaler{% endblock %}
 
-{% block content %}
-<div class="container py-4">
-    <nav aria-label="breadcrumb" class="d-none d-md-block">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
-            <li class="breadcrumb-item active">Legeaftaler</li>
-        </ol>
-    </nav>
-
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h2 mb-0">Mine legeaftaler</h1>
-        </div>
-        <a href="{% url 'organization_VolunteerAppointment_create' %}" class="btn btn-primary">
-            <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Ny legeaftale</span>
-        </a>
-    </div>
-
-    <div class="list-group shadow-sm border-0 rounded-3">
-        {% for appt in appointments %}
-        <a href="{{ appt.get_absolute_url }}" class="list-group-item list-group-item-action p-3 border-start-0 border-end-0 border-top-0 border-bottom">
-            <div class="d-flex w-100 justify-content-between align-items-center">
-                
-                <div class="d-flex align-items-center">
-                    <div class="text-center me-3 border-end pe-3">
-                        <div class="fw-bold text-primary" style="line-height: 1;">{{ appt.start_date|date:"d" }}</div>
-                        <small class="text-uppercase text-muted" style="font-size: 0.7rem;">{{ appt.start_date|date:"M" }}</small>
-                    </div>
-
-                    <div>
-                        <div class="fw-bold">
-                            {% if appt.requester == user %}
-                                {{ appt.receiver }}
-                                {% with appt.receiver.teams.first as team %}
-                                    {% if team %}<small class="text-muted">({{ team.short_name }})</small>{% endif %}
-                                {% endwith %}
-                            {% else %}
-                                {{ appt.requester }}
-                                {% with appt.requester.teams.first as team %}
-                                    {% if team %}<small class="text-muted">({{ team.short_name }})</small>{% endif %}
-                                {% endwith %}
-                            {% endif %}
-                        </div>
-                        <small class="text-muted">
-                            <i class="bi bi-clock"></i> {{ appt.start_time|time:"H:i" }}
-                        </small>
-                        {% if appt.requester == user %}
-                            <span class="badge bg-light text-dark border ms-1" style="font-size: 0.65rem;">Afsender</span>
-                        {% else %}
-                            <span class="badge bg-primary-subtle text-primary ms-1" style="font-size: 0.65rem;">Modtager</span>
-                        {% endif %}
-                    </div>
-
-                </div>
-
-                <div class="text-end d-flex align-items-center">
-                    <div class="me-2">
-                        {% if appt.status == 'accepted' %}
-                            <span class="badge rounded-pill bg-success px-2 py-1"><i class="bi bi-check-lg"></i></span>
-                        {% elif appt.status == 'rejected' %}
-                            <span class="badge rounded-pill bg-danger px-2 py-1"><i class="bi bi-x-lg"></i></span>
-                        {% else %}
-                            <span class="badge rounded-pill bg-warning text-dark px-2 py-1"><i class="bi bi-clock"></i></span>
-                        {% endif %}
-                    </div>
-                    <i class="bi bi-chevron-right"></i>
-                </div>
-            </div>
-        </a>
-        {% empty %}
-        <div class="list-group-item text-center py-5 bg-light">
-            <div class="text-muted mb-2">
-            </div>
-            <p class="text-muted mb-0">Du har ingen legeaftaler endnu.</p>
-        </div>
-        {% endfor %}
-    </div>
-</div>
-
-<style>
-    /* Clean up the list items */
-    .list-group-item {
-        transition: background-color 0.2s;
-    }
-    .list-group-item:last-child {
-        border-bottom: none !important;
-    }
-    .avatar-circle {
-        width: 40px;
-        height: 40px;
-        background-color: #f8f9fa;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-</style>
+{% block booking_row_primary %}
+<a href="{{ object.get_absolute_url }}" class="text-decoration-none text-primary">
+    {% if object.role == 'requester' %}
+        {{ object.receiver_display }}
+    {% else %}
+        {{ object.requester.get_full_name|default:object.requester.username }}
+        <i class="bi bi-arrow-right"></i> {{ object.receiver_display }}
+    {% endif %}
+</a>
+{% if object.is_team_appointment %}
+<span class="badge rounded-pill bg-primary-subtle text-primary border ms-1">
+    <i class="bi bi-people"></i> Team
+</span>
+{% endif %}
 {% endblock %}
 
+{% block booking_row_meta %}
+<span><i class="bi bi-clock"></i> {{ object.start_time|time:"H:i" }}{% if object.end_time %} - {{ object.end_time|time:"H:i" }}{% endif %}</span>
+{% if object.start_date %}<span><i class="bi bi-calendar3"></i> {{ object.start_date|date:"d/m" }}</span>{% endif %}
+{% if object.role == 'requester' %}
+<span class="badge bg-light text-dark border">Afsender</span>
+{% elif object.role == 'receiver' %}
+<span class="badge bg-primary-subtle text-primary">Modtager</span>
+{% elif object.role == 'team' %}
+<span class="badge bg-primary-subtle text-primary">Dit team</span>
+{% elif object.role == 'staff' %}
+<span class="badge bg-light text-dark border">Administrator</span>
+{% else %}
+<span class="badge bg-info-subtle text-info-emphasis border">Delt med dit team</span>
+{% endif %}
+{% endblock %}
+
+{% block booking_row_actions %}
+<a href="{{ object.get_absolute_url }}" class="btn btn-light btn-circle text-muted" title="Åbn aftale">
+    <i class="bi bi-chevron-right"></i>
+</a>
+{% endblock %}

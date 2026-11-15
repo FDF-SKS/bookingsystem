@@ -9,6 +9,12 @@ from django.views import generic
 
 from organization.models import Event
 from organization.permissions import StaffRequiredMixin, TeamQuerysetMixin
+from utils.ui import (
+    BookingDetailContextMixin,
+    BookingListContextMixin,
+    ItemDetailContextMixin,
+    ItemGalleryContextMixin,
+)
 
 from . import forms, models
 
@@ -32,11 +38,20 @@ def reject_booking(request, pk):
     return redirect(next_url)
 
 
-class TeknikBookingListView(TeamQuerysetMixin, LoginRequiredMixin, generic.ListView):
+class TeknikBookingListView(BookingListContextMixin, TeamQuerysetMixin, LoginRequiredMixin, generic.ListView):
     model = models.TeknikBooking
     form_class = forms.TeknikBookingForm
     context_object_name = 'object_list'
     template_name = 'Teknik/teknikbooking_list.html'
+
+    booking_list_title = "Teknik bookinger"
+    booking_list_create_url_name = "Teknik_TeknikBooking_create"
+    booking_list_create_label = "Ny booking"
+    booking_list_mobile_create_label = "Ny teknik bestilling"
+    booking_list_approve_url_name = "Teknik_TeknikBooking_approve"
+    booking_list_reject_url_name = "Teknik_TeknikBooking_reject"
+    booking_list_update_url_name = "Teknik_TeknikBooking_update"
+    booking_list_delete_url_name = "Teknik_TeknikBooking_delete"
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
@@ -50,21 +65,13 @@ class TeknikBookingListView(TeamQuerysetMixin, LoginRequiredMixin, generic.ListV
             'team', 'team_contact', 'item'
         ).defer('location').order_by('item', 'start_date')
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
-        
-        # Only fetch team membership once - already filtered in get_queryset
-        if not user.is_staff:
-            user_team_membership = user.teammembership_set.select_related('team').first()
-            context['user_team_membership'] = user_team_membership
-        else:
-            context['user_team_membership'] = None
-        
-        # Add current sort parameter to context
-        context['current_sort'] = self.request.GET.get('sort', 'item')
-        
-        return context
+    def get_booking_list_subtitle(self) -> str:
+        membership = self.request.user.teammembership_set.select_related('team').first()
+        return f"Team: {membership.team.name}" if membership else ""
+
+    def get_booking_list_deadline(self) -> str:
+        event = Event.objects.filter(is_active=True).first()
+        return str(event.deadline_teknik) if event and event.deadline_teknik else ""
 
 
 
@@ -101,9 +108,15 @@ class TeknikBookingCreateView(LoginRequiredMixin, generic.CreateView):
             context['items'] = items
         return context
 
-class TeknikBookingDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
+class TeknikBookingDetailView(BookingDetailContextMixin, TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     model = models.TeknikBooking
     form_class = forms.TeknikBookingForm
+
+    booking_detail_kicker = "Teknik booking"
+    booking_detail_list_url_name = "Teknik_TeknikBooking_list"
+    booking_detail_list_label = "Teknik bookinger"
+    booking_detail_approve_url_name = "Teknik_TeknikBooking_approve"
+    booking_detail_reject_url_name = "Teknik_TeknikBooking_reject"
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
@@ -182,10 +195,23 @@ class TeknikBookingDeleteView(TeamQuerysetMixin, LoginRequiredMixin, generic.Del
         return super().dispatch(*args, **kwargs)
 
 
-class TeknikItemListView(LoginRequiredMixin, generic.ListView):
+class TeknikItemListView(ItemGalleryContextMixin, LoginRequiredMixin, generic.ListView):
     model = models.TeknikItem
     form_class = forms.TeknikItemForm
     context_object_name = 'object_list'
+
+    item_list_title = "Teknikkatalog"
+    item_list_subtitle = "Find og book det nødvendige udstyr og teknisk assistance."
+    item_list_book_url_name = "Teknik_TeknikBooking_create_with_item"
+    item_list_book_label = "Book mig!"
+    item_list_book_icon = "bi-plus-circle"
+    item_list_book_button_class = "btn-primary"
+    item_list_icon = "bi-tools"
+    item_list_image_height = 200
+    item_list_css_class = "teknik-catalog"
+    item_list_empty_icon = "bi-box-seam"
+    item_list_empty_title = "Ingen teknik fundet"
+    item_list_empty_message = "Der er i øjeblikket ingen varer i kataloget."
 
     def get_queryset(self):
         queryset = models.TeknikItem.objects.all().order_by('name')  # Order by the 'name' field
@@ -197,9 +223,15 @@ class TeknikItemCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.Creat
     form_class = forms.TeknikItemForm
 
 
-class TeknikItemDetailView(LoginRequiredMixin, generic.DetailView):
+class TeknikItemDetailView(ItemDetailContextMixin, LoginRequiredMixin, generic.DetailView):
     model = models.TeknikItem
     form_class = forms.TeknikItemForm
+
+    item_detail_catalog_label = "Teknikkatalog"
+    item_detail_list_url_name = "Teknik_TeknikItem_list"
+    item_detail_badge_label = "Genstand nr."
+    item_detail_icon = "bi-tools"
+    item_detail_footer_text = "Information fra Teknikkataloget"
 
 
 class TeknikItemUpdateView(StaffRequiredMixin, LoginRequiredMixin, generic.UpdateView):

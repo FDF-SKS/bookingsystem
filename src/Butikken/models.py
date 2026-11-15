@@ -6,9 +6,46 @@ from django.utils import timezone
 
 
 class ButikkenItem(models.Model):
+    """A catalog item in Butikken.
+
+    Items are usually maintained by staff. When a team needs something that is
+    not in the catalog yet, the order form creates a *pending* item (a
+    proposal) so the order can still be fulfilled. Staff then approves or
+    rejects the proposal, which is how the catalog grows over time.
+    """
+
+    STATUS_ACTIVE = "Active"
+    STATUS_PENDING = "Pending"
+    STATUS_SPECIAL = "Special"
+    STATUS_REJECTED = "Rejected"
+    STATUS_CHOICES = (
+        (STATUS_ACTIVE, "Aktiv"),
+        (STATUS_PENDING, "Afventer godkendelse"),
+        (STATUS_SPECIAL, "Godkendt specialbestilling"),
+        (STATUS_REJECTED, "Afvist"),
+    )
+
+    # Type used for items proposed by users until staff classifies them.
+    PROPOSAL_TYPE = "Specialbestilling"
 
     # Relationships
     type = models.CharField(max_length=100)
+    proposed_by = models.ForeignKey(
+        "organization.Volunteer",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="butikken_item_proposals",
+        verbose_name="Foreslået af",
+    )
+    source_order = models.ForeignKey(
+        "Butikken.ButikkenOrder",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="proposed_items",
+        verbose_name="Foreslået i ordre",
+    )
 
     # Fields
     description = models.TextField(max_length=500, blank=True)
@@ -17,6 +54,13 @@ class ButikkenItem(models.Model):
     content_normal = models.CharField(max_length=100, blank=True)
     content_unit = models.CharField(max_length=100, blank=True)
     created = models.DateTimeField(auto_now_add=True, editable=False)
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default=STATUS_ACTIVE,
+        db_index=True,
+        verbose_name="Status",
+    )
 
     class Meta:
         verbose_name = "Butiksvare"
@@ -24,6 +68,47 @@ class ButikkenItem(models.Model):
 
     def __str__(self):
         return str(self.name)
+
+    @property
+    def is_active(self) -> bool:
+        return self.status == self.STATUS_ACTIVE
+
+    @property
+    def is_special(self) -> bool:
+        """Approved for a specific order, but not part of the shared catalog."""
+        return self.status == self.STATUS_SPECIAL
+
+    @property
+    def is_pending(self) -> bool:
+        return self.status == self.STATUS_PENDING
+
+    @property
+    def is_rejected(self) -> bool:
+        return self.status == self.STATUS_REJECTED
+
+    @property
+    def is_selectable(self) -> bool:
+        """Only catalog items may be picked for a new booking."""
+        return self.status == self.STATUS_ACTIVE
+
+    @property
+    def is_proposal(self) -> bool:
+        """A proposal is an item that is not part of the catalog."""
+        return self.status != self.STATUS_ACTIVE
+
+    def approve(self) -> None:
+        """Approve as a regular catalog item."""
+        self.status = self.STATUS_ACTIVE
+        self.save(update_fields=["status", "last_updated"])
+
+    def approve_as_special(self) -> None:
+        """Approve for the order only; keep it out of the shared catalog."""
+        self.status = self.STATUS_SPECIAL
+        self.save(update_fields=["status", "last_updated"])
+
+    def reject(self) -> None:
+        self.status = self.STATUS_REJECTED
+        self.save(update_fields=["status", "last_updated"])
 
     def get_absolute_url(self):
         return reverse("Butikken_ButikkenItem_detail", args=(self.pk,))

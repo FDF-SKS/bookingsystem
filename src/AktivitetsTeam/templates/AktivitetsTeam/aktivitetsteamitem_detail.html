@@ -1,172 +1,107 @@
-{% extends "base.html" %}
-{% load static %}
+{% extends "components/item_detail.html" %}
+{% load l10n %}
 {% load embed_video_tags %}
 
-{% block extra_head %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-<style>
-    #detail-map {
-        height: 350px !important; /* Force the height */
-        min-height: 350px;         /* Ensure it doesn't collapse */
-        width: 100%;
-        display: block;            /* Ensure it is treated as a block element */
-        z-index: 1;
-    }
-    .bg-secondary-subtle { background-color: rgba(var(--bs-secondary-rgb), 0.1) !important; }
-    .breadcrumb-item + .breadcrumb-item::before { content: "›"; font-size: 1.2rem; vertical-align: middle; }
-    .sticky-top { transition: top 0.3s ease; }
-    .lead { line-height: 1.8; font-size: 1.1rem; }
-</style>
+{% block item_detail_extra %}
+{% if object.youtube_link %}
+<div class="mt-5">
+    <h4 class="fw-bold mb-3"><i class="bi bi-play-circle me-2"></i>Se aktiviteten i aktion</h4>
+    <div class="ratio ratio-16x9 rounded-4 overflow-hidden shadow">
+        {% video object.youtube_link as my_video %}
+        {% video my_video '100% x 100%' %}
+        {% endvideo %}
+    </div>
+</div>
+{% endif %}
+
+{% if object.location and object.coords_list %}
+<div class="mt-5">
+    <h4 class="fw-bold mb-3"><i class="bi bi-geo-alt me-2"></i>Find os her</h4>
+    <div id="item-detail-map" class="rounded-4 shadow-sm border mb-3" style="height: 400px; width: 100%; display: block;"></div>
+    <div class="d-flex flex-wrap gap-2">
+        <a href="https://www.google.com/maps/search/?api=1&query={{ object.coords_list.0|unlocalize }},{{ object.coords_list.1|unlocalize }}"
+           target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+            <i class="bi bi-google me-1"></i>Åbn i Google Maps
+        </a>
+        <a href="https://www.openstreetmap.org/?mlat={{ object.coords_list.0|unlocalize }}&mlon={{ object.coords_list.1|unlocalize }}#map=17/{{ object.coords_list.0|unlocalize }}/{{ object.coords_list.1|unlocalize }}"
+           target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+            <i class="bi bi-map me-1"></i>Se på OpenStreetMap
+        </a>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
-{% block content %}
-<div class="container py-4">
-    
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb bg-light p-3 rounded-pill shadow-sm px-4">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none text-muted">Hjem</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'AktivitetsTeam_AktivitetsTeamItem_list' %}" class="text-decoration-none text-muted">Katalog</a></li>
-            <li class="breadcrumb-item active fw-bold text-secondary" aria-current="page">{{ object.name }}</li>
-        </ol>
-    </nav>
-
-    <div class="row g-4">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-                {% if object.image %}
-                    <img src="{{ object.image.url }}" class="img-fluid w-100" alt="{{ object.name }}" style="max-height: 400px; object-fit: cover;">
-                {% endif %}
-                
-                <div class="card-body p-4 p-md-5">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <h1 class="fw-bold text-dark mb-0">{{ object.name }}</h1>
-                        {% if object.category %}
-                            <span class="badge rounded-pill bg-secondary-subtle text-secondary px-3 py-2">
-                                <i class="bi {{ object.category.bs_icon }} me-1"></i>
-                                {{ object.category.name }}
-                            </span>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="lead text-muted mb-4" style="white-space: pre-line;">
-                        {{ object.description }}
-                    </div>
-
-                    {% if object.youtube_link %}
-                        <div class="mt-5">
-                            <h4 class="fw-bold mb-3"><i class="bi bi-play-circle me-2"></i>Se aktiviteten i aktion</h4>
-                            <div class="ratio ratio-16x9 rounded-4 overflow-hidden shadow">
-                                {% video object.youtube_link as my_video %}
-                                    {% video my_video '100% x 100%' %}
-                                {% endvideo %}
-                            </div>
-                        </div>
-                    {% endif %}
-
-                    {% if object.location %}
-                        <div class="mt-5">
-                            <h4 class="fw-bold mb-3"><i class="bi bi-geo-alt me-2"></i>Find os her</h4>
-                            
-                            <div id="detail-map" class="rounded-4 shadow-sm border mb-3" style="height: 400px !important; width: 100%; display: block;"></div>
-                            
-                            <div class="d-flex flex-wrap gap-2">
-                                <a href="https://www.google.com/maps/search/?api=1&query={{ object.coords_list.0|stringformat:"f" }},{{ object.coords_list.1|stringformat:"f" }}" 
-                                target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-                                    <i class="bi bi-google me-1"></i>Åbn i Google Maps
-                                </a>
-
-                                <a href="https://www.openstreetmap.org/?mlat={{ object.coords_list.0|stringformat:"f" }}&mlon={{ object.coords_list.1|stringformat:"f" }}#map=17/{{ object.coords_list.0|stringformat:"f" }}/{{ object.coords_list.1|stringformat:"f" }}" 
-                                target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                                    <i class="bi bi-map me-1"></i>Se på OpenStreetMap
-                                </a>
-                            </div>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
+{% block item_detail_sidebar %}
+<div class="sticky-top" style="top: 2rem; z-index: 10;">
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4 text-center">
+            <h5 class="fw-bold mb-3">Klar til at booke?</h5>
+            <a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_create_with_item' object.id %}"
+               class="btn btn-secondary w-100 py-3 rounded-pill fw-bold shadow-sm mb-3">
+                <i class="bi bi-calendar-plus me-2"></i>Book denne aktivitet
+            </a>
+            {% if user.is_staff and object.get_update_url %}
+            <a href="{{ object.get_update_url }}" class="btn btn-outline-secondary btn-sm w-100 rounded-pill">
+                <i class="bi bi-pencil me-1"></i>Rediger som Admin
+            </a>
+            {% endif %}
         </div>
+    </div>
 
-        <div class="col-lg-4">
-            <div class="sticky-top" style="top: 2rem; z-index: 10;">
-                
-                <div class="card border-0 shadow-sm rounded-4 mb-4">
-                    <div class="card-body p-4 text-center">
-                        <h5 class="fw-bold mb-3">Klar til at booke?</h5>
-                        <a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_create_with_item' object.id %}" 
-                           class="btn btn-secondary w-100 py-3 rounded-pill fw-bold shadow-sm mb-3">
-                            <i class="bi bi-calendar-plus me-2"></i>Book denne aktivitet
-                        </a>
-                        {% if user.is_staff %}
-                            <a href="{{ object.get_update_url }}" class="btn btn-outline-secondary btn-sm w-100 rounded-pill">
-                                <i class="bi bi-pencil me-1"></i>Rediger som Admin
-                            </a>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-                    <div class="card-header bg-white py-3 border-0">
-                        <h6 class="fw-bold mb-0">Hurtig info</h6>
-                    </div>
-                    <div class="list-group list-group-flush">
-                        {% if object.description_flow %}
-                        <div class="list-group-item border-0 px-4 py-3">
-                            <div class="small text-muted fw-semibold text-uppercase">Flow</div>
-                            <div class="text-dark">{{ object.description_flow }}</div>
-                        </div>
-                        {% endif %}
-                        
-                        {% if object.description_aktiverede %}
-                        <div class="list-group-item border-0 px-4 py-3">
-                            <div class="small text-muted fw-semibold text-uppercase">Aktiverede deltagere</div>
-                            <div class="text-dark">{{ object.description_aktiverede }}</div>
-                        </div>
-                        {% endif %}
-
-                        {% if object.description_eksempel %}
-                        <div class="list-group-item border-0 px-4 py-3 bg-light-subtle">
-                            <div class="small text-muted fw-semibold text-uppercase">Eksempler</div>
-                            <div class="text-dark small">{{ object.description_eksempel }}</div>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <div class="card-footer bg-white text-center py-3">
-                        <small class="text-muted">
-                            <i class="bi bi-clock-history me-1"></i>
-                            Sidst opdateret: {{ object.last_updated|date:"d. M Y" }}
-                        </small>
-                    </div>
-                </div>
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white py-3 border-0">
+            <h6 class="fw-bold mb-0">Hurtig info</h6>
+        </div>
+        <div class="list-group list-group-flush">
+            {% if object.description_flow %}
+            <div class="list-group-item border-0 px-4 py-3">
+                <div class="small text-muted fw-semibold text-uppercase">Flow</div>
+                <div class="text-dark">{{ object.description_flow }}</div>
             </div>
+            {% endif %}
+            {% if object.description_aktiverede %}
+            <div class="list-group-item border-0 px-4 py-3">
+                <div class="small text-muted fw-semibold text-uppercase">Aktiverede deltagere</div>
+                <div class="text-dark">{{ object.description_aktiverede }}</div>
+            </div>
+            {% endif %}
+            {% if object.description_eksempel %}
+            <div class="list-group-item border-0 px-4 py-3 bg-light-subtle">
+                <div class="small text-muted fw-semibold text-uppercase">Eksempler</div>
+                <div class="text-dark small">{{ object.description_eksempel }}</div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-<script nonce="{{ csp_nonce }}">
-    document.addEventListener('DOMContentLoaded', function() {
-        {% if object.coords_list %}
-            var lat = {{ object.coords_list.0|stringformat:"f" }};
-            var lng = {{ object.coords_list.1|stringformat:"f" }};
-            
-            var map = L.map('detail-map').setView([lat, lng], 16);
-
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-                detectRetina: true,
-                referrerPolicy: 'origin'
-            }).addTo(map);
-
-            L.marker([lat, lng]).addTo(map)
-                .bindPopup('<b>{{ object.name|escapejs }}</b>')
-                .openPopup();
-
-            // This is the magic line that fixes "collapsed" or "gray" maps
-            setTimeout(function() {
-                map.invalidateSize();
-            }, 200);
-        {% endif %}
-    });
-</script>
 {% endblock %}
 
+{% block item_detail_staff_edit %}{% endblock %}
+
+{% block item_detail_scripts %}
+{% if object.location and object.coords_list %}
+<script nonce="{{ csp_nonce }}">
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof L === 'undefined') return;
+        var lat = {{ object.coords_list.0|unlocalize }};
+        var lng = {{ object.coords_list.1|unlocalize }};
+        var map = L.map('item-detail-map').setView([lat, lng], 16);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            detectRetina: true,
+            referrerPolicy: 'origin'
+        }).addTo(map);
+
+        L.marker([lat, lng]).addTo(map)
+            .bindPopup("{{ object.name|escapejs }}")
+            .openPopup();
+
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 200);
+    });
+</script>
+{% endif %}
+{% endblock %}

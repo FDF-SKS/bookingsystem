@@ -86,7 +86,16 @@
                             <tbody>
                                 {% for b in bookings %}
                                 <tr>
-                                    <td><a href="{{ b.get_absolute_url }}">{{ b.item }}</a></td>
+                                    <td>
+                                        <a href="{{ b.get_absolute_url }}">{{ b.item }}</a>
+                                        {% if b.item.is_pending %}
+                                        <span class="badge bg-warning text-dark ms-2">Afventer godkendelse</span>
+                                        {% elif b.item.is_special %}
+                                        <span class="badge bg-info text-dark ms-2">Specialbestilling</span>
+                                        {% elif b.item.is_rejected %}
+                                        <span class="badge bg-danger ms-2">Afvist</span>
+                                        {% endif %}
+                                    </td>
                                     <td>{{ b.quantity }}</td>
                                     <td class="text-muted">{{ b.unit }}</td>
                                     <td>{{ b.start_date }} {{ b.start_time }}</td>

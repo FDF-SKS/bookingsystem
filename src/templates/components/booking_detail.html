@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% load l10n %}
+
+{% block title %}{{ booking_detail_kicker|default:"Booking" }}: {% block booking_detail_page_title %}{{ object.item }}{% endblock %}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
+            {% block booking_detail_breadcrumb %}
+            {% if booking_detail_list_url_name %}
+            <li class="breadcrumb-item"><a href="{% url booking_detail_list_url_name %}">{{ booking_detail_list_label|default:"Bookinger" }}</a></li>
+            {% endif %}
+            {% endblock %}
+            <li class="breadcrumb-item active">{% block booking_detail_breadcrumb_active %}Booking #{{ object.pk }}{% endblock %}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-start mb-4 gap-3">
+        <div>
+            <span class="text-muted text-uppercase small fw-bold">{% block booking_detail_kicker %}{{ booking_detail_kicker|default:"Booking" }}{% endblock %}</span>
+            <h1 class="display-5 mb-0">{% block booking_detail_title %}{{ object.item }}{% endblock %}</h1>
+            <p class="lead text-muted mb-0">
+                {% block booking_detail_subtitle %}
+                {% if object.team %}Team: {{ object.team.name }}{% endif %}
+                {% endblock %}
+            </p>
+        </div>
+        <div class="d-flex flex-column align-items-end gap-2">
+            <span class="fs-5">
+                {% include "components/booking_status_badge.html" %}
+            </span>
+            {% block booking_detail_header_actions %}
+            {% if object.get_update_url %}
+            <a href="{{ object.get_update_url }}" class="btn btn-outline-primary rounded-pill px-4">
+                <i class="bi bi-pencil"></i> Rediger
+            </a>
+            {% endif %}
+            {% endblock %}
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card card-custom mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-4 border-bottom pb-2">{% block booking_detail_info_heading %}Information om booking{% endblock %}</h5>
+
+                    <div class="row g-4 mb-4">
+                        {% if object.quantity %}
+                        <div class="col-md-12">
+                            <div class="detail-label">Mængde</div>
+                            <div class="detail-value text-primary fs-3">
+                                {{ object.quantity|floatformat:"-2" }} {% if object.unit %}{{ object.unit }}{% else %}stk.{% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="{% if object.end_date %}col-md-6 border-end{% else %}col-md-12{% endif %}">
+                            <div class="detail-label">{% block booking_detail_start_label %}Fra (Start){% endblock %}</div>
+                            <div class="detail-value">
+                                <i class="bi bi-calendar-event"></i> {{ object.start_date|date:"l \d. j. F" }}<br>
+                                <span class="text-dark small">kl. {{ object.start_time|time:"H:i" }}</span>
+                            </div>
+                        </div>
+
+                        {% if object.end_date %}
+                        <div class="col-md-6">
+                            <div class="detail-label">{% block booking_detail_end_label %}Til (Slut){% endblock %}</div>
+                            <div class="detail-value">
+                                <i class="bi bi-calendar-check"></i> {{ object.end_date|date:"l \d. j. F" }}<br>
+                                <span class="text-dark small">kl. {{ object.end_time|time:"H:i" }}</span>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if object.assistance_needed or object.delivery_needed %}
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <div class="detail-label">Assistance</div>
+                            <div class="detail-value">
+                                {% if object.assistance_needed %}<i class="bi bi-check-circle text-success"></i> Ja{% else %}<i class="bi bi-dash-circle text-muted"></i> Nej{% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-label">Levering</div>
+                            <div class="detail-value">
+                                {% if object.delivery_needed %}<i class="bi bi-check-circle text-success"></i> Ja{% else %}<i class="bi bi-dash-circle text-muted"></i> Nej{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if object.date_used or object.for_meal %}
+                    <div class="row g-4 mb-4">
+                        {% if object.date_used %}
+                        <div class="col-md-6">
+                            <div class="detail-label">Anvendelsesdato</div>
+                            <div class="detail-value"><i class="bi bi-calendar-event"></i> {{ object.date_used|date:"l \d. j. F" }}</div>
+                        </div>
+                        {% endif %}
+                        {% if object.for_meal %}
+                        <div class="col-md-6">
+                            <div class="detail-label">Anvendes til måltid</div>
+                            <div class="detail-value"><i class="bi bi-egg-fried"></i> {% firstof object.get_for_meal_display object.for_meal %}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% block booking_detail_main_extra %}{% endblock %}
+
+                    <div class="bg-light p-3 rounded">
+                        <div class="detail-label">{% block booking_detail_notes_label %}Bemærkninger{% endblock %}</div>
+                        <div class="mt-2">
+                            {% block booking_detail_notes %}
+                            {% if object.remarks %}{{ object.remarks|linebreaksbr }}{% else %}<span class="text-muted fst-italic">Ingen bemærkninger tilføjet.</span>{% endif %}
+                            {% endblock %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% block booking_detail_map %}
+            {% if object.location and object.coords_list %}
+            <div class="card card-custom mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3 border-bottom pb-2"><i class="bi bi-geo-alt me-1"></i>Lokation</h5>
+                    <div id="booking-detail-map" class="rounded-4 shadow-sm border mb-3" style="height: 400px; width: 100%; position: relative;"></div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="https://www.google.com/maps/search/?api=1&query={{ object.coords_list.0|unlocalize }},{{ object.coords_list.1|unlocalize }}"
+                           target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                            <i class="bi bi-google me-1"></i>Åbn i Google Maps
+                        </a>
+                        <a href="https://www.openstreetmap.org/?mlat={{ object.coords_list.0|unlocalize }}&mlon={{ object.coords_list.1|unlocalize }}#map=17/{{ object.coords_list.0|unlocalize }}/{{ object.coords_list.1|unlocalize }}"
+                           target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                            <i class="bi bi-map me-1"></i>Se på OpenStreetMap
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endblock %}
+
+            {% block booking_detail_comments %}
+            {% if booking_detail_show_comments != False %}
+            <div class="card card-custom mb-5">
+                <div class="card-body p-4">
+                    {% include "components/booking_comments_section.html" with object=object comments=comments %}
+                </div>
+            </div>
+            {% endif %}
+            {% endblock %}
+        </div>
+
+        <div class="col-lg-4">
+            {% block booking_detail_sidebar %}
+            {% if object.image %}
+            <div class="card card-custom mb-4 overflow-hidden">
+                <div class="position-relative">
+                    <img src="{{ object.image.url }}" class="sidebar-img-preview" alt="Booking dokumentation" data-bs-toggle="modal" data-bs-target="#bookingDetailImageModal">
+                    <div class="position-absolute bottom-0 end-0 m-2">
+                        <span class="badge bg-dark bg-opacity-75 rounded-pill"><i class="bi bi-zoom-in"></i> Klik for stor</span>
+                    </div>
+                </div>
+                <div class="card-footer bg-white border-top-0 py-3">
+                    <h5 class="card-title h6 mb-0">Dokumentation / Billede</h5>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if object.team_contact %}
+            <div class="card card-custom mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3 border-bottom pb-2">Kontaktperson</h5>
+                    <div class="d-flex align-items-center mb-3">
+                        {% if object.team_contact.image_thumbnail %}
+                        <img src="{{ object.team_contact.image_thumbnail.url }}" alt="{{ object.team_contact.get_full_name }}" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;" loading="lazy">
+                        {% elif object.team_contact.image %}
+                        <img src="{{ object.team_contact.image.url }}" alt="{{ object.team_contact.get_full_name }}" class="rounded-circle me-3" style="width: 50px; height: 50px; object-fit: cover;" loading="lazy">
+                        {% else %}
+                        <div class="bg-soft-primary rounded-circle me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                            <i class="bi bi-person-circle fs-3 text-primary"></i>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <a href="{% url 'organization_Volunteer_detail' object.team_contact.pk %}" class="detail-value text-decoration-none">{{ object.team_contact }}</a>
+                            <div class="text-muted small">Primær kontakt</div>
+                        </div>
+                    </div>
+                    {% if object.team %}
+                    <div class="sidebar-info d-flex justify-content-between">
+                        <span class="text-muted">Tilhører Team:</span>
+                        <span class="fw-bold">{{ object.team.name }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% firstof object.created object.created_at as created_at %}
+            {% if booking_detail_show_history != False and created_at %}
+            <div class="card card-custom bg-light mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3 small fw-bold text-uppercase text-muted">Historik</h5>
+                    <div class="sidebar-info d-flex justify-content-between small">
+                        <span>Oprettet:</span>
+                        <span>{{ created_at|date:"l \d. j. F, H:i" }}</span>
+                    </div>
+                    <div class="sidebar-info d-flex justify-content-between small">
+                        <span>Opdateret:</span>
+                        <span>{{ object.last_updated|date:"l \d. j. F, H:i" }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            {% block booking_detail_admin_controls %}
+            {% if user.is_staff and booking_detail_approve_url_name and booking_detail_reject_url_name %}
+            <div class="card card-custom border-primary bg-white shadow mb-4">
+                <div class="card-body p-4">
+                    <h5 class="card-title text-primary mb-3"><i class="bi bi-shield-check"></i> Admin Kontrol</h5>
+                    <div class="d-grid gap-2">
+                        {% if object.status|lower != "approved" and object.status|lower != "accepted" %}
+                        <form method="post" action="{% url booking_detail_approve_url_name object.pk %}?next={{ request.path }}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success w-100">Godkend booking</button>
+                        </form>
+                        {% endif %}
+                        {% if object.status|lower != "rejected" %}
+                        <form method="post" action="{% url booking_detail_reject_url_name object.pk %}?next={{ request.path }}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger w-100">Afvis booking</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% endblock %}
+
+            {% if booking_detail_delete_url_name %}
+            <div class="d-grid mb-2">
+                <a href="{% url booking_detail_delete_url_name object.pk %}" class="btn btn-outline-danger">
+                    <i class="bi bi-trash"></i> Slet booking
+                </a>
+            </div>
+            {% endif %}
+
+            {% block booking_detail_sidebar_extra %}{% endblock %}
+
+            {% if booking_detail_list_url_name %}
+            <div class="mt-2 d-grid">
+                <a href="{% url booking_detail_list_url_name %}" class="btn btn-link text-muted">
+                    <i class="bi bi-arrow-left"></i> Tilbage til listen
+                </a>
+            </div>
+            {% endif %}
+            {% endblock %}
+        </div>
+    </div>
+</div>
+
+{% if object.image %}
+<div class="modal fade" id="bookingDetailImageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 bg-transparent">
+            <div class="modal-body p-0 text-center position-relative">
+                <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" data-bs-dismiss="modal"></button>
+                <img src="{{ object.image.url }}" class="img-fluid rounded shadow-lg" alt="Booking dokumentation">
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% block booking_detail_scripts %}
+{% if object.location and object.coords_list %}
+<script nonce="{{ csp_nonce }}">
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof L === 'undefined') return;
+        var lat = {{ object.coords_list.0|unlocalize }};
+        var lng = {{ object.coords_list.1|unlocalize }};
+        var map = L.map('booking-detail-map').setView([lat, lng], 16);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            referrerPolicy: 'origin'
+        }).addTo(map);
+
+        L.marker([lat, lng]).addTo(map)
+            .bindPopup("{{ object.item|escapejs }}")
+            .openPopup();
+
+        setTimeout(function() {
+            map.invalidateSize();
+        }, 200);
+    });
+</script>
+{% endif %}
+{% endblock %}
+{% endblock %}

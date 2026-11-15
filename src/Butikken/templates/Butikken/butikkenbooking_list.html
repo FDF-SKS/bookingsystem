@@ -1,89 +1,12 @@
-{% extends "base.html" %}
-{% block content %}
-{% load bootstrap_icons %}
-{% load django_bootstrap5 %}
-{% load comments %}
-<br>
-{% if request.user.is_authenticated %}
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h5 class="mb-0">Booking oversigt for team: 
-      {% if user_team_membership %}
-        <strong>{{ user_team_membership.team.name }}</strong>
-      {% endif %}
-    </h5>
+{% extends "components/booking_list.html" %}
+
+{% block booking_list_toolbar %}
+<div class="d-flex justify-content-end mb-3">
     <div class="btn-group btn-group-sm" role="group">
-      <a href="?sort=item" class="btn {% if current_sort == 'item' %}btn-primary{% else %}btn-outline-secondary{% endif %}" title="Sortér efter vare navn">
-        Vare A-Z
-      </a>
-      <a href="?sort=-item" class="btn {% if current_sort == '-item' %}btn-primary{% else %}btn-outline-secondary{% endif %}" title="Sortér efter vare navn omvendt">
-        Vare Z-A
-      </a>
-      <a href="?sort=start" class="btn {% if current_sort == 'start' %}btn-primary{% else %}btn-outline-secondary{% endif %}" title="Sortér efter dato, tidligst først">
-        Dato ↑
-      </a>
-      <a href="?sort=-start" class="btn {% if current_sort == '-start' %}btn-primary{% else %}btn-outline-secondary{% endif %}" title="Sortér efter dato, senest først">
-        Dato ↓
-      </a>
+        <a href="?sort=item" class="btn {% if current_sort == 'item' %}btn-primary{% else %}btn-outline-secondary{% endif %}" title="Sortér efter vare navn">Vare A-Z</a>
+        <a href="?sort=-item" class="btn {% if current_sort == '-item' %}btn-primary{% else %}btn-outline-secondary{% endif %}" title="Sortér efter vare navn omvendt">Vare Z-A</a>
+        <a href="?sort=start_date" class="btn {% if current_sort == 'start_date' %}btn-primary{% else %}btn-outline-secondary{% endif %}" title="Sortér efter dato, tidligst først">Dato ↑</a>
+        <a href="?sort=-start_date" class="btn {% if current_sort == '-start_date' %}btn-primary{% else %}btn-outline-secondary{% endif %}" title="Sortér efter dato, senest først">Dato ↓</a>
     </div>
-  </div>
-{% endif %}
-<table class="table">
-  <thead>
-    <tr>
-      <th scope="col">#</th>
-      <th scope="col">Item</th>
-      <th scope="col">Antal</th>
-      <th scope="col">Dato</th>
-      <th scope="col">Tid</th>
-      <th scope="col">Booket af</th>
-      <th scope="col">Status</th>
-      <th scope="col">Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for object in object_list %}
-      <tr>
-        <th scope="row">{{ object.id }}</th>
-        <td><a href="{{ object.get_absolute_url }}">{{ object.item }}</a></td>
-        <td>{{ object.quantity }}</td>
-        <td>{{ object.start }}</td>
-        <td>{{ object.start_time }}</td>
-        <td>{{ object.team_contact }}</td>
-        <td>
-          {% if object.status == 'Pending' %}
-            <span class="badge bg-warning text-dark">
-              <small>Afventer</small>
-            </span>
-          {% elif object.status == 'Approved' %}
-            <span class="badge bg-success">
-              <small>Godkendt</small>
-            </span>
-          {% elif object.status == 'Rejected' %}
-            <span class="badge bg-danger">
-              <small>Afvist</small>
-            </span>
-          {% elif object.status == 'Udleveret' %}
-            <span class="badge bg-info">
-              <small>Udleveret</small>
-            </span>
-          {% endif %}
-        </td>
-        <td>
-          <a href="{% url 'Butikken_ButikkenBooking_update' object.pk %}" class="btn btn-outline-warning btn-sm">
-            <i class="bi bi-pencil"></i>
-          </a>
-          <a href="{% url 'Butikken_ButikkenBooking_delete' object.pk %}" class="btn btn-outline-danger btn-sm">
-            <i class="bi bi-trash"></i>
-          </a>
-        </td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
-<div>
-  <a class="btn btn-primary" href="{% url 'Butikken_ButikkenBooking_create' %}">
-    Ny butiksbestilling
-  </a>
 </div>
 {% endblock %}
-

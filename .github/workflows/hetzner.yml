@@ -1,52 +1,73 @@
 name: Deploy to Hetzner
 
+# Deploy udløser en fast systemd-unit på serveren – CI får ingen shell.
+# Se scripts/server/setup-deploy-user.sh og readme-afsnittet "Deployment".
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# To deploys må ikke overlappe.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
+    name: Udløs deploy på serveren
     runs-on: ubuntu-latest
+    # Kræver godkendelse, hvis environment "production" har required reviewers.
+    environment: production
     steps:
-      - name: Require SSH host fingerprint
+      - name: Validér secrets
         env:
+          DEPLOY_HOST: ${{ secrets.HETZNER_HOST }}
+          DEPLOY_KEY: ${{ secrets.HETZNER_SSH_KEY }}
           HOST_FINGERPRINT: ${{ secrets.HETZNER_HOST_FINGERPRINT }}
         run: |
-          if [ -z "$HOST_FINGERPRINT" ]; then
-            echo "::error::Set the HETZNER_HOST_FINGERPRINT repository secret (SHA256 host key fingerprint)."
+          set -euo pipefail
+          for name in DEPLOY_HOST DEPLOY_KEY HOST_FINGERPRINT; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Mangler repository-secret: $name"
+              exit 1
+            fi
+          done
+
+      - name: Sæt SSH op og verificér serverens host key
+        env:
+          DEPLOY_HOST: ${{ secrets.HETZNER_HOST }}
+          DEPLOY_KEY: ${{ secrets.HETZNER_SSH_KEY }}
+          HOST_FINGERPRINT: ${{ secrets.HETZNER_HOST_FINGERPRINT }}
+        run: |
+          set -euo pipefail
+          install -d -m 0700 "$HOME/.ssh"
+
+          ssh-keyscan -T 15 -p 22 "$DEPLOY_HOST" > /tmp/keyscan 2>/dev/null
+          ssh-keygen -lf /tmp/keyscan | awk '{print $2}' | sort -u > /tmp/fingerprints
+          if ! grep -qx "$HOST_FINGERPRINT" /tmp/fingerprints; then
+            echo "::error::Serverens host key matcher ikke HETZNER_HOST_FINGERPRINT"
             exit 1
           fi
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
-        with:
-          host: ${{ secrets.HETZNER_HOST }}
-          username: root
-          # The | ensures the private key format is preserved exactly
-          key: |
-            ${{ secrets.HETZNER_SSH_KEY }}
-          port: 22
-          # Verify the server's host key so the connection cannot be MITM'd.
-          fingerprint: ${{ secrets.HETZNER_HOST_FINGERPRINT }}
-          debug: true
-          script: |
-            # Navigate to the project folder we created manually
-            cd ~/booking-system
-            
-            # Pull the latest image from Docker Hub
-            # Note: Ensure you have logged in to Docker Hub on the server once!
-            docker compose pull web
-            
-            # Restart the services. This will use the new image for 'web'
-            # and keep the 'db' running or restart it if needed.
-            docker compose up -d
-            
-            # Run database migrations inside the running container
-            # -T is used for non-interactive shells in CI/CD
-            docker compose exec -T web python manage.py migrate --noinput
-            
-            # Collect static files (optional, but recommended if you changed CSS/JS)
-            docker compose exec -T web python manage.py collectstatic --noinput
-            
-            # Cleanup unused images to keep the Hetzner disk lean
-            docker image prune -f
+          cat /tmp/keyscan >> "$HOME/.ssh/known_hosts"
+          chmod 0600 "$HOME/.ssh/known_hosts"
+
+          printf '%s\n' "$DEPLOY_KEY" > "$HOME/.ssh/deploy_key"
+          chmod 0600 "$HOME/.ssh/deploy_key"
+
+      - name: Udløs deploy
+        # Der sendes bevidst ingen fjernkommando: nøglen er låst til én
+        # forced command på serveren, som starter deploy-unit'en.
+        env:
+          DEPLOY_HOST: ${{ secrets.HETZNER_HOST }}
+        run: |
+          set -euo pipefail
+          ssh -i "$HOME/.ssh/deploy_key" \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=20 \
+            "deploy@$DEPLOY_HOST"

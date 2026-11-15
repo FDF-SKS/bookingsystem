@@ -1,151 +1,35 @@
-{% extends 'base.html' %}
-{% load static %}
-{% load bootstrap_icons %}
+{% extends "components/booking_detail.html" %}
 
-{% block title %}{{ booking }} - Booking detaljer{% endblock %}
+{% block booking_detail_info_heading %}Information om reservation{% endblock %}
 
-{% block content %}
-<div class="container py-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="mb-0">
-                <i class="bi bi-calendar-check"></i> Booking detaljer
-            </h1>
-        </div>
-        <div class="col-md-4 text-end">
-            <a href="{{ booking.get_update_url }}" class="btn btn-warning">
-                <i class="bi bi-pencil"></i> Rediger
-            </a>
-            <a href="{% url 'Depot_DepotBooking_list' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left"></i> Tilbage
-            </a>
-        </div>
-    </div>
+{% block booking_detail_main_extra %}
+{{ block.super }}
+{% if object.admin_comment %}
+<div class="alert alert-info mb-4">
+    <h6 class="alert-heading"><i class="bi bi-chat-left-text"></i> Admin bemærkning</h6>
+    <div class="mb-0">{{ object.admin_comment|linebreaks }}</div>
+</div>
+{% endif %}
+{% endblock %}
 
-    <div class="row">
-        <div class="col-md-8">
-            <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Booking information</h5>
+{% block booking_detail_sidebar_extra %}
+<div class="card card-custom mb-4">
+    <div class="card-body p-4">
+        <h5 class="card-title mb-3 border-bottom pb-2">Vare tilgængelighed</h5>
+        <p class="text-muted mb-2">For denne tidsperiode:</p>
+        <div class="alert alert-info mb-3">
+            <div class="row">
+                <div class="col-6">
+                    <small class="d-block text-muted">I alt</small>
+                    <strong class="fs-5">{{ object.item.quantity }}</strong>
                 </div>
-                <div class="card-body">
-                    <dl class="row">
-                        <dt class="col-sm-3">Vare:</dt>
-                        <dd class="col-sm-9">
-                            <a href="{{ booking.item.get_absolute_url }}" class="text-decoration-none">
-                                {{ booking.item.name }}
-                            </a>
-                        </dd>
-
-                        <dt class="col-sm-3">Hold:</dt>
-                        <dd class="col-sm-9">{{ booking.team.name }}</dd>
-
-                        <dt class="col-sm-3">Kontakt:</dt>
-                        <dd class="col-sm-9">{{ booking.team_contact.name }}</dd>
-
-                        <dt class="col-sm-3">Antal:</dt>
-                        <dd class="col-sm-9">
-                            <span class="badge bg-info">{{ booking.quantity }}</span>
-                        </dd>
-
-                        <dt class="col-sm-3">Status:</dt>
-                        <dd class="col-sm-9">
-                            <span class="badge bg-{{ booking.get_status_display_color }} fs-6">
-                                {{ booking.get_status_display }}
-                            </span>
-                        </dd>
-                    </dl>
-                </div>
-            </div>
-
-            <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Tidsperiode</h5>
-                </div>
-                <div class="card-body">
-                    <dl class="row">
-                        <dt class="col-sm-3">Start:</dt>
-                        <dd class="col-sm-9">{{ booking.start_date|date:"l, d/m/Y" }} {{ booking.start_time|time:"H:i" }}</dd>
-
-                        <dt class="col-sm-3">Slut:</dt>
-                        <dd class="col-sm-9">{{ booking.end_date|date:"l, d/m/Y" }} {{ booking.end_time|time:"H:i" }}</dd>
-
-                        <dt class="col-sm-3">Varighed:</dt>
-                        <dd class="col-sm-9">
-                            Cirka dage mellem datoer
-                        </dd>
-                    </dl>
-                </div>
-            </div>
-
-            {% if booking.remarks %}
-            <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Bemærkninger</h5>
-                </div>
-                <div class="card-body">
-                    {{ booking.remarks|linebreaks }}
-                </div>
-            </div>
-            {% endif %}
-
-            {% if booking.admin_comment %}
-            <div class="card mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Admin bemærkning</h5>
-                </div>
-                <div class="card-body">
-                    <div class="alert alert-info mb-0">
-                        {{ booking.admin_comment|linebreaks }}
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Vare tilgængelighed</h5>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted mb-2">For denne tidsperiode:</p>
-                    <div class="alert alert-info mb-3">
-                        <div class="row">
-                            <div class="col-6">
-                                <small class="d-block text-muted">I alt</small>
-                                <strong class="fs-5">{{ booking.item.quantity }}</strong>
-                            </div>
-                            <div class="col-6">
-                                <small class="d-block text-muted">Anmodet</small>
-                                <strong class="fs-5">{{ booking.quantity }}</strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer bg-light">
-                    <a href="{{ booking.item.get_absolute_url }}" class="btn btn-sm btn-outline-primary w-100">
-                        Vis vare
-                    </a>
-                </div>
-            </div>
-
-            <div class="card mt-3">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">Handlinger</h5>
-                </div>
-                <div class="list-group list-group-flush">
-                    <a href="{{ booking.get_update_url }}" class="list-group-item list-group-item-action">
-                        <i class="bi bi-pencil"></i> Rediger booking
-                    </a>
-                    <a href="{% url 'Depot_DepotBooking_delete' booking.pk %}" class="list-group-item list-group-item-action text-danger">
-                        <i class="bi bi-trash"></i> Slet booking
-                    </a>
+                <div class="col-6">
+                    <small class="d-block text-muted">Anmodet</small>
+                    <strong class="fs-5">{{ object.quantity }}</strong>
                 </div>
             </div>
         </div>
+        <a href="{{ object.item.get_absolute_url }}" class="btn btn-sm btn-outline-primary w-100">Vis vare</a>
     </div>
 </div>
 {% endblock %}
-
-

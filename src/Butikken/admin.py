@@ -110,6 +110,18 @@ class ButikkenBookingInline(TabularInline):
     tab = True
 
 
+# Inline for pending item proposals made through the order form
+class ButikkenItemProposalInline(TabularInline):
+    model = ButikkenItem
+    fk_name = 'source_order'
+    extra = 0
+    fields = ('name', 'type', 'status', 'content_normal', 'content_unit', 'description', 'proposed_by')
+    readonly_fields = ('proposed_by',)
+    verbose_name = 'Vareforslag'
+    verbose_name_plural = 'Vareforslag'
+    tab = True
+
+
 class ButikkenOrderResource(resources.ModelResource):
     team = fields.Field(attribute='team__name', column_name='Team')
     team_contact = fields.Field(attribute='team_contact__first_name', column_name='Kontakt')
@@ -178,9 +190,18 @@ def export_butikken_bookings_csv(bookings_queryset):
 @admin.register(ButikkenItem)
 class ButikkenItemAdmin(BaseAdmin):
     resource_class = ButikkenItemResource
-    list_display = ["name", "display_type", "display_content", "last_updated"]
-    list_filter = ["type"]
+    list_display = [
+        "name",
+        "display_type",
+        "display_content",
+        "display_status",
+        "proposed_by",
+        "last_updated",
+    ]
+    list_filter = ["type", "status"]
+    list_select_related = ["proposed_by"]
     search_fields = ["name", "description"]
+    actions = ["approve_proposals", "approve_as_special", "reject_proposals", "export_selected_raw"]
 
     @display(description="Type", label=True)
     def display_type(self, obj):
@@ -189,6 +210,49 @@ class ButikkenItemAdmin(BaseAdmin):
     @display(description="Indhold")
     def display_content(self, obj):
         return f"{obj.content_normal} {obj.content_unit}" if obj.content_normal else "-"
+
+    @display(
+        description="Status",
+        label={
+            ButikkenItem.STATUS_ACTIVE: "success",
+            ButikkenItem.STATUS_PENDING: "warning",
+            ButikkenItem.STATUS_SPECIAL: "info",
+            ButikkenItem.STATUS_REJECTED: "danger",
+        },
+    )
+    def display_status(self, obj):
+        return obj.get_status_display()
+
+    @admin.action(description="Godkend som butiksvare")
+    def approve_proposals(self, request, queryset):
+        updated = queryset.update(status=ButikkenItem.STATUS_ACTIVE)
+        self.message_user(
+            request,
+            f"{updated} vareforslag er nu godkendt og en del af sortimentet.",
+            messages.SUCCESS,
+        )
+
+    @admin.action(description="Godkend som specialbestilling")
+    def approve_as_special(self, request, queryset):
+        updated = queryset.update(status=ButikkenItem.STATUS_SPECIAL)
+        self.message_user(
+            request,
+            f"{updated} vareforslag er godkendt som specialbestilling.",
+            messages.INFO,
+        )
+
+    @admin.action(description="Afvis valgte vareforslag")
+    def reject_proposals(self, request, queryset):
+        proposals = list(queryset.filter(status=ButikkenItem.STATUS_PENDING))
+        # Call save() per row so the rejection signal can remove the order lines
+        # and queue email/Discord notifications for the affected teams.
+        for item in proposals:
+            item.reject()
+        self.message_user(
+            request,
+            f"{len(proposals)} vareforslag er blevet afvist og fjernet fra bestillingerne.",
+            messages.WARNING,
+        )
 
 @admin.register(ButikkenBooking)
 class ButikkenBookingAdmin(BaseAdmin):
@@ -255,7 +319,7 @@ class ButikkenOrderAdmin(BaseAdmin):
     resource_class = ButikkenOrderResource
     list_display = ["id", "name", "team", "team_contact", "pickup_date", "status", "last_updated"]
     list_filter = ["status", "team", "pickup_date"]
-    inlines = [ButikkenBookingInline]
+    inlines = [ButikkenBookingInline, ButikkenItemProposalInline]
     actions = ["export_order_with_bookings", "approve_selected", "reject_selected"]
 
     def get_export_resource_classes(self, request):

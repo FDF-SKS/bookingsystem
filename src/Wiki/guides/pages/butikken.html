@@ -1,17 +1,31 @@
-<p>Butikken dækker mad, drikkevarer og de små ting, der skal købes ind til eventet. Bestillingerne lægges som en samlet ordre, som administratoren godkender og pakker.</p>
+<p>Butikken dækker mad, drikkevarer og de små ting, der skal købes ind til eventet. Bestillingerne lægges som en samlet ordre, som administratoren godkender og pakker. Butikken har også et overblik på tværs af teams – og en måde at foreslå varer, der mangler i kataloget.</p>
 
 <h2>Menuen</h2>
 <ul>
+    <li><strong>Butikken</strong> – åbner <em>Overblik</em>. Brug pilen ved siden af menupunktet for at åbne undermenuen.</li>
+    <li><strong>Overblik</strong> – dashboard med teams, måltider, varebestillinger og vareforslag.</li>
     <li><strong>Varekatalog</strong> – alle varer med enhed og beskrivelse.</li>
     <li><strong>Varebestillinger</strong> – jeres ordrer.</li>
     <li><strong>Måltidsbestillinger</strong> – bestilling af måltider til teamet.</li>
     <li><strong>Ny varebestilling</strong> – genvej direkte til formularen.</li>
 </ul>
 
+<h2>Overblikket</h2>
+<p>Overblikket viser status for alle teams. Administratorer ser alle teams; almindelige brugere ser de teams, de er medlem af.</p>
+<ul>
+    <li><strong>Teams</strong> – én række pr. team.</li>
+    <li><strong>Måltidsbestillinger</strong> – en badge pr. relevant dag i eventet. Grøn med flueben betyder godkendt, gul betyder afventer, rød betyder afvist, og grå betyder, at der ikke er bestilt. Under badge-rækken står, om alle dage er booket, eller hvor mange der mangler.</li>
+    <li><strong>Varebestillinger</strong> – antal ordrer og den nyeste ordre med status. Står der <em>Ingen bestilling</em>, kan I oprette en med det samme.</li>
+    <li><strong>Vareforslag der mangler godkendelse</strong> – kun for administratorer. Tallet viser, hvor mange foreslåede varer der venter på svar.</li>
+</ul>
+
+<p>Relevante dage er måltidsplanerne inden for det aktive events datointerval. Findes der ikke et aktivt event, vises alle måltidsplaner.</p>
+
 <h2>Sådan bestiller I varer</h2>
 <ol>
     <li>Gå til <strong>Butikken &rarr; Ny varebestilling</strong>.</li>
     <li>Find varerne i kataloget, og læg dem i kurven med det antal, I skal bruge.</li>
+    <li>Mangler en vare i kataloget, så brug <strong>Foreslå ny vare</strong> (se nedenfor).</li>
     <li>Vælg <strong>Team</strong> og <strong>Kontaktperson</strong>.</li>
     <li>Skriv et navn til ordren og en <strong>afhentningsdato</strong>.</li>
     <li>Tilføj eventuelle <strong>bemærkninger</strong>, og gem ordren.</li>
@@ -20,6 +34,29 @@
 <p><img src="/static/wiki/guides/butikken-ordre.png" alt="En varebestilling med varer, antal, afhentningsdato og status"></p>
 
 <p><em>Ordren samler alle varerne. Status skifter fra Afventer til Godkendt, Pakket og Udleveret.</em></p>
+
+<h2>Foreslå en vare, der mangler</h2>
+<p>Hvis I skal bruge noget, som ikke findes i varekataloget, kan I foreslå det direkte i ordren i stedet for at bruge en tom »Specialbestilling«-vare med en kommentar.</p>
+<ol>
+    <li>Tryk <strong>Foreslå ny vare</strong> under varelisten.</li>
+    <li>Skriv <strong>varenavn</strong>, <strong>antal</strong>, <strong>enhed</strong> og eventuelt en <strong>beskrivelse</strong>.</li>
+    <li>Tryk <strong>Tilføj vareforslag</strong>. Forslaget lægges i kurven med badge <em>Ny vare</em>.</li>
+    <li>Gem ordren som normalt.</li>
+</ol>
+<p>I kan have flere forslag i samme ordre. Hvis en vare med samme navn allerede findes i kataloget, bruges den i stedet for at lave en dublet. Hvis flere teams foreslår den samme nye vare, samles forslagene, så butikken kun skal tage stilling én gang.</p>
+
+<blockquote>
+    <p><strong>Forslaget er ikke en bestilling endnu.</strong> Varen står som <em>Afventer godkendelse</em>, indtil butikken har taget stilling. Resten af ordren kan godkendes og pakkes som normalt.</p>
+</blockquote>
+
+<h2>Sådan behandles et vareforslag</h2>
+<p>Administratorer ser forslagene under <strong>Overblik &rarr; Vareforslag der mangler godkendelse</strong> og kan vælge:</p>
+<ul>
+    <li><strong>Godkend som butiksvare</strong> – varen bliver en del af varekataloget og kan vælges af alle teams til fremtidige bestillinger.</li>
+    <li><strong>Godkend som specialbestilling</strong> – varen bliver på den aktuelle ordre, men kommer ikke i kataloget. Den kan altså ikke vælges af andre eller til nye ordrer.</li>
+    <li><strong>Afvis</strong> – varen fjernes fra ordren, og teamet får besked på email og i Discord.</li>
+</ul>
+<p>På ordren vises et badge, så I kan se, om varen er <em>Afventer godkendelse</em>, en <em>Specialbestilling</em> eller <em>Afvist</em>.</p>
 
 <h2>Sådan bestiller I måltider</h2>
 <ol>
@@ -32,4 +69,4 @@
     <p><strong>Én ordre pr. afhentning.</strong> Skal I hente på to forskellige dage, er det nemmere at lave to ordrer – så kan de godkendes hver for sig.</p>
 </blockquote>
 
-<p>Se også: <a href="/wiki/bookinger-saadan/">Sådan laver du en booking</a>.</p>
+<p>Se også: <a href="/wiki/bookinger-saadan/">Sådan laver du en booking</a> og <a href="/wiki/admin-godkend-bookinger/">Admin: godkend bookinger</a>.</p>

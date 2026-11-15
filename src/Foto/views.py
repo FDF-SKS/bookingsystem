@@ -9,14 +9,33 @@ from django.views import generic
 
 from organization.models import Event
 from organization.permissions import StaffRequiredMixin, TeamQuerysetMixin
+from utils.ui import (
+    BookingDetailContextMixin,
+    BookingListContextMixin,
+    ItemDetailContextMixin,
+    ItemListContextMixin,
+)
 
 from . import forms, models
 
 
-class FotoItemListView(LoginRequiredMixin,generic.ListView):
+class FotoItemListView(ItemListContextMixin, LoginRequiredMixin, generic.ListView):
     model = models.FotoItem
     form_class = forms.FotoItemForm
     context_object_name = 'object_list'
+
+    item_list_title = "Fotokatalog"
+    item_list_subtitle = "Book professionelt udstyr eller find den rette fotograf til jeres næste store øjeblik."
+    item_list_create_url_name = "Foto_FotoItem_create"
+    item_list_create_label = "Tilføj genstand"
+    item_list_detail_url_name = "Foto_FotoItem_detail"
+    item_list_update_url_name = "Foto_FotoItem_update"
+    item_list_delete_url_name = "Foto_FotoItem_delete"
+    item_list_icon = "bi-camera"
+    item_list_show_location = False
+    item_list_show_quantity = False
+    item_list_empty_title = "Ingen fotovarer fundet"
+    item_list_empty_message = "Der er endnu ingen fotovarer i kataloget."
 
     def get_queryset(self):
         queryset = models.FotoItem.objects.all().order_by('name')  # Order by the 'name' field
@@ -48,9 +67,15 @@ class FotoItemCreateView(LoginRequiredMixin, StaffRequiredMixin, generic.CreateV
 
 
 
-class FotoItemDetailView(LoginRequiredMixin, generic.DetailView):
+class FotoItemDetailView(ItemDetailContextMixin, LoginRequiredMixin, generic.DetailView):
     model = models.FotoItem
     form_class = forms.FotoItemForm
+
+    item_detail_catalog_label = "Fotokatalog"
+    item_detail_list_url_name = "Foto_FotoItem_list"
+    item_detail_badge_label = "Genstand nr."
+    item_detail_icon = "bi-camera"
+    item_detail_footer_text = "Information fra Fotokataloget"
 
 
 class FotoItemUpdateView(StaffRequiredMixin, generic.UpdateView):
@@ -90,9 +115,29 @@ def reject_booking(request, pk):
     return redirect(next_url)
 
 
-class FotoBookingListView(LoginRequiredMixin, TeamQuerysetMixin, generic.ListView):
+class FotoBookingListView(BookingListContextMixin, LoginRequiredMixin, TeamQuerysetMixin, generic.ListView):
     model = models.FotoBooking
     form_class = forms.FotoBookingForm
+
+    booking_list_title = "Foto bookinger"
+    booking_list_create_url_name = "Foto_FotoBooking_create"
+    booking_list_create_label = "Ny booking"
+    booking_list_mobile_create_label = "Ny Foto booking"
+    booking_list_approve_url_name = "Foto_FotoBooking_approve"
+    booking_list_reject_url_name = "Foto_FotoBooking_reject"
+    booking_list_update_url_name = "Foto_FotoBooking_update"
+    booking_list_delete_url_name = "Foto_FotoBooking_delete"
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('team', 'team_contact', 'item')
+
+    def get_booking_list_subtitle(self) -> str:
+        membership = self.request.user.teammembership_set.select_related('team').first()
+        return f"Team: {membership.team.name}" if membership else ""
+
+    def get_booking_list_deadline(self) -> str:
+        event = Event.objects.filter(is_active=True).first()
+        return str(event.deadline_foto) if event and event.deadline_foto else ""
 
 
 class FotoBookingCreateView(LoginRequiredMixin, generic.CreateView):
@@ -128,9 +173,18 @@ class FotoBookingCreateView(LoginRequiredMixin, generic.CreateView):
         return redirect('Foto_FotoBooking_detail', pk=self.object.pk)
 
 
-class FotoBookingDetailView(LoginRequiredMixin, TeamQuerysetMixin, generic.DetailView):
+class FotoBookingDetailView(BookingDetailContextMixin, LoginRequiredMixin, TeamQuerysetMixin, generic.DetailView):
     model = models.FotoBooking
     form_class = forms.FotoBookingForm
+
+    booking_detail_kicker = "Foto booking"
+    booking_detail_list_url_name = "Foto_FotoBooking_list"
+    booking_detail_list_label = "Foto bookinger"
+    booking_detail_approve_url_name = "Foto_FotoBooking_approve"
+    booking_detail_reject_url_name = "Foto_FotoBooking_reject"
+
+    def get_queryset(self):
+        return super().get_queryset().select_related('item', 'team', 'team_contact')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item_list_title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{% block item_list_breadcrumb_label %}{{ item_list_title }}{% endblock %}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-2 flex-wrap gap-3">
+        <div>
+            <h1 class="display-5">{% block item_list_title %}{{ item_list_title }}{% endblock %}</h1>
+            {% if item_list_subtitle %}<p class="text-muted mb-0">{{ item_list_subtitle }}</p>{% endif %}
+        </div>
+        {% if user.is_authenticated and user.is_staff and item_list_create_url_name %}
+        <div>
+            <a href="{% url item_list_create_url_name %}" class="btn btn-primary">
+                <i class="bi {{ item_list_create_icon|default:"bi-plus-circle" }} me-2"></i>{{ item_list_create_label|default:"Tilføj" }}
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-4">
+            <input type="text" id="item-list-search" class="form-control form-control-lg"
+                   placeholder="{{ item_list_search_placeholder|default:'Søg efter navn, lokation, beskrivelse...' }}" autocomplete="off">
+        </div>
+    </div>
+
+    {% if item_list_items %}
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="item-list-table">
+                    <thead class="bg-light text-muted">
+                        <tr>
+                            <th scope="col" class="ps-4">Navn</th>
+                            {% if item_list_show_location != False %}<th scope="col">Lokation</th>{% endif %}
+                            {% if item_list_show_quantity != False %}<th scope="col">Lagerbeholdning</th>{% endif %}
+                            {% if item_list_show_description != False %}<th scope="col">Beskrivelse</th>{% endif %}
+                            <th scope="col" class="text-end pe-4">{% if user.is_authenticated and user.is_staff and item_list_update_url_name %}Handlinger{% else %}Detaljer{% endif %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in item_list_items %}
+                        {% if item_list_detail_url_name %}
+                        {% url item_list_detail_url_name item.pk as item_url %}
+                        {% else %}
+                        {% firstof item.get_absolute_url as item_url %}
+                        {% endif %}
+                        {% firstof item.quantity item.quantity_lager item.content_normal as item_quantity %}
+                        {% firstof item.unit item.content_unit "stk" as item_unit %}
+                        <tr class="clickable-row item-row" data-href="{{ item_url }}"
+                            data-name="{{ item.name|lower }}"
+                            data-location="{% if item.location %}{{ item.location.name|lower }}{% endif %}"
+                            data-description="{{ item.description|default:''|lower }}">
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    {% if item.image %}
+                                    <img src="{{ item.image.url }}" alt="{{ item.name }}" class="rounded me-3 shadow-sm" style="width: 40px; height: 40px; object-fit: cover;" loading="lazy">
+                                    {% else %}
+                                    <div class="me-3 bg-secondary-subtle text-secondary rounded d-flex align-items-center justify-content-center fw-bold" style="width: 40px; height: 40px; font-size: 0.8rem;">
+                                        <i class="bi {{ item_list_icon|default:"bi-box-seam" }} fs-5"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <span class="text-dark fw-bold">{{ item.name }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            {% if item_list_show_location != False %}
+                            <td>
+                                {% if item.location %}
+                                <span class="badge bg-light text-dark border">{{ item.location.name }}</span>
+                                {% else %}
+                                <span class="text-muted small fst-italic">Ingen lokation</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                            {% if item_list_show_quantity != False %}
+                            <td>
+                                {% if item_quantity %}
+                                <span class="text-muted small">{{ item_quantity }} {{ item_unit }}</span>
+                                {% else %}
+                                <span class="text-muted small fst-italic">-</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                            {% if item_list_show_description != False %}
+                            <td>
+                                <span class="text-muted small">
+                                    {% if item.description %}
+                                    {{ item.description|truncatewords:5 }}
+                                    {% else %}
+                                    <span class="fst-italic">-</span>
+                                    {% endif %}
+                                </span>
+                            </td>
+                            {% endif %}
+                            <td class="text-end pe-4">
+                                {% if user.is_authenticated and user.is_staff and item_list_update_url_name %}
+                                <a href="{% url item_list_update_url_name item.pk %}" class="btn btn-sm btn-primary me-2" title="Rediger">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                {% if item_list_delete_url_name %}
+                                <a href="{% url item_list_delete_url_name item.pk %}" class="btn btn-sm btn-danger" title="Slet">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                                {% endif %}
+                                {% else %}
+                                <i class="bi bi-chevron-right text-muted"></i>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <h4 class="alert-heading"><i class="bi bi-info-circle me-2"></i>{{ item_list_empty_title|default:"Ingen varer fundet" }}</h4>
+        <p>{{ item_list_empty_message|default:"Der er endnu ingen varer i kataloget." }}</p>
+        {% if user.is_authenticated and user.is_staff and item_list_create_url_name %}
+        <p><a href="{% url item_list_create_url_name %}" class="btn btn-primary btn-sm">{{ item_list_create_label|default:"Opret første vare" }}</a></p>
+        {% endif %}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Luk"></button>
+    </div>
+    {% endif %}
+</div>
+
+<script nonce="{{ csp_nonce }}">
+    document.addEventListener("DOMContentLoaded", function() {
+        const searchInput = document.getElementById('item-list-search');
+        const tableRows = document.querySelectorAll('.item-row');
+
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function() {
+                const searchTerm = this.value.toLowerCase();
+                tableRows.forEach(row => {
+                    const name = row.getAttribute('data-name') || '';
+                    const location = row.getAttribute('data-location') || '';
+                    const description = row.getAttribute('data-description') || '';
+                    const matches = name.includes(searchTerm) || location.includes(searchTerm) || description.includes(searchTerm);
+                    row.style.display = matches ? '' : 'none';
+                });
+            });
+        }
+
+        const tableBody = document.querySelector("#item-list-table tbody");
+        if (tableBody) {
+            tableBody.addEventListener("click", function(e) {
+                const row = e.target.closest(".clickable-row");
+                if (row && row.dataset.href && !e.target.closest('a, button')) {
+                    window.location.href = row.dataset.href;
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

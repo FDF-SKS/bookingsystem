@@ -1,89 +1,19 @@
-{% extends "base.html" %}
-{% load static %}
-{% load django_bootstrap5 %}
-{% load bootstrap_icons %}
+{% extends "components/booking_form.html" %}
 
-{% block content %}
+{% block booking_form_page_title %}SOS booking{% endblock %}
+{% block booking_form_title %}{% if form.instance.pk %}Rediger{% else %}Ny{% endif %} SOS booking{% endblock %}
+{% block booking_form_breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'SOS_SOSBooking_list' %}">SOS bestillinger</a></li>{% endblock %}
+{% block booking_form_breadcrumb_active %}{% if form.instance.pk %}Rediger{% else %}Ny{% endif %} booking{% endblock %}
 
-<br>
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'SOS_SOSBooking_list' %}">SOS bestillinger</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Ny booking </li>
-    </ol>
-</nav>
-
-<h1 class="display-3" >Ny SOS booking</h1>
-{% if user.is_authenticated %}
-<p>Deadline for SOS bestillinger: <mark> {{user.events.first.deadline_sos }} </mark>.</p>
-
+{% block booking_form_deadline %}
+{% if user.is_authenticated and user.events.first %}
+<p class="text-muted">
+    <i class="bi bi-info-circle"></i> Deadline for SOS bestillinger:
+    <span class="badge bg-warning text-dark">{{ user.events.first.deadline_sos }}</span>
+</p>
 {% endif %}
-
-<br>
-    
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.errors }}
-        <!-- Item -->
-        {% bootstrap_field form.item %}
-
-        <!-- Quantity -->
-        {% bootstrap_field form.quantity   %}
-
-        <!-- Start date -->
-        {% bootstrap_field form.start_date  id="start_date" %}
-    
-        <!-- Start time -->
-        {% bootstrap_field form.start_time %}
-    
-        <!-- End date -->
-        {% bootstrap_field form.end_date    id="end_date"  %}
-    
-        <!-- End time -->
-        {% bootstrap_field form.end_time %}
-    
-        <!-- Team -->
-        {% bootstrap_field form.team   %}
-
-        <!-- Team Contact -->
-        {% bootstrap_field form.team_contact   %}
-
-
-    <div class="form-group row mb-2">
-        <div class="col-sm-2 col-form-label">{{ form.assistance_needed.label}}</div>
-        <div class="col-sm-10">
-            <div class="form-check">
-                {{ form.assistance_needed }}
-                <label class="form-check-label" for="{{ form.assistance_needed.id_for_label }}">Vi har brug for assistance - uddyb i bemærkninger</label>
-            </div>
-        </div>
-    </div>
-
-    <div class="form-group row mb-2">
-        <div class="col-sm-2 col-form-label">{{ form.delivery_needed.label}}</div>
-        <div class="col-sm-10">
-            <div class="form-check">
-                {{ form.delivery_needed }}
-                <label class="form-check-label" for="{{ form.delivery_needed.id_for_label }}">Vi har brug for at få det leveret</label>
-            </div>
-        </div>
-    </div>
-
-    <div class="form-group row mb-2">
-        <label class="col-sm-2 col-form-label" for="remarks">Bemærkninger:</label>
-        <div class="col-sm-10">
-            <textarea class="form-control" id="remarks" name="remarks" rows="4">{{ object.remarks }}</textarea>
-        </div>
-    </div>
-
-    <div class="form-group row">
-        <div class="col-sm-10 offset-sm-2">
-            <input type="submit" value="Indsend" class="btn btn-primary">
-        </div>
-    </div>
-</form>
-
 {% endblock %}
 
-
+{% block booking_form_cancel %}
+<a href="{% url 'SOS_SOSBooking_list' %}" class="btn btn-outline-secondary">Annuller</a>
+{% endblock %}

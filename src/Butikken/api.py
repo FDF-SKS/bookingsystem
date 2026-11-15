@@ -16,6 +16,13 @@ class ButikkenItemViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.ButikkenItemSerializer
     permission_classes = [IsStaffOrReadOnly]
 
+    def get_queryset(self):
+        # Pending proposals are only visible to staff until they are approved.
+        queryset = models.ButikkenItem.objects.all()
+        if self.request.user.is_staff:
+            return queryset
+        return queryset.filter(status=models.ButikkenItem.STATUS_ACTIVE)
+
 
 class ButikkenBookingViewSet(TeamScopedMixin, viewsets.ModelViewSet):
     queryset = models.ButikkenBooking.objects.all()

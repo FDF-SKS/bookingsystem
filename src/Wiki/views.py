@@ -1,3 +1,4 @@
+import contextlib
 import html
 
 from django.contrib.auth.decorators import login_required
@@ -7,6 +8,7 @@ from django.http import JsonResponse
 from django.urls import reverse_lazy
 from django.utils.html import strip_tags
 from django.views import generic
+
 from organization.permissions import StaffRequiredMixin
 
 from .forms import WikiPageForm
@@ -68,10 +70,8 @@ class WikiPageCreateView(StaffRequiredMixin, generic.CreateView):
         initial = super().get_initial()
         parent_id = self.request.GET.get('parent')
         if parent_id:
-            try:
+            with contextlib.suppress(TypeError, ValueError):
                 initial['parent'] = WikiPage.objects.filter(pk=int(parent_id)).first()
-            except (TypeError, ValueError):
-                pass
         return initial
 
     def form_valid(self, form):

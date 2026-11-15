@@ -1,157 +1,42 @@
-{% extends 'base.html' %}
-{% load static %}
-{% load bootstrap_icons %}
+{% extends "components/booking_list.html" %}
 
-{% block title %}Depot Bookinger{% endblock %}
-
-{% block content %}
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h1 class="mb-0">
-                <i class="bi bi-calendar-check"></i> Depot Bookinger
-            </h1>
-        </div>
-        <div class="col-md-4 text-end">
-            <a href="{% url 'Depot_DepotBooking_create' %}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Ny booking
-            </a>
-        </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="">Alle statusser</option>
-                        {% for status_value, status_label in status_choices %}
-                        <option value="{{ status_value }}" {% if selected_status == status_value %}selected{% endif %}>
-                            {{ status_label }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Vare</label>
-                    <select name="item" class="form-select">
-                        <option value="">Alle varer</option>
-                        <!-- Add dynamic options if needed -->
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Hold</label>
-                    <select name="team" class="form-select">
-                        <option value="">Alle hold</option>
-                        <!-- Add dynamic options if needed -->
-                    </select>
-                </div>
-                <div class="col-md-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-outline-secondary w-100">
-                        <i class="bi bi-funnel"></i> Filter
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Bookings Table -->
-    {% if bookings %}
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Vare</th>
-                        <th>Hold</th>
-                        <th>Kontakt</th>
-                        <th>Antal</th>
-                        <th>Periode</th>
-                        <th>Status</th>
-                        <th>Oprettet</th>
-                        <th>Handlinger</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for booking in bookings %}
-                    <tr>
-                        <td>
-                            <a href="{{ booking.item.get_absolute_url }}" class="text-decoration-none">
-                                {{ booking.item.name }}
-                            </a>
-                        </td>
-                        <td>{{ booking.team.name }}</td>
-                        <td>{{ booking.team_contact.name }}</td>
-                        <td>{{ booking.quantity }}</td>
-                        <td>
-                            <small>
-                                {{ booking.start_date|date:"d/m/Y" }} {{ booking.start_time|time:"H:i" }} → {{ booking.end_date|date:"d/m/Y" }} {{ booking.end_time|time:"H:i" }}
-                            </small>
-                        </td>
-                        <td>
-                            <span class="badge bg-{{ booking.get_status_display_color }}">
-                                {{ booking.get_status_display }}
-                            </span>
-                        </td>
-                        <td>{{ booking.created_at|date:"d/m/Y" }}</td>
-                        <td>
-                            <a href="{{ booking.get_update_url }}" class="btn btn-sm btn-warning">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <a href="{% url 'Depot_DepotBooking_delete' booking.pk %}" class="btn btn-sm btn-danger">
-                                <i class="bi bi-trash"></i>
-                            </a>
-                        </td>
-                    </tr>
+{% block booking_list_toolbar %}
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">Alle statusser</option>
+                    {% for status_value, status_label in status_choices %}
+                    <option value="{{ status_value }}" {% if selected_status == status_value %}selected{% endif %}>{{ status_label }}</option>
                     {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Vare</label>
+                <select name="item" class="form-select">
+                    <option value="">Alle varer</option>
+                    {% for depot_item in filter_items %}
+                    <option value="{{ depot_item.pk }}" {% if selected_item == depot_item.pk|stringformat:"s" %}selected{% endif %}>{{ depot_item.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Hold</label>
+                <select name="team" class="form-select">
+                    <option value="">Alle hold</option>
+                    {% for team in filter_teams %}
+                    <option value="{{ team.pk }}" {% if selected_team == team.pk|stringformat:"s" %}selected{% endif %}>{{ team.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+            </div>
+        </form>
     </div>
-
-    <!-- Pagination -->
-    {% if is_paginated %}
-    <nav aria-label="Page navigation" class="mt-4">
-        <ul class="pagination justify-content-center">
-            {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page=1">Første</a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Forrige</a>
-            </li>
-            {% endif %}
-
-            {% for num in page_obj.paginator.page_range %}
-                {% if page_obj.number == num %}
-                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                {% else %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                </li>
-                {% endif %}
-            {% endfor %}
-
-            {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Næste</a>
-            </li>
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Sidste</a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
-
-    {% else %}
-    <div class="alert alert-info" role="alert">
-        <i class="bi bi-info-circle"></i> Ingen bookinger fundet.
-    </div>
-    {% endif %}
 </div>
 {% endblock %}
-
-

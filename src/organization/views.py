@@ -8,7 +8,7 @@ from django.contrib.auth.views import PasswordResetView
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db import transaction
-from django.db.models import Case, IntegerField, Q, Value, When
+from django.db.models import Case, F, IntegerField, Q, Value, When
 from django.db.models.functions import Cast
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
@@ -18,6 +18,7 @@ from django.views import generic
 from django.views.decorators.http import require_POST
 
 from emailing.forms import BrandedPasswordResetForm
+from utils.ui import BookingDetailContextMixin, BookingListContextMixin
 
 from . import forms, models
 from .models import Team, TeamMembership
@@ -265,28 +266,60 @@ class KeyDeleteView(StaffRequiredMixin, LoginRequiredMixin, generic.DeleteView):
 
 
 class AppointmentQuerysetMixin:
-    """Restrict appointments to ones where the user is the requester or receiver."""
+    """Restrict appointments to the ones the user may see.
+
+    Participants, members of the receiving team, and (for shared appointments)
+    the requester's teammates all get access. Staff see everything.
+    """
+
+    def get_queryset(self):
+        return super().get_queryset().visible_to(self.request.user)
+
+
+class AppointmentOwnerMixin:
+    """Restrict editing and deleting to the requester (or staff)."""
 
     def get_queryset(self):
         qs = super().get_queryset()
         user = self.request.user
         if user.is_staff:
             return qs
-        return qs.filter(Q(requester=user) | Q(receiver=user))
+        return qs.filter(requester=user)
 
 
-class VolunteerAppointmentListView(LoginRequiredMixin, generic.ListView):
+class VolunteerAppointmentListView(BookingListContextMixin, LoginRequiredMixin, generic.ListView):
     model = models.VolunteerAppointment
     context_object_name = 'appointments'
 
+    booking_list_title = "Mine legeaftaler"
+    booking_list_create_url_name = "organization_VolunteerAppointment_create"
+    booking_list_create_label = "Ny legeaftale"
+    booking_list_mobile_create_label = "Ny legeaftale"
+    booking_list_show_comments = False
+    booking_list_show_quantity = False
+    booking_list_show_team_contact = False
+    booking_list_empty_message = "Du har ingen legeaftaler endnu."
+
     def get_queryset(self):
+        return (
+            models.VolunteerAppointment.objects.visible_to(self.request.user)
+            .select_related('requester', 'receiver', 'receiver_team')
+            .order_by(
+                F('start_date').desc(nulls_last=True),
+                F('start_time').desc(nulls_last=True),
+            )
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        appointments = context.get('object_list')
+        if appointments is None:
+            appointments = context.get(self.context_object_name, [])
         user = self.request.user
-        # Filter where user is EITHER the requester OR the receiver
-        return models.VolunteerAppointment.objects.filter(
-            Q(requester=user) | Q(receiver=user)
-        ).select_related(
-            'requester', 'receiver'
-        ).order_by('-start_date', '-start_time')
+        for appointment in appointments:
+            appointment.role = appointment.role_for(user)
+        context['object_list'] = appointments
+        return context
     
     
 class VolunteerAppointmentCreateView(LoginRequiredMixin, generic.CreateView):
@@ -304,14 +337,24 @@ class VolunteerAppointmentCreateView(LoginRequiredMixin, generic.CreateView):
         form.instance.status = 'pending'
         return super().form_valid(form)
 
-class VolunteerAppointmentDetailView(AppointmentQuerysetMixin, LoginRequiredMixin, generic.DetailView):
+class VolunteerAppointmentDetailView(BookingDetailContextMixin, AppointmentQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     model = models.VolunteerAppointment
-    
+
+    booking_detail_kicker = "Legeaftale"
+    booking_detail_list_url_name = "organization_VolunteerAppointment_list"
+    booking_detail_list_label = "Legeaftaler"
+    booking_detail_show_comments = False
+
+    def get_queryset(self):
+        return super().get_queryset().select_related(
+            'requester', 'receiver', 'receiver_team', 'resolved_by'
+        )
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from django.urls import reverse
         from django_comments_xtd.models import XtdComment
-        
+
         # Get all comments for this appointment
         content_type = ContentType.objects.get_for_model(models.VolunteerAppointment)
         context['comments'] = XtdComment.objects.filter(
@@ -319,19 +362,18 @@ class VolunteerAppointmentDetailView(AppointmentQuerysetMixin, LoginRequiredMixi
             object_pk=str(self.object.pk),
             is_public=True
         ).select_related('user').order_by('-submit_date')
-        
-        # Add flag for whether user can comment
-        context['user_can_comment'] = (
-            self.request.user == self.object.requester or 
-            self.request.user == self.object.receiver
-        )
-        
+
+        # Everyone who can see the appointment can join the conversation.
+        context['user_can_comment'] = self.object.can_view(self.request.user)
+        context['user_can_respond'] = self.object.can_respond(self.request.user)
+        context['user_can_edit'] = self.object.can_edit(self.request.user)
+
         # Add URL for comment form submission
         context['comment_form_url'] = reverse('appointment_comment_add', kwargs={'pk': self.object.pk})
-        
+
         return context
 
-class VolunteerAppointmentUpdateView(AppointmentQuerysetMixin, LoginRequiredMixin, generic.UpdateView):
+class VolunteerAppointmentUpdateView(AppointmentOwnerMixin, LoginRequiredMixin, generic.UpdateView):
     model = models.VolunteerAppointment
     form_class = forms.AppointmentForm
     # Fallback redirect if get_absolute_url isn't used
@@ -342,7 +384,7 @@ class VolunteerAppointmentUpdateView(AppointmentQuerysetMixin, LoginRequiredMixi
         kwargs['user'] = self.request.user
         return kwargs
 
-class VolunteerAppointmentDeleteView(AppointmentQuerysetMixin, LoginRequiredMixin, generic.DeleteView):
+class VolunteerAppointmentDeleteView(AppointmentOwnerMixin, LoginRequiredMixin, generic.DeleteView):
     model = models.VolunteerAppointment
     success_url = reverse_lazy("organization_VolunteerAppointment_list")
 
@@ -352,11 +394,18 @@ class VolunteerAppointmentDeleteView(AppointmentQuerysetMixin, LoginRequiredMixi
 @login_required
 @require_POST
 def appointment_status_update(request, pk, new_status):
-    # Only the receiver should be able to trigger this
-    appointment = get_object_or_404(models.VolunteerAppointment, pk=pk, receiver=request.user)
+    """Let the receiver (or a member of the receiving team) answer."""
+    appointment = get_object_or_404(models.VolunteerAppointment, pk=pk)
+    if not appointment.can_respond(request.user):
+        raise Http404()
+
     if new_status in ['accepted', 'rejected', 'pending']:
         appointment.status = new_status
-        appointment.save()
+        if new_status in ('accepted', 'rejected'):
+            appointment.resolved_by = request.user
+        else:
+            appointment.resolved_by = None
+        appointment.save(update_fields=['status', 'resolved_by', 'last_updated'])
     return redirect('organization_VolunteerAppointment_detail', pk=pk)
 
 
@@ -366,12 +415,12 @@ def appointment_comment_add(request, pk):
     """Add a comment to a VolunteerAppointment."""
     from django.conf import settings
     from django_comments_xtd.models import XtdComment
-    
+
     appointment = get_object_or_404(models.VolunteerAppointment, pk=pk)
-    
-    # Only requester and receiver can comment
-    if request.user != appointment.requester and request.user != appointment.receiver:
-        return redirect('organization_VolunteerAppointment_detail', pk=pk)
+
+    # Everyone who can see the appointment can comment on it.
+    if not appointment.can_view(request.user):
+        raise Http404()
     
     comment_text = request.POST.get('comment', '').strip()
     if not comment_text:

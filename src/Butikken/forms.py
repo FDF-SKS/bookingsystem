@@ -1,6 +1,8 @@
 from datetime import time
+from decimal import Decimal
 
 from django import forms
+from django.db.models import Q
 from django.forms import (
     TextInput,
 )
@@ -106,6 +108,24 @@ class ButikkenItemForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields["type"].queryset = ButikkenItemType.objects.all()
 
+class ButikkenItemProposalForm(forms.Form):
+    """Validates a new item proposed from the order form.
+
+    The order form sends proposals as JSON, so this form is used server-side to
+    validate each entry before creating a pending :class:`ButikkenItem`.
+    """
+
+    name = forms.CharField(max_length=100, strip=True)
+    quantity = forms.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        min_value=Decimal("0.01"),
+        initial=Decimal("1"),
+        required=False,
+    )
+    unit = forms.CharField(max_length=100, strip=True, required=False)
+    description = forms.CharField(max_length=500, strip=True, required=False)
+
 class ButikkenBookingForm(forms.ModelForm):
     start_date = forms.DateField(
         widget=TextInput(attrs={"type": "date"}),
@@ -170,7 +190,15 @@ class ButikkenBookingForm(forms.ModelForm):
     
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["item"].queryset = ButikkenItem.objects.all()
+        self.fields["item"].queryset = ButikkenItem.objects.filter(
+            status=ButikkenItem.STATUS_ACTIVE
+        )
+        # Keep the current item selectable when editing a booking that points at
+        # a pending/rejected proposal item.
+        if self.instance and self.instance.pk and self.instance.item_id:
+            self.fields["item"].queryset = ButikkenItem.objects.filter(
+                Q(status=ButikkenItem.STATUS_ACTIVE) | Q(pk=self.instance.item_id)
+            )
         self.fields["team"].queryset = Team.objects.all()
         self.fields["team_contact"].queryset = Volunteer.objects.all()
         self.fields["item"].empty_label = "Begynd at skrive for at finde en vare..."

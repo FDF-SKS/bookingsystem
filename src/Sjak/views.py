@@ -15,6 +15,12 @@ from django.views.decorators.http import require_POST
 
 from organization.models import Event, Volunteer
 from organization.permissions import StaffRequiredMixin, TeamQuerysetMixin
+from utils.ui import (
+    BookingDetailContextMixin,
+    BookingListContextMixin,
+    ItemDetailContextMixin,
+    ItemListContextMixin,
+)
 
 from . import forms, models
 
@@ -206,12 +212,21 @@ class SjakKanbanView(LoginRequiredMixin, UserPassesTestMixin, generic.ListView):
         
         return grouped
 
-class SjakBookingListView(LoginRequiredMixin, generic.ListView):
+class SjakBookingListView(BookingListContextMixin, LoginRequiredMixin, generic.ListView):
     model = models.SjakBooking
     form_class = forms.SjakBookingForm
     context_object_name = 'object_list'
-    template_name = 'Sjak/SjakBooking_list.html'
+    template_name = 'Sjak/sjakbooking_list.html'
     paginate_by = 16  # Display 15 items per page
+
+    booking_list_title = "Sjak bookinger"
+    booking_list_create_url_name = "Sjak_SjakBooking_create"
+    booking_list_create_label = "Ny booking"
+    booking_list_mobile_create_label = "Ny Sjak booking"
+    booking_list_kanban_url_name = "Sjak_SjakBooking_kanban"
+    booking_list_approve_url_name = "Sjak_SjakBooking_approve"
+    booking_list_reject_url_name = "Sjak_SjakBooking_reject"
+    booking_list_update_url_name = "Sjak_SjakBooking_update"
 
     def get_queryset(self):
         user = self.request.user
@@ -231,38 +246,13 @@ class SjakBookingListView(LoginRequiredMixin, generic.ListView):
         logger.info(f"Fetched {queryset.count()} bookings for user {user.id}")
         return queryset
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
+    def get_booking_list_subtitle(self) -> str:
+        membership = self.request.user.teammembership_set.select_related('team').first()
+        return f"Team: {membership.team.name}" if membership else ""
 
-        # Fetch the user's team membership
-        user_team_membership = user.teammembership_set.select_related('team').first()
-        is_staff = user.is_staff
-
-        # Filter the object list based on the user's team membership and staff status
-        if is_staff:
-            filtered_object_list = context['object_list']
-        else:
-            filtered_object_list = [
-            obj for obj in context['object_list']
-            if user_team_membership and obj.team == user_team_membership.team
-            ]
-
-        # Fetch user events
-        user_events = list(user.events.filter(is_active=True).values('name', 'deadline_sjak'))
-
-        # Fetch volunteer team memberships
-        volunteer_team_memberships = list(user.teammembership_set.select_related('team').values('team__name'))
-
-        context.update({
-            'filtered_object_list': filtered_object_list,
-            'is_staff': is_staff,
-            'user_team_membership': user_team_membership,
-            'user_events': user_events,
-            'volunteer_team_memberships': volunteer_team_memberships,
-        })
-
-        return context
+    def get_booking_list_deadline(self) -> str:
+        event = self.request.user.events.filter(is_active=True).first()
+        return str(event.deadline_sjak) if event and event.deadline_sjak else ""
 
     def get(self, request, *args, **kwargs):
         logger.info(f"Handling GET request for user {request.user.id} on page {self.request.GET.get('page', 1)}")
@@ -316,9 +306,15 @@ class SjakBookingCreateView(LoginRequiredMixin, generic.CreateView):
 
 
 
-class SjakBookingDetailView(TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
+class SjakBookingDetailView(BookingDetailContextMixin, TeamQuerysetMixin, LoginRequiredMixin, generic.DetailView):
     model = models.SjakBooking
     form_class = forms.SjakBookingForm
+
+    booking_detail_kicker = "Sjak bestilling"
+    booking_detail_list_url_name = "Sjak_SjakBooking_list"
+    booking_detail_list_label = "Sjak bookinger"
+    booking_detail_approve_url_name = "Sjak_SjakBooking_approve"
+    booking_detail_reject_url_name = "Sjak_SjakBooking_reject"
 
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
@@ -404,11 +400,23 @@ class SjakBookingDeleteView(TeamQuerysetMixin, LoginRequiredMixin, generic.Delet
     
 
 
-class SjakItemListView(LoginRequiredMixin, generic.ListView):
+class SjakItemListView(ItemListContextMixin, LoginRequiredMixin, generic.ListView):
     model = models.SjakItem
     form_class = forms.SjakItemForm
     context_object_name = 'object_list'
     ordering = ['name']
+
+    item_list_title = "Sjaks katalog"
+    item_list_subtitle = "Oversigt over materiel og udstyr tilgængeligt i Sjaks katalog."
+    item_list_create_url_name = "Sjak_SjakItem_create"
+    item_list_create_label = "Tilføj genstand"
+    item_list_detail_url_name = "Sjak_SjakItem_detail"
+    item_list_update_url_name = "Sjak_SjakItem_update"
+    item_list_delete_url_name = "Sjak_SjakItem_delete"
+    item_list_search_placeholder = "Søg efter navn, lokation, beskrivelse..."
+    item_list_empty_title = "Ingen varer fundet"
+    item_list_empty_message = "Der er endnu ingen varer i Sjak-kataloget."
+    item_list_icon = "bi-tools"
 
     def get_queryset(self):
         queryset = models.SjakItem.objects.all().order_by('name')  # Order by the 'name' field
@@ -425,9 +433,16 @@ class SjakItemCreateView(StaffRequiredMixin, LoginRequiredMixin, generic.CreateV
         return super().form_valid(form)
 
 
-class SjakItemDetailView(LoginRequiredMixin, generic.DetailView):
+class SjakItemDetailView(ItemDetailContextMixin, LoginRequiredMixin, generic.DetailView):
     model = models.SjakItem
     form_class = forms.SjakItemForm
+
+    item_detail_catalog_label = "Sjak Katalog"
+    item_detail_list_url_name = "Sjak_SjakItem_list"
+    item_detail_badge_label = "Materiel nr."
+    item_detail_icon = "bi-box-seam"
+    item_detail_quantity_label = "Lagerbeholdning"
+    item_detail_footer_text = "Information fra Sjaks Katalog"
 
 
 

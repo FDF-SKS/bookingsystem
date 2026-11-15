@@ -269,6 +269,28 @@ class Key(models.Model):
         return reverse("organization_Key_update", args=(self.pk,))
 
 
+class VolunteerAppointmentQuerySet(models.QuerySet):
+    """Queryset helpers for the visibility rules of legeaftaler."""
+
+    def visible_to(self, user):
+        """Return appointments ``user`` is allowed to see.
+
+        A legeaftale is visible to the requester, the receiver, every member of
+        the receiving team, and - when shared - the requester's teammates.
+        """
+        if not user or not user.is_authenticated:
+            return self.none()
+        if user.is_staff:
+            return self
+        team_ids = user.teams.values_list('pk', flat=True)
+        return self.filter(
+            models.Q(requester=user)
+            | models.Q(receiver=user)
+            | models.Q(receiver_team_id__in=team_ids)
+            | models.Q(shared_with_team=True, requester__teams__in=team_ids)
+        ).distinct()
+
+
 class VolunteerAppointment(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Afventer (Pending)'),
@@ -282,10 +304,38 @@ class VolunteerAppointment(models.Model):
         on_delete=models.CASCADE, 
         related_name="requested_appointments"
     )
+    # Exactly one of ``receiver`` and ``receiver_team`` is set: either a single
+    # person is invited, or the appointment is open to a whole team.
     receiver = models.ForeignKey(
-        "organization.Volunteer", 
-        on_delete=models.CASCADE, 
-        related_name="received_appointments"
+        "organization.Volunteer",
+        on_delete=models.CASCADE,
+        related_name="received_appointments",
+        null=True,
+        blank=True,
+        verbose_name="Modtager",
+    )
+    receiver_team = models.ForeignKey(
+        "organization.Team",
+        on_delete=models.CASCADE,
+        related_name="received_appointments",
+        null=True,
+        blank=True,
+        verbose_name="Modtagerteam",
+        help_text="Vælg et team i stedet for en bestemt person.",
+    )
+    shared_with_team = models.BooleanField(
+        default=False,
+        verbose_name="Delt med afsenderens team",
+        help_text="Gør aftalen synlig for alle på afsenderens team.",
+    )
+    resolved_by = models.ForeignKey(
+        "organization.Volunteer",
+        on_delete=models.SET_NULL,
+        related_name="resolved_appointments",
+        null=True,
+        blank=True,
+        verbose_name="Besvaret af",
+        help_text="Den person, der svarede på aftalen - relevant ved teamaftaler.",
     )
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
@@ -301,20 +351,116 @@ class VolunteerAppointment(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
 
+    objects = VolunteerAppointmentQuerySet.as_manager()
+
     class Meta:
         verbose_name = "Aftale"
+        verbose_name_plural = "Aftaler"
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(receiver__isnull=False, receiver_team__isnull=True)
+                    | models.Q(receiver__isnull=True, receiver_team__isnull=False)
+                ),
+                name="appointment_receiver_or_team",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if bool(self.receiver_id) == bool(self.receiver_team_id):
+            raise ValidationError(
+                "Vælg enten en bestemt person eller et team som modtager."
+            )
+        if self.receiver_id and self.receiver_id == self.requester_id:
+            raise ValidationError({"receiver": "Du kan ikke lave en aftale med dig selv."})
+
+    # -- display -----------------------------------------------------------
+    @property
+    def is_team_appointment(self) -> bool:
+        return self.receiver_team_id is not None
+
+    @property
+    def receiver_display(self) -> str:
+        if self.receiver_id:
+            return self.receiver.get_full_name() or self.receiver.username
+        if self.receiver_team_id:
+            return f"{self.receiver_team.name} (team)"
+        return "-"
 
     def __str__(self):
         # Get first team for requester
         requester_team = self.requester.teams.first()
         requester_str = f"{self.requester} ({requester_team.short_name})" if requester_team else str(self.requester)
-        
-        # Get first team for receiver
-        receiver_team = self.receiver.teams.first()
-        receiver_str = f"{self.receiver} ({receiver_team.short_name})" if receiver_team else str(self.receiver)
-        
-        return f"{requester_str} -> {receiver_str} "
-    
+
+        if self.receiver_id:
+            receiver_team = self.receiver.teams.first()
+            receiver_str = f"{self.receiver} ({receiver_team.short_name})" if receiver_team else str(self.receiver)
+        else:
+            receiver_str = f"{self.receiver_team} (team)" if self.receiver_team_id else "?"
+
+        return f"{requester_str} -> {receiver_str}"
+
+    # -- permissions -------------------------------------------------------
+    def is_requester(self, user) -> bool:
+        return bool(user and user.is_authenticated and user.pk == self.requester_id)
+
+    def is_receiver(self, user) -> bool:
+        return bool(
+            self.receiver_id
+            and user
+            and user.is_authenticated
+            and user.pk == self.receiver_id
+        )
+
+    def is_receiver_team_member(self, user) -> bool:
+        if not self.receiver_team_id or not user or not user.is_authenticated:
+            return False
+        return user.teams.filter(pk=self.receiver_team_id).exists()
+
+    def is_requester_team_member(self, user) -> bool:
+        if not user or not user.is_authenticated:
+            return False
+        return self.requester.teams.filter(pk__in=user.teams.values('pk')).exists()
+
+    def can_view(self, user) -> bool:
+        if not user or not user.is_authenticated:
+            return False
+        if user.is_staff:
+            return True
+        return (
+            self.is_requester(user)
+            or self.is_receiver(user)
+            or self.is_receiver_team_member(user)
+            or (self.shared_with_team and self.is_requester_team_member(user))
+        )
+
+    def can_respond(self, user) -> bool:
+        if not user or not user.is_authenticated:
+            return False
+        return (
+            user.is_staff
+            or self.is_receiver(user)
+            or self.is_receiver_team_member(user)
+        )
+
+    def can_edit(self, user) -> bool:
+        if not user or not user.is_authenticated:
+            return False
+        return user.is_staff or self.is_requester(user)
+
+    def role_for(self, user) -> str:
+        """Return the viewer's role, used for labels in lists."""
+        if self.is_requester(user):
+            return 'requester'
+        if self.is_receiver(user):
+            return 'receiver'
+        if self.is_receiver_team_member(user):
+            return 'team'
+        if user and user.is_authenticated and user.is_staff:
+            return 'staff'
+        return 'shared'
+
     def get_absolute_url(self):
         return reverse("organization_VolunteerAppointment_detail", args=(self.pk,))
 

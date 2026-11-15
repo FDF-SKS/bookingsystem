@@ -1,105 +1,22 @@
-{% extends "base.html" %}
-{% load static %}
-{% load django_bootstrap5 %}
-{% load bootstrap_icons %}
+{% extends "components/booking_form.html" %}
 
-{% block content %}
-{% block extra_css %}
-<link href="{% static 'vendor/tom-select/tom-select.bootstrap5.min.css' %}" rel="stylesheet">
-<style>
-    /* Small adjustments for Tom Select styling inside bootstrap_field wrappers */
-    .input-group > .ts-wrapper { flex: 1 1 auto; width: 1%; }
-    .input-group > .ts-wrapper .ts-control {
-        border-top-right-radius: 0 !important;
-        border-bottom-right-radius: 0 !important;
-        padding: 0.5rem 0.75rem !important;
-        min-height: calc(1.5em + 1rem + 2px);
-        z-index: 1;
-    }
-    .ts-wrapper.form-control { padding: 0 !important; border: none !important; }
-    .ts-control { border: 1px solid #dee2e6 !important; }
-    .ts-wrapper.focus .ts-control { box-shadow: 0 0 0 0.25rem rgba(13,110,253,0.25) !important; }
-    .ts-dropdown { z-index: 1050 !important; }
-</style>
-{% endblock %}
-<div class="container py-4">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'index' %}">Hjem</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'organization_VolunteerAppointment_list' %}">Legeaftaler</a></li>
-            <li class="breadcrumb-item active" aria-current="page">{% if object %}Rediger{% else %}Ny{% endif %} legeaftale</li>
-        </ol>
-    </nav>
+{% block booking_form_page_title %}Legeaftale{% endblock %}
+{% block booking_form_title %}{% if form.instance.pk %}Rediger{% else %}Ny{% endif %} legeaftale{% endblock %}
+{% block booking_form_breadcrumb %}<li class="breadcrumb-item"><a href="{% url 'organization_VolunteerAppointment_list' %}">Legeaftaler</a></li>{% endblock %}
+{% block booking_form_breadcrumb_active %}{% if form.instance.pk %}Rediger{% else %}Ny{% endif %} legeaftale{% endblock %}
+{% block booking_form_details_heading %}Information{% endblock %}
 
-    <div class="mb-4 mt-2">
-        <h1 class="display-5">{% if object %}Rediger{% else %}Ny{% endif %} legeaftale</h1>
-        {% if user.is_authenticated and user.events.first %}
-        <div class="alert alert-light" role="alert">
-            <i class="bi bi-info-circle"></i> Du opretter en aftale for eventet: 
-            <span class="badge bg-primary">{{ user.events.first.name }}</span>
-        </div>
-        {% endif %}
-    </div>
-
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-4">
-            <form id="form" role="form" method="post" class="needs-validation">
-                {% csrf_token %}
-                {% bootstrap_form_errors form type='non_fields' %}
-
-                <h5 class="border-bottom pb-2 mb-3 mt-3">Information</h5>
-                <div class="row">
-                    <div class="col-md-12 mb-3">
-                        {% bootstrap_field form.receiver %}
-                        <div class="form-text">Vælg den person, du gerne vil lave en aftale med.</div>
-                    </div>
-                </div>
-
-                <h5 class="border-bottom pb-2 mb-3 mt-3">Tidspunkt</h5>
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        {% bootstrap_field form.start_date %}
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        {% bootstrap_field form.start_time %}
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        {% bootstrap_field form.end_date %}
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        {% bootstrap_field form.end_time %}
-                    </div>
-                </div>
-
-                <h5 class="border-bottom pb-2 mb-3 mt-3">Aftalens indhold</h5>
-                <div class="row">
-                    <div class="col-12 mb-3">
-                        {% bootstrap_field form.description %}
-                    </div>
-                </div>
-
-                <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-5 mt-4">
-                    <button type="submit" class="btn btn-primary btn-lg px-5">
-                        <i class="bi bi-send"></i> {% if object %}Opdater{% else %}Send{% endif %} anmodning
-                    </button>
-                    <a href="{% url 'organization_VolunteerAppointment_list' %}" class="btn btn-outline-secondary btn-lg">Annuller</a>
-                </div>
-            </form>
-        </div>
-    </div>
+{% block booking_form_deadline %}
+{% if user.is_authenticated and user.events.first %}
+<div class="alert alert-light" role="alert">
+    <i class="bi bi-info-circle"></i> Du opretter en aftale for eventet:
+    <span class="badge bg-primary">{{ user.events.first.name }}</span>
 </div>
-
-            <script src="{% static 'vendor/tom-select/tom-select.complete.min.js' %}"></script>
-            <script nonce="{{ csp_nonce }}">
-            document.addEventListener('DOMContentLoaded', function() {
-                const receiverSelect = document.querySelector('select[name="receiver"]');
-                if (receiverSelect) {
-                    new TomSelect(receiverSelect, {
-                        create: false,
-                        placeholder: 'Søg efter person...'
-                    });
-                }
-            });
-            </script>
+{% endif %}
 {% endblock %}
 
+{% block booking_form_submit_label %}{% if form.instance.pk %}Opdater{% else %}Send{% endif %} anmodning{% endblock %}
+
+{% block booking_form_cancel %}
+<a href="{% url 'organization_VolunteerAppointment_list' %}" class="btn btn-outline-secondary">Annuller</a>
+{% endblock %}
