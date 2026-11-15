@@ -1,7 +1,7 @@
 # Core Framework
-Django==5.2.17
+Django==5.2.19
 django-allauth[mfa]>=65.14.2
-djangorestframework>=3.16.1
+djangorestframework>=3.18.2
 asgiref>=3.11.1
 djlint>=1.36.4
 
@@ -17,7 +17,7 @@ django-admin-list-filter-dropdown>=1.0.3
 psycopg2-binary>=2.9.11
 gunicorn==27.0.0
 python-dotenv>=1.2.1
-sqlparse>=0.5.5
+sqlparse>=0.6.0
 
 # Excel export
 openpyxl>=3.1
@@ -47,7 +47,7 @@ django-redis>=6.0.0
 # Email (Amazon SES + async sending)
 django-ses>=4.8.0
 boto3>=1.35
-cryptography>=48.0.1
+cryptography>=50.0.0
 celery>=5.4
 redis>=5.0
 

@@ -20,6 +20,17 @@ def team_ids_for(user):
     return set(user.teammembership_set.values_list("team_id", flat=True))
 
 
+def scope_to_user_teams(queryset, user, team_field="team_id"):
+    """Limit ``queryset`` to the teams ``user`` belongs to.
+
+    Staff see everything. Use this for every team-scoped query (lists, detail
+    pages, dashboards) so the visibility rule is defined in one place.
+    """
+    if user is not None and user.is_authenticated and user.is_staff:
+        return queryset
+    return queryset.filter(**{f"{team_field}__in": team_ids_for(user)})
+
+
 def restrict_team_field(user, team_field, contact_field=None):
     """Restrict a team ``ModelChoiceField`` (and optional contact field) to the
     teams the user belongs to. Staff keep the full queryset."""
@@ -45,11 +56,7 @@ class TeamQuerysetMixin:
     """Scope a List/Detail/Update/Delete queryset to the user's teams."""
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        user = self.request.user
-        if user.is_staff:
-            return qs
-        return qs.filter(team_id__in=team_ids_for(user))
+        return scope_to_user_teams(super().get_queryset(), self.request.user)
 
 
 class IsStaffOrReadOnly(permissions.BasePermission):
@@ -85,11 +92,7 @@ class TeamScopedMixin:
     """
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        user = self.request.user
-        if user.is_staff:
-            return qs
-        return qs.filter(team_id__in=team_ids_for(user))
+        return scope_to_user_teams(super().get_queryset(), self.request.user)
 
     def perform_create(self, serializer):
         user = self.request.user

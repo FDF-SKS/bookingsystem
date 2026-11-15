@@ -288,6 +288,50 @@ class ViewAuthorizationTests(TestCase):
             DepotBooking.objects.filter(pk=self.team_b_depot_booking.pk).exists()
         )
 
+    def test_non_staff_cannot_see_other_team_bookings_on_item_detail(self):
+        """Vare-detaljesiden må ikke afsløre andre holds bookinger."""
+        response = self.client.get(
+            reverse("Depot_DepotItem_detail", args=[self.depot_item.pk])
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(self.team_b_depot_booking, list(response.context["bookings"]))
+        self.assertNotIn(
+            self.team_b_depot_booking, list(response.context["upcoming_bookings"])
+        )
+        self.assertNotContains(response, self.team_b.name)
+
+    def test_non_staff_sees_own_team_bookings_on_item_detail(self):
+        own_booking = DepotBooking.objects.create(
+            item=self.depot_item,
+            team=self.team_a,
+            team_contact=self.user,
+            quantity=2,
+            start_date=date(2026, 2, 1),
+            end_date=date(2026, 2, 2),
+            status="Approved",
+        )
+
+        response = self.client.get(
+            reverse("Depot_DepotItem_detail", args=[self.depot_item.pk])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(own_booking, list(response.context["bookings"]))
+        self.assertIn(own_booking, list(response.context["upcoming_bookings"]))
+        self.assertNotIn(self.team_b_depot_booking, list(response.context["bookings"]))
+        # Tabellen skal faktisk rendres for almindelige brugere ...
+        self.assertContains(response, self.team_a.name)
+
+    def test_staff_sees_all_bookings_on_item_detail(self):
+        self.client.force_login(self.staff)
+
+        response = self.client.get(
+            reverse("Depot_DepotItem_detail", args=[self.depot_item.pk])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(self.team_b_depot_booking, list(response.context["bookings"]))
+
     def test_non_staff_cannot_update_other_team_meal_booking(self):
         response = self.client.get(
             reverse("Butikken_MealBooking_update", args=[self.team_b_meal_booking.pk])

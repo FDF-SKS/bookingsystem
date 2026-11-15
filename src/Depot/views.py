@@ -15,6 +15,7 @@ from organization.permissions import (
     StaffRequiredMixin,
     TeamQuerysetMixin,
     restrict_team_field,
+    scope_to_user_teams,
 )
 from utils.ui import (
     BookingDetailContextMixin,
@@ -84,17 +85,22 @@ class DepotItemDetailView(ItemDetailContextMixin, LoginRequiredMixin, DetailView
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        item = self.get_object()
-        
-        # Get all bookings for this item
-        context['bookings'] = DepotBooking.objects.filter(item=item).select_related('team', 'team_contact')
-        
+
+        # Kun bookinger for brugerens egne teams; staff ser alt. Ellers kan en
+        # almindelig bruger se andre holds bookinger via vare-detaljesiden.
+        bookings = scope_to_user_teams(
+            DepotBooking.objects.filter(item=self.object).select_related(
+                'team', 'team_contact'
+            ),
+            self.request.user,
+        )
+        context['bookings'] = bookings
+
         # Get upcoming bookings (approved only)
-        context['upcoming_bookings'] = DepotBooking.objects.filter(
-            item=item,
+        context['upcoming_bookings'] = bookings.filter(
             status='Approved'
         ).order_by('start_date')
-        
+
         return context
 
 
