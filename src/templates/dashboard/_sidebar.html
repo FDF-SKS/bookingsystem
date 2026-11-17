@@ -1,0 +1,80 @@
+<aside class="offcanvas-lg offcanvas-start dashboard-sidebar"
+       tabindex="-1"
+       id="dashboardSidebar"
+       aria-labelledby="dashboardSidebarLabel">
+    <div class="offcanvas-header d-lg-none">
+        <h2 class="offcanvas-title fs-6 fw-bold" id="dashboardSidebarLabel">Menu</h2>
+        <button type="button"
+                class="btn-close"
+                data-bs-dismiss="offcanvas"
+                data-bs-target="#dashboardSidebar"
+                aria-label="Luk menu"></button>
+    </div>
+
+    <div class="offcanvas-body dashboard-sidebar__body">
+        <nav class="dashboard-nav" aria-label="Hovedmenu">
+            {% for section in sidebar_sections %}
+                {% if section.flat %}
+                    <div class="dashboard-nav-flat">
+                        {% include "dashboard/_nav_item.html" with item=section.only_item %}
+                    </div>
+                {% else %}
+                    <div class="dashboard-nav-section">
+                        <button class="dashboard-nav-section__toggle"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#dashboard-nav-{{ forloop.counter }}"
+                                aria-expanded="{{ section.default_open|yesno:'true,false' }}"
+                                aria-controls="dashboard-nav-{{ forloop.counter }}">
+                            <span class="dashboard-nav-section__label">
+                                <i class="bi {{ section.icon }}" aria-hidden="true"></i>
+                                <span>{{ section.title }}</span>
+                            </span>
+                            <i class="bi bi-chevron-down dashboard-nav-section__chevron" aria-hidden="true"></i>
+                        </button>
+                        <div class="collapse {% if section.default_open %}show{% endif %}"
+                             id="dashboard-nav-{{ forloop.counter }}">
+                            {% for item in section.items %}
+                                {% include "dashboard/_nav_item.html" with item=item %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </nav>
+
+        <div class="dashboard-user dropdown dropup">
+            <button class="dashboard-user__toggle"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false">
+                {% if user.image_thumbnail %}
+                    <img class="dashboard-avatar"
+                         src="{{ user.image_thumbnail.url }}"
+                         alt=""
+                         width="28"
+                         height="28"
+                         loading="lazy">
+                {% else %}
+                    <span class="dashboard-avatar dashboard-avatar--initials" aria-hidden="true">
+                        {{ user.first_name|slice:":1" }}{{ user.last_name|slice:":1" }}
+                    </span>
+                {% endif %}
+                <span class="dashboard-user__name">{{ user.get_full_name|default:user.email }}</span>
+                <i class="bi bi-chevron-up ms-auto" aria-hidden="true"></i>
+            </button>
+            <ul class="dropdown-menu w-100">
+                <li><a class="dropdown-item" href="{% url 'organization_Volunteer_detail' user.pk %}">Min profil</a></li>
+                <li><a class="dropdown-item" href="{% url 'notifications_settings' %}">Notifikationer &amp; kalender</a></li>
+                <li><a class="dropdown-item" href="{% url 'mfa_index' %}">Sikkerhed &amp; login</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Tema</h6></li>
+                <li><a class="dropdown-item" href="#" data-theme-option="system">System</a></li>
+                <li><a class="dropdown-item" href="#" data-theme-option="light">Lys</a></li>
+                <li><a class="dropdown-item" href="#" data-theme-option="dark">Mørk</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'logout_user' %}">Log ud</a></li>
+            </ul>
+        </div>
+    </div>
+</aside>

@@ -1,0 +1,16 @@
+<div class="dashboard-nav-item">
+    <a class="dashboard-nav-link {% if item.active %}active{% endif %}"
+       href="{{ item.url }}"
+       {% if item.active %}aria-current="page"{% endif %}>
+        <i class="bi {{ item.icon }}" aria-hidden="true"></i>
+        <span>{{ item.label }}</span>
+    </a>
+    {% if item.create_url %}
+        <a class="dashboard-nav-add"
+           href="{{ item.create_url }}"
+           aria-label="Opret {{ item.label }}"
+           title="Opret {{ item.label }}">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        </a>
+    {% endif %}
+</div>

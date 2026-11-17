@@ -135,6 +135,10 @@ MAX_PROGRAM_DAYS = 60
 PROGRAM_WEEKDAYS = (
     'Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag',
 )
+PROGRAM_HOUR_HEIGHT = 48
+# Shorter blocks (roughly <= 45 minutes) get a single-row layout so the title
+# stays visible instead of being pushed out by the time and meta lines.
+PROGRAM_COMPACT_HEIGHT = 38
 PROGRAM_CATEGORY_LABELS = dict(ProgramBlock.CATEGORY_CHOICES)
 PROGRAM_HISTORY_TYPE_LABELS = {
     '+': 'Oprettet',
@@ -171,7 +175,12 @@ def _program_day_range(event) -> list:
     return days
 
 
-def _layout_day_blocks(blocks, start_hour: int, end_hour: int) -> list:
+def _layout_day_blocks(
+    blocks,
+    start_hour: int,
+    end_hour: int,
+    hour_height: int = PROGRAM_HOUR_HEIGHT,
+) -> list:
     """Compute calendar geometry for the blocks of one day.
 
     Overlapping blocks are placed in lanes; a lane count is computed per
@@ -220,6 +229,7 @@ def _layout_day_blocks(blocks, start_hour: int, end_hour: int) -> list:
             height = max(0.4, min(100.0 - top, raw_height))
             left = lane / lane_count * 100
             width = 100 / lane_count
+            height_px = height / 100 * total_minutes / 60 * hour_height
             chunks.append(
                 {
                     'block': block,
@@ -235,6 +245,15 @@ def _layout_day_blocks(blocks, start_hour: int, end_hour: int) -> list:
                     'height': round(height, 3),
                     'left': round(left, 3),
                     'width': round(width, 3),
+                    'compact': height_px < PROGRAM_COMPACT_HEIGHT,
+                    'origin_label': (
+                        (block.team.short_name or block.team.name)
+                        if block.team_id
+                        else 'Fælles'
+                    ),
+                    'is_preparation': (
+                        block.category == ProgramBlock.CATEGORY_PREPARATION
+                    ),
                 }
             )
     return chunks
@@ -441,7 +460,7 @@ def build_program_context(
         'hours': hours,
         'start_hour': start_hour,
         'end_hour': end_hour,
-        'hour_height': 48,
+        'hour_height': PROGRAM_HOUR_HEIGHT,
         'block_data': block_data,
         'block_form': block_form,
         'editing_block': editing_block,

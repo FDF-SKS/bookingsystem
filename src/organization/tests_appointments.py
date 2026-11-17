@@ -346,19 +346,21 @@ class AppointmentViewTests(AppointmentTestBase):
         response = self.client.get(reverse("index"))
         self.assertEqual(response.status_code, 200)
         titles = [
-            booking["title"]
-            for booking in response.context["bookings"]
-            if booking["type"] == "Legeaftale"
+            item.responsible
+            for item in response.context["feed_items"]
+            if item.kind_label == "Legeaftale"
         ]
-        self.assertIn("Alice Test → Team B (team)", titles)
+        self.assertTrue(
+            any("Alice Test til Team B" in title for title in titles)
+        )
 
         self.client.force_login(self.dave)
         response = self.client.get(reverse("index"))
         self.assertEqual(
             [
-                booking
-                for booking in response.context["bookings"]
-                if booking["type"] == "Legeaftale"
+                item
+                for item in response.context["feed_items"]
+                if item.kind_label == "Legeaftale"
             ],
             [],
         )

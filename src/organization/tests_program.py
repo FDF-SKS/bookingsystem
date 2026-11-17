@@ -249,6 +249,42 @@ class ProgramViewTests(ProgramTestBase):
         self.assertContains(response, 'program-block__title')
         self.assertContains(response, 'form="programBlockForm"')
 
+    def test_short_blocks_use_a_compact_layout(self):
+        self.create_block(
+            title='Kort møde',
+            team=self.team_a,
+            category=ProgramBlock.CATEGORY_PREPARATION,
+            start_time=time(10, 0),
+            end_time=time(10, 30),
+        )
+        self.client.force_login(self.alice)
+
+        response = self.client.get(
+            reverse('organization_Event_program', args=(self.event.pk,)),
+            {'team': self.team_a.pk},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        # A 30-minute block gets the one-row layout so its title stays visible.
+        self.assertContains(response, 'program-block--compact')
+        # Category and origin are stated explicitly, not only by colour.
+        self.assertContains(
+            response, 'class="program-block__category">Forberedelse'
+        )
+        self.assertContains(response, 'class="program-block__origin">Sjak')
+
+    def test_long_blocks_keep_the_full_layout(self):
+        self.create_block(
+            title='Langt møde', start_time=time(10, 0), end_time=time(11, 0)
+        )
+        self.client.force_login(self.alice)
+
+        response = self.client.get(
+            reverse('organization_Event_program', args=(self.event.pk,))
+        )
+
+        self.assertNotContains(response, 'program-block--compact')
+
     def test_block_geometry_uses_non_localized_decimals(self):
         # ``da-dk`` localizes floats to "12,5", which is invalid CSS. The view
         # therefore builds the style string with dot decimals.

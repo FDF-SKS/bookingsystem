@@ -25,10 +25,14 @@
         {% endif %}
     </div>
 
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body p-4">
-            <input type="text" id="item-list-search" class="form-control form-control-lg"
-                   placeholder="{{ item_list_search_placeholder|default:'Søg efter navn, lokation, beskrivelse...' }}" autocomplete="off">
+    <div class="item-list-search mb-3">
+        <div class="input-group">
+            <span class="input-group-text bg-transparent" aria-hidden="true">
+                <i class="bi bi-search"></i>
+            </span>
+            <input type="search" id="item-list-search" class="form-control"
+                   placeholder="{{ item_list_search_placeholder|default:'Søg efter navn, lokation, beskrivelse...' }}"
+                   autocomplete="off" aria-label="Søg i listen">
         </div>
     </div>
 
@@ -36,8 +40,8 @@
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="item-list-table">
-                    <thead class="bg-light text-muted">
+                <table class="table table-hover table-themed align-middle mb-0" id="item-list-table">
+                    <thead class="text-muted">
                         <tr>
                             <th scope="col" class="ps-4">Navn</th>
                             {% if item_list_show_location != False %}<th scope="col">Lokation</th>{% endif %}

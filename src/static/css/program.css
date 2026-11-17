@@ -157,7 +157,7 @@
             transparent var(--program-hour-height, 48px)
         );
     cursor: crosshair;
-    touch-action: none;
+    touch-action: manipulation;
     user-select: none;
 }
 
@@ -248,6 +248,7 @@
 }
 
 .program-block__origin,
+.program-block__category,
 .program-block__people {
     font-size: 0.63rem;
     opacity: 0.9;
@@ -257,12 +258,51 @@
     white-space: nowrap;
 }
 
-.program-block__origin {
+.program-block__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    max-width: 100%;
+}
+
+.program-block__origin,
+.program-block__category {
     text-transform: uppercase;
     letter-spacing: 0.03em;
     border: 1px solid currentColor;
     border-radius: 999px;
     padding: 0 0.3rem;
+}
+
+/* Short blocks: a single row keeps the title visible instead of letting the
+   time and meta lines push it out of the block. */
+.program-block.program-block--compact {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0 0.3rem;
+    font-size: 0.62rem;
+    line-height: 1;
+}
+
+.program-block--compact .program-block__time {
+    flex-shrink: 0;
+    font-size: 0.6rem;
+}
+
+.program-block--compact .program-block__time-end,
+.program-block--compact .program-block__meta,
+.program-block--compact .program-block__people {
+    display: none;
+}
+
+.program-block--compact .program-block__title {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .program-selection {
@@ -284,6 +324,84 @@
 
 .program-event-card {
     transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+@media (max-width: 767.98px) {
+    .program-header {
+        margin-bottom: 0.5rem !important;
+    }
+
+    .program-header__intro h1 {
+        font-size: 1.4rem;
+    }
+
+    .program-header__intro p {
+        margin-bottom: 0.25rem;
+        font-size: 0.8rem;
+    }
+
+    .program-toolbar {
+        width: 100%;
+    }
+
+    .program-toolbar form {
+        flex: 1 1 auto;
+    }
+
+    .program-toolbar label {
+        display: none;
+    }
+
+    .program-scope-select {
+        width: 100%;
+        max-width: none;
+    }
+
+    .program-tool-button {
+        width: 2rem;
+        height: 2rem;
+    }
+
+    .program-legend {
+        gap: 0.25rem 0.7rem;
+        margin-bottom: 0.5rem !important;
+        font-size: 0.72rem;
+    }
+
+    .program-legend__hint {
+        font-size: 0.7rem;
+    }
+
+    .program-swatch {
+        width: 0.7rem;
+        height: 0.7rem;
+    }
+
+    .program-day-header {
+        height: 2.5rem;
+        padding: 0.2rem 0.4rem;
+    }
+
+    .program-day-header__weekday {
+        font-size: 0.68rem;
+    }
+
+    .program-day-header__date {
+        font-size: 0.72rem;
+    }
+
+    .program-grid {
+        grid-template-columns: 2.9rem repeat(var(--program-days), minmax(7.5rem, 1fr));
+    }
+
+    .program-day {
+        min-width: 7.5rem;
+    }
+
+    .program-hour {
+        padding-right: 0.3rem;
+        font-size: 0.62rem;
+    }
 }
 
 @media (max-width: 576px) {

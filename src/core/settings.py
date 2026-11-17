@@ -294,6 +294,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.app_feature_toggles',
                 'core.context_processors.csp_nonce',
+                'core.context_processors.dashboard_sidebar',
             ],
         },
     },

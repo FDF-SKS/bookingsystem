@@ -12,30 +12,30 @@
         </ol>
     </nav>
 
-    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
+    <div class="d-flex justify-content-between align-items-center mb-3 mt-1">
         <div>
             <h1 class="display-5">Frivillige</h1>
-            <p class="text-muted">Kontaktliste over alle tilknyttede personer.</p>
+            <p class="text-muted mb-0">Kontaktliste over alle tilknyttede personer.</p>
         </div>
     </div>
 
     <div class="card shadow-sm border-0">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" id="volunteerTable">
-                    <thead class="bg-light text-muted">
+                <table class="table table-hover table-themed align-middle mb-0" id="volunteerTable">
+                    <thead class="text-muted">
                         <tr>
-                            <th scope="col" class="ps-4">Navn</th>
+                            <th scope="col" class="ps-3">Navn</th>
                             <th scope="col">Gruppe / Team</th>
                             <th scope="col">Telefon</th>
-                            <th scope="col">Email</th>
-                            <th scope="col" class="text-end pe-4">Profil</th>
+                            <th scope="col" class="d-none d-lg-table-cell">Email</th>
+                            <th scope="col" class="text-end pe-3">Profil</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for volunteer in volunteer_list %}
                         <tr class="clickable-row" data-href="{% url 'organization_Volunteer_detail' volunteer.id %}">
-                            <td class="ps-4">
+                            <td class="ps-3">
                                 <div class="d-flex align-items-center">
                                     {% if volunteer.image_thumbnail %}
                                         <img src="{{ volunteer.image_thumbnail.url }}" alt="{{ volunteer.first_name }} {{ volunteer.last_name }}" class="rounded-circle me-3 shadow-sm" style="width: 40px; height: 40px; object-fit: cover;" loading="lazy">
@@ -66,13 +66,13 @@
                                  {{ volunteer.phone }}
                                 </span>
                             </td>
-                            <td>
+                            <td class="d-none d-lg-table-cell">
                                 <i class="bi bi-envelope text-primary me-1"></i>
                                 <span class="text-muted small">
                                 {{ volunteer.email }}
                                 </span>
                             </td>
-                            <td class="text-end pe-4">
+                            <td class="text-end pe-3">
                                 <i class="bi bi-chevron-right text-muted"></i>
                             </td>
                         </tr>
@@ -86,42 +86,13 @@
 
 <style>
     .card { border-radius: 15px; overflow: hidden; }
-    .table thead th { 
-        padding: 1rem 0.75rem;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
     .clickable-row {
         cursor: pointer;
         transition: background-color 0.15s ease-in-out;
     }
-    
     .clickable-row:hover {
         background-color: rgba(13, 110, 253, 0.04) !important;
     }
-
-    /* Styling the DataTables Search Input to match Bootstrap */
-    .dataTable-input {
-        display: block;
-        width: 100%;
-        padding: 0.5rem 1rem;
-        font-size: 1rem;
-        border: 1px solid #dee2e6;
-        border-radius: 10px;
-        margin-bottom: 1.5rem;
-    }
-    
-    .bg-secondary-subtle { background-color: #e2e3e5 !important; }
-
-    #volunteerTable thead {
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        background-color: white;
-        box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1);
-}
 </style>
 
 <link href="{% static 'vendor/simple-datatables/style.css' %}" rel="stylesheet" type="text/css">
@@ -134,7 +105,8 @@
             paging: false,    // No paging: shows all rows sent by Django
             fixedHeight: false,
             labels: {
-                placeholder: "Søg efter navn, team, telefon eller mail...",
+                placeholder: "Søg i frivillige…",
+                searchLabel: "",
                 noRows: "Ingen frivillige fundet",
                 info: "Viser {rows} frivillige", // Shows total count of filtered rows
             }

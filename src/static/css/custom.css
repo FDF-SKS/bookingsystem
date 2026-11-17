@@ -91,7 +91,7 @@
     --bs-card-border: rgba(255, 255, 255, 0.12);
 
     /* Navbar and links tuned to the orange primary */
-    --bs-navbar-bg: rgba(255,255,255,0.02);
+    --bs-navbar-bg: var(--bs-primary);
     --bs-link-color: var(--bs-primary);
 
     /* Keep logo colors fixed in dark mode as well */
@@ -109,8 +109,6 @@
     --bs-surface-4: rgba(255,255,255,0.01);
     --bs-surface-5: rgba(255,255,255,0.04); /* slightly lighter - used for header bars and inputs */
 
-    /* Navbar in dark mode should be a slightly stronger surface than the page */
-    --bs-navbar-bg: rgba(35,39,43,0.98);
     /* Dark-mode dropdown/bg and border (solid dark surface for readability) */
     --bs-dropdown-bg: rgba(35,39,43,0.98);
     --bs-dropdown-border: rgba(255,255,255,0.04);
@@ -824,4 +822,149 @@ a:hover {
 }
 [data-bs-theme="dark"] .btn-secondary {
     --bs-btn-color: #ffffff;
+}
+
+/* =========================================================================
+   PWA / offline
+   ========================================================================= */
+.offline-banner {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1035;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.85rem calc(0.55rem + env(safe-area-inset-bottom, 0px));
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #1f1f1f;
+    background: var(--bs-warning);
+    border-top: 1px solid rgba(0, 0, 0, 0.12);
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.offline-banner[hidden] {
+    display: none;
+}
+
+.offline-banner.is-online {
+    color: #102600;
+    background: var(--bs-success);
+}
+
+.offline-banner .btn {
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+body.has-offline-banner {
+    padding-bottom: calc(3.25rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* =========================================================================
+   simple-datatables (volunteer and key lists)
+   ========================================================================= */
+.datatable-wrapper .datatable-top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 1rem 1rem 0;
+}
+
+.datatable-wrapper .datatable-search {
+    flex: 1 1 100%;
+}
+
+.datatable-wrapper .datatable-search-label {
+    display: none;
+}
+
+.datatable-wrapper .datatable-input {
+    width: 100%;
+    padding: 0.6rem 0.9rem 0.6rem 2.25rem;
+    font-size: 1rem;
+    color: var(--bs-body-color);
+    background-color: var(--bs-body-bg);
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236c757d' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 0.8rem center;
+    background-size: 1rem;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.75rem;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.datatable-wrapper .datatable-input:focus {
+    border-color: var(--bs-primary);
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.2);
+}
+
+.datatable-wrapper .datatable-bottom {
+    padding: 0.5rem 1rem 1rem;
+}
+
+.datatable-wrapper .datatable-info {
+    font-size: 0.8rem;
+    color: var(--bs-muted);
+}
+
+/* Theme-aware table head used by the contact and catalog lists. */
+.table-themed > thead th {
+    background-color: var(--bs-surface-1);
+    color: var(--bs-muted);
+    border-bottom-color: var(--bs-border-color);
+}
+
+/* =========================================================================
+   Mobile polish
+   ========================================================================= */
+@media (max-width: 767.98px) {
+    .container,
+    .container-fluid {
+        --bs-gutter-x: 1rem;
+    }
+
+    .container.py-4,
+    .container-fluid.py-4 {
+        padding-top: 0.75rem !important;
+        padding-bottom: 1.25rem !important;
+    }
+
+    .container.mt-4 {
+        margin-top: 0.75rem !important;
+    }
+
+    .display-5 {
+        margin-bottom: 0.25rem;
+        font-size: 1.75rem;
+        line-height: 1.2;
+    }
+
+    h1.h2,
+    h1.h3,
+    .h2 {
+        font-size: 1.4rem;
+    }
+
+    .breadcrumb {
+        margin-bottom: 0.5rem;
+        font-size: 0.8rem;
+    }
+
+    .breadcrumb-item + .breadcrumb-item {
+        padding-left: 0.35rem;
+    }
+
+    .table-themed > thead th {
+        padding: 0.55rem 0.45rem;
+        font-size: 0.68rem;
+    }
+
+    .table-themed td {
+        padding: 0.55rem 0.45rem;
+    }
 }

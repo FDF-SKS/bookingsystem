@@ -211,6 +211,9 @@ celery -A core beat -l info
 ```
 i `src`-mappen (kræver Redis). Docker-opsætningerne har allerede en `beat`-service ved siden af `worker`.
 
+### Offline
+Service workeren gemmer app-skallet (CSS, JS, ikoner og CDN-filer) samt de sider, brugeren har åbnet. Siderne gemmes **pr. bruger**, og når appen er offline viser en bjælke nederst, hvornår dataen sidst blev hentet. Log ud rydder brugerens gemte sider. Sider under `/admin/`, `/accounts/` og kalenderfeeds gemmes ikke.
+
 ### Kalenderabonnement
 Hver bruger har et personligt, token-beskyttet iCalendar-feed:
 ```

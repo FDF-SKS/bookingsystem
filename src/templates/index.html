@@ -1,397 +1,167 @@
 {% extends "base.html" %}
-{% load bootstrap_icons %}
+{% load tiptap %}
+
+{% block body_class %}dashboard-page{% endblock %}
+
+{% block main_class %}dashboard-main--narrow{% endblock %}
+
+{% block page_container %}{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Header -->
-    <div class="mb-4">
-        <h1 class="h3 fw-bold text-primary mb-1">Velkommen, {{ user.first_name|default:"Spejder" }}</h1>
-        <p class="text-muted mb-3">Din kommende bookinger og aftaler</p>
-    </div>
+        <header class="feed-header">
+            <p class="feed-eyebrow">{{ today|date:"l j. F" }}</p>
+            <h1 class="feed-title">Hej {{ user.first_name|default:"spejder" }}</h1>
+        </header>
 
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3">
-        {% if config.APP_ENABLE_CONTACTS %}
-        <div class="col">
-            <a href="{% url 'organization_Volunteer_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
-                <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
-                    <div class="icon-box bg-primary text-white rounded-4 mb-2 mx-auto">
-                        <i class="bi bi-person-lines-fill fs-1"></i>
-                    </div>
-                    <h4 class="fw-bold">Kontaktbog</h4>
-                    <p class="text-muted small mb-0">Who Ya Gonna Call?</p>
-                </div>
-            </a>
-        </div>
-        {% endif %}
-        
-        <div class="col">
-            <a href="{% url 'organization_Program_event_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
-                <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
-                    <div class="icon-box bg-dark text-white rounded-4 mb-2 mx-auto">
-                        <i class="bi bi-calendar3-week fs-1"></i>
-                    </div>
-                    <h4 class="fw-bold">Rammeprogram</h4>
-                    <p class="text-muted small mb-0">Eventets program og dit teams plan</p>
-                </div>
-            </a>
-        </div>
-
-        {% if config.APP_ENABLE_BUTIKKEN %}
-        <div class="col">
-            <a href="{% url 'Butikken_ButikkenOrder_create' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
-                <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
-                    <div class="icon-box bg-info text-white rounded-4 mb-2 mx-auto">
-                        <i class="bi bi-shop fs-1"></i>
-                    </div>
-                    <h4 class="fw-bold">Butikken</h4>
-                    <p class="text-muted small mb-0">Mad og måltider</p>
-                </div>
-            </a>
-        </div>
-        {% endif %}
-
-        {% if config.APP_ENABLE_AKTIVITETSTEAM %}
-        <div class="col">
-            <a href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_create' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
-                <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
-                    <div class="icon-box bg-success text-white rounded-4 mb-2 mx-auto">
-                        <i class="bi bi-universal-access fs-1"></i>
-                    </div>
-                    <h4 class="fw-bold">Aktiviteter</h4>
-                    <p class="text-muted small mb-0">Klatring, kanoer og aktiviteter</p>
-                </div>
-            </a>
-        </div>
-        {% endif %}
-
-        {% if config.APP_ENABLE_SJAK %}
-        <div class="col">
-            <a href="{% url 'Sjak_SjakBooking_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
-                <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
-                    <div class="icon-box bg-primary text-white rounded-4 mb-2 mx-auto">
-                        <i class="bi bi-tools fs-1"></i>
-                    </div>
-                    <h4 class="fw-bold">Sjak</h4>
-                    <p class="text-muted small mb-0">Værktøj, materialer og Sjak sager</p>
-                </div>
-            </a>
-        </div>
-        {% endif %}
-
-        {% if config.APP_ENABLE_LOEB %}
-        <div class="col">
-            {% if request.user.is_staff %}
-                <a href="{% url 'Loeb_Loeb_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
-                    <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
-                        <div class="icon-box bg-dark text-white rounded-4 mb-2 mx-auto">
-                            <i class="bi bi-flag-fill fs-1"></i>
-                        </div>
-                        <h4 class="fw-bold">Løb</h4>
-                        <p class="text-muted small mb-0">Kommer snart</p>
-                    </div>
-                </a>
-            {% else %}
-                <div class="card h-100 shadow-sm border-0 dashboard-card disabled" aria-disabled="true" tabindex="-1">
-                    <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
-                        <div class="icon-box bg-dark text-white rounded-4 mb-2 mx-auto">
-                            <i class="bi bi-flag-fill fs-1"></i>
-                        </div>
-                        <h4 class="fw-bold">Løb</h4>
-                        <p class="text-muted small mb-0">Kommer snart</p>
-                    </div>
-                </div>
-            {% endif %}
-        </div>
-        {% endif %}
-
-        {% if config.APP_ENABLE_SOS %}
-        <div class="col">
-            <a href="{% url 'SOS_SOSBooking_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
-                <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
-                    <div class="icon-box bg-danger text-white rounded-4 mb-2 mx-auto">
-                        <i class="bi bi-heart-pulse fs-1"></i>
-                    </div>
-                    <h4 class="fw-bold">SOS</h4>
-                    <p class="text-muted small mb-0">Førstehjælp, tryghed og assistance.</p>
-                </div>
-            </a>
-        </div>
-        {% endif %}
-
-        {% if config.APP_ENABLE_TEKNIK %}
-        <div class="col">
-            <a href="{% url 'Teknik_TeknikBooking_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
-                <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
-                    <div class="icon-box bg-warning text-white rounded-4 mb-2 mx-auto">
-                        <i class="bi bi-cpu fs-1"></i>
-                    </div>
-                    <h4 class="fw-bold">Teknik</h4>
-                    <p class="text-muted small mb-0">IT, lyd og lys.</p>
-                </div>
-            </a>
-        </div>
-        {% endif %}
-
-        {% if config.APP_ENABLE_FOTO %}
-        <div class="col">
-            <a href="{% url 'Foto_FotoBooking_create' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
-                <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
-                    <div class="icon-box bg-secondary text-white rounded-4 mb-2 mx-auto">
-                        <i class="bi bi-camera fs-1"></i>
-                    </div>
-                    <h4 class="fw-bold">Foto</h4>
-                    <p class="text-muted small mb-0">Foto og video</p>
-                </div>
-            </a>
-        </div>
-        {% endif %}
-
-        {% if config.APP_ENABLE_LEGEAFTALER %}
-        <div class="col">
-            <a href="{% url 'organization_VolunteerAppointment_create' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
-                <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
-                    <div class="icon-box bg-danger text-white rounded-4 mb-2 mx-auto">
-                        <i class="bi bi-balloon-heart fs-1"></i>
-                    </div>
-                    <h4 class="fw-bold">Legeaftaler</h4>
-                    <p class="text-muted small mb-0">Skal vi lege?</p>
-                </div>
-            </a>
-        </div>
-        {% endif %}
-
-        {% if config.APP_ENABLE_DEPOT %}
-        <div class="col">
-            <a href="{% url 'Depot_DepotItem_list' %}" class="card h-100 shadow-sm border-0 text-decoration-none dashboard-card">
-                <div class="card-body p-2 text-center d-flex flex-column align-items-center justify-content-center">
-                    <div class="icon-box bg-info text-white rounded-4 mb-2 mx-auto">
-                        <i class="bi bi-box-seam fs-1"></i>
-                    </div>
-                    <h4 class="fw-bold">Depot</h4>
-                    <p class="text-muted small mb-0">Inventar og udstyr</p>
-                </div>
-            </a>
-        </div>
-        {% endif %}
-
-    </div>
-</div>
-
-    <!-- Timeline Section -->
-    {% if grouped_bookings %}
-        <div class="timeline">
-            {% for date, date_bookings in grouped_bookings.items %}
-                <!-- Date Header -->
-                <div class="mb-4 mt-5">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <div class="flex-grow-1">
-                            <h5 class="fw-bold text-primary mb-0">
-                                {% if date|date:"Y-m-d" == now|date:"Y-m-d" %}
-                                    I dag, {{ date|date:"l j. F" }}
-                                {% elif date|date:"Y-m-d" == tomorrow|date:"Y-m-d" %}
-                                    I morgen, {{ date|date:"l j. F" }}
+        {% if feed_days %}
+            <div class="agenda">
+                {% for day in feed_days %}
+                    <section class="agenda-day" aria-labelledby="agenda-day-{{ forloop.counter }}">
+                        <div class="agenda-day__date" id="agenda-day-{{ forloop.counter }}">
+                            <span class="agenda-day__weekday">
+                                {% if day.is_today %}
+                                    I dag
+                                {% elif day.is_tomorrow %}
+                                    I morgen
                                 {% else %}
-                                    {{ date|date:"l j. F Y" }}
+                                    {{ day.date|date:"D" }}
                                 {% endif %}
-                            </h5>
+                            </span>
+                            <span class="agenda-day__day">{{ day.date|date:"j" }}</span>
+                            <span class="agenda-day__month">{{ day.date|date:"M" }}</span>
                         </div>
-                        <span class="badge bg-light text-dark">{{ date_bookings|length }} booking{{ date_bookings|length|pluralize:"," }}</span>
-                    </div>
 
-                    <!-- Bookings for this date -->
-                    <div class="list-group shadow-sm border-0 rounded-2 overflow-hidden">
-                        {% for booking in date_bookings %}
-                            <div class="list-group-item p-0 border-start-0 border-end-0 border-top-0 border-bottom booking-item">
-                                <div class="booking-wrapper">
-                                    <!-- Type Icon - Left Ear -->
-                                    <button type="button" class="btn flex-shrink-0 booking-create-btn" style="width: 44px; background-color: var(--bs-{{ booking.color }}); border: none; font-size: 1.5rem; border-radius: 0;" title="Create new {{ booking.type }}">
-                                        {% if booking.type == 'Sjak' %}
-                                            <i class="bi bi-tools text-white"></i>
-                                        {% elif booking.type == 'Teknik' %}
-                                            <i class="bi bi-cpu text-white"></i>
-                                        {% elif booking.type == 'AktivitetsTeam' %}
-                                            <i class="bi bi-universal-access text-white"></i>
-                                        {% elif booking.type == 'Foto' %}
-                                            <i class="bi bi-camera text-white"></i>
-                                        {% elif booking.type == 'SOS' %}
-                                            <i class="bi bi-heart-pulse text-white"></i>
-                                        {% elif booking.type == 'Butikken' %}
-                                            <i class="bi bi-shop text-white"></i>
-                                        {% elif booking.type == 'Legeaftale' %}
-                                            <i class="bi bi-balloon-heart text-white"></i>
-                                        {% endif %}
-                                    </button>
-
-                                    <!-- Card Content -->
-                                    <a href="{{ booking.url }}" class="booking-card text-decoration-none p-2" style="flex-grow: 1;">
-                                        <div class="d-flex w-100 justify-content-between align-items-center gap-2">
-                                            <div class="d-flex align-items-center flex-grow-1 min-w-0">
-                                                <div class="flex-grow-1">
-                                                    <div class="fw-bold mb-0">
-                                                        <span class="text-primary">{{ booking.title }}</span>
-                                                        <span class="text-muted small fw-normal ms-2">
-                                                            {{ booking.start|time:"H:i" }}
-                                                            {% if booking.end %}
-                                                                - {{ booking.end|time:"H:i" }}
-                                                            {% endif %}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <span class="badge rounded-pill text-white flex-shrink-0" style="font-size: 0.75rem; padding: 0.35rem 0.65rem; background-color: var(--bs-{{ booking.status_color }});">
-                                                {% if booking.obj.status == 'Pending' %}
-                                                    Afventer
-                                                {% elif booking.obj.status == 'Approved' %}
-                                                    Godkendt
-                                                {% elif booking.obj.status == 'Rejected' %}
-                                                    Afvist
+                        <div class="agenda-day__items">
+                            {% for item in day.items %}
+                                <div class="agenda-item">
+                                    <div class="agenda-item__time">
+                                        {% if item.all_day %}
+                                            <span class="agenda-item__time-label">{{ item.all_day_label }}</span>
+                                        {% else %}
+                                            {{ item.starts_at|date:"H:i" }}
+                                            {% if item.ends_at %}
+                                                {% if item.ends_at|date:"Y-m-d" == item.starts_at|date:"Y-m-d" %}
+                                                    <span class="agenda-item__time-end">{{ item.ends_at|date:"H:i" }}</span>
                                                 {% else %}
-                                                    {{ booking.obj.status }}
+                                                    <span class="agenda-item__time-end">{{ item.ends_at|date:"j/n" }}</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endif %}
+                                    </div>
+
+                                    <span class="agenda-item__dot text-bg-{{ item.color }}" aria-hidden="true"></span>
+
+                                    <!-- djlint:off H054 -->
+                                    {% if item.modal_id %}
+                                    <button type="button"
+                                            class="agenda-item__card"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#{{ item.modal_id }}">
+                                    {% else %}
+                                    <a class="agenda-item__card{% if not item.linkable %} agenda-item__card--static{% endif %}"
+                                       {% if item.linkable %}href="{{ item.url }}"{% endif %}>
+                                    {% endif %}
+                                        <span class="agenda-item__icon text-bg-{{ item.color }}">
+                                            <i class="bi {{ item.icon }}" aria-hidden="true"></i>
+                                        </span>
+
+                                        <span class="agenda-item__body">
+                                            <span class="agenda-item__title">
+                                                {{ item.title }}
+                                                {% if item.is_ongoing %}
+                                                    <span class="feed-chip feed-chip--live">I gang</span>
+                                                {% elif item.is_next %}
+                                                    <span class="feed-chip">Næste</span>
                                                 {% endif %}
                                             </span>
-                                        </div>
+                                            {% if item.origin or item.is_preparation %}
+                                                <span class="agenda-item__tags">
+                                                    {% if item.origin %}
+                                                        <span class="feed-chip feed-chip--origin">{{ item.origin }}</span>
+                                                    {% endif %}
+                                                    {% if item.is_preparation %}
+                                                        <span class="feed-chip feed-chip--prep">Forberedelse</span>
+                                                    {% endif %}
+                                                </span>
+                                            {% endif %}
+                                            {% if item.responsible %}
+                                                <span class="agenda-item__meta">
+                                                    <i class="bi bi-person" aria-hidden="true"></i>
+                                                    {{ item.responsible }}
+                                                </span>
+                                            {% endif %}
+                                        </span>
+
+                                        {% if item.status %}
+                                            <span class="badge rounded-pill text-bg-{{ item.status_color }} agenda-item__status">
+                                                {{ item.status }}
+                                            </span>
+                                        {% endif %}
+                                        {% if item.modal_id %}
+                                            <i class="bi bi-info-circle agenda-item__chevron" aria-hidden="true"></i>
+                                        {% elif item.linkable %}
+                                            <i class="bi bi-chevron-right agenda-item__chevron" aria-hidden="true"></i>
+                                        {% endif %}
+                                    {% if item.modal_id %}
+                                    </button>
+                                    {% else %}
                                     </a>
+                                    {% endif %}
+                                    <!-- djlint:on -->
                                 </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="feed-empty">
+                <div class="feed-empty__icon">
+                    <i class="bi bi-calendar2-check" aria-hidden="true"></i>
+                </div>
+                <p class="feed-empty__title">Der er ikke planlagt noget endnu</p>
+                <p class="feed-empty__text">
+                    Nye bookinger, opgaver og programpunkter vises her, når de bliver oprettet.
+                </p>
+            </div>
+        {% endif %}
+
+        {% for item in feed_items %}
+            {% if item.modal_id %}
+            <div class="modal fade" id="{{ item.modal_id }}" tabindex="-1"
+                 aria-labelledby="{{ item.modal_id }}-title" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <div>
+                                <p class="feed-modal__eyebrow">
+                                    {{ item.starts_at|date:"l j. F" }}
+                                    · {{ item.starts_at|date:"H:i" }}–{{ item.ends_at|date:"H:i" }}
+                                </p>
+                                <h2 class="modal-title h4" id="{{ item.modal_id }}-title">{{ item.title }}</h2>
                             </div>
-                        {% endfor %}
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Luk"></button>
+                        </div>
+                        <div class="modal-body">
+                            {% if item.responsible %}
+                                <p class="feed-modal__responsible">
+                                    <i class="bi bi-person" aria-hidden="true"></i>
+                                    {{ item.responsible }}
+                                </p>
+                            {% endif %}
+                            {% if item.content %}
+                                <div class="feed-modal__content">{{ item.content|tiptap_html }}</div>
+                            {% else %}
+                                <p class="feed-modal__empty">Der er endnu ikke skrevet en beskrivelse af denne programblok.</p>
+                            {% endif %}
+                        </div>
+                        <div class="modal-footer">
+                            <a class="btn btn-outline-secondary" href="{{ item.url }}">Åbn i programmet</a>
+                            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Luk</button>
+                        </div>
                     </div>
                 </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <!-- Empty State -->
-        <div class="text-center py-5">
-            <div class="mb-4">
-                <i class="bi bi-calendar-check fs-1 text-muted opacity-25"></i>
             </div>
-            <h5 class="text-muted fw-bold mb-2">Ingen kommende bookinger</h5>
-            <p class="text-muted mb-4">Du har ingen kommende bookinger eller aftaler. Gå til en af modulerne for at oprette en ny booking.</p>
-            <a href="{% url 'Sjak_SjakBooking_list' %}" class="btn btn-primary">Se alle bookinger</a>
-        </div>
-    {% endif %}
-</div>
-
-<style>
-    .icon-box {
-        width: 65px;
-        height: 65px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* Color branding for the Info/Dark cards since they aren't in your :root variables */
-    .bg-info { background-color: #0dcaf0 !important; }
-    .bg-dark { background-color: #212529 !important; }
-
-    
-
-    .booking-item {
-        padding: 0 !important;
-    }
-
-    .booking-wrapper {
-        display: flex;
-        gap: 0;
-        align-items: stretch;
-    }
-
-    .booking-card {
-        color: inherit;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        flex-grow: 1;
-    }
-
-    .booking-card:hover {
-        color: inherit;
-    }
-
-
-    .booking-create-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0 !important;
-        padding: 0 !important;
-        height: auto;
-    }
-
-    .booking-create-btn:focus {
-        outline: none;
-        box-shadow: none;
-    }
-        /* Ensure the grid looks balanced */
-    .dashboard-card {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        border-radius: 1.25rem !important;
-    }
-
-    .dashboard-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 0.5rem 1.5rem rgba(0,0,0,0.08) !important;
-    }
-
-    /* Visual style for disabled dashboard cards (non-staff) */
-    .dashboard-card.disabled,
-    .dashboard-card[aria-disabled="true"] {
-        pointer-events: none;
-        opacity: 0.6;
-        filter: grayscale(0.3);
-    }
-
-    
-    @media (max-width: 576px) {
-        .icon-box {
-            width: 45px;
-            height: 45px;
-        }
-        .icon-box i {
-            font-size: 1.25rem !important;
-        }
-    }
-</style>
-
-<script nonce="{{ csp_nonce }}">
-document.addEventListener('DOMContentLoaded', function() {
-    // Map booking types to their list URLs
-    const createUrlMap = {
-        'Sjak': '{% url "Sjak_SjakBooking_list" %}',
-        'Teknik': '{% url "Teknik_TeknikBooking_list" %}',
-        'AktivitetsTeam': '{% url "AktivitetsTeam_AktivitetsTeamBooking_list" %}',
-        'Foto': '{% url "Foto_FotoBooking_list" %}',
-        'SOS': '{% url "SOS_SOSBooking_list" %}',
-        'Butikken': '{% url "Butikken_ButikkenBooking_list" %}',
-        'Legeaftale': '{% url "organization_VolunteerAppointment_list" %}',
-    };
-
-    // Add click handlers to create buttons
-    document.querySelectorAll('.booking-create-btn').forEach(function(btn) {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Get the booking type from the parent card's data or text
-            const bookingCard = btn.closest('.booking-card');
-            const bookingType = bookingCard.querySelector('.badge')?.textContent?.trim() || '';
-            
-            // Find the matching booking type from siblings
-            let type = null;
-            for (let [key, url] of Object.entries(createUrlMap)) {
-                if (bookingCard.innerHTML.includes(key)) {
-                    type = key;
-                    break;
-                }
-            }
-            
-            if (type && createUrlMap[type]) {
-                window.location.href = createUrlMap[type];
-            }
-        });
-    });
-});
-</script>
+            {% endif %}
+        {% endfor %}
 {% endblock %}
-

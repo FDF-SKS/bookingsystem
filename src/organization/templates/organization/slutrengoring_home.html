@@ -58,79 +58,73 @@
                 <h2 class="h4 mb-0">Mine opgaver</h2>
                 <span class="badge rounded-pill bg-secondary">{{ active_assignments|length }} aktiv{{ active_assignments|length|pluralize:"e" }}</span>
             </div>
-            <div class="row g-3 mb-4">
+            <div class="list-group shadow-sm border-0 rounded-3 mb-4">
                 {% for assignment in active_assignments %}
-                    <div class="col-12 col-lg-6">
-                        <div class="card shadow-sm border-0 rounded-3 h-100">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start gap-2">
-                                    <div>
-                                        <h3 class="h5 mb-1">
-                                            <a href="{% url 'organization_Slutrengoring_detail' pk=assignment.pk %}"
-                                               class="text-decoration-none">{{ assignment.tjanse.title }}</a>
-                                        </h3>
-                                        <div class="d-flex flex-wrap gap-2 align-items-center">
-                                            <span class="badge rounded-pill {% if assignment.tjanse.priority == 'required' %}bg-danger {% elif assignment.tjanse.priority == 'high' %}bg-warning text-dark {% elif assignment.tjanse.priority == 'medium' %}bg-info text-dark {% else %}bg-secondary{% endif %}">
-                                                {{ assignment.tjanse.get_priority_display }}
-                                            </span>
-                                            <span class="badge rounded-pill {% if assignment.status == 'in_progress' %}bg-info text-dark {% else %}bg-warning text-dark{% endif %}">
-                                                {{ assignment.get_status_display }}
-                                            </span>
-                                            {% if assignment.tjanse.area %}
-                                                <small class="text-muted"><i class="bi bi-geo-alt"></i> {{ assignment.tjanse.area }}</small>
-                                            {% endif %}
-                                            {% if assignment.tjanse.estimated_minutes %}
-                                                <small class="text-muted"><i class="bi bi-clock"></i> ca. {{ assignment.tjanse.estimated_minutes }} min.</small>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                    <span class="badge rounded-pill bg-light text-dark">{{ assignment.team.short_name|default:assignment.team.name }}</span>
-                                </div>
-                                <div class="d-flex flex-wrap gap-2 mt-3">
-                                    {% if assignment.status == "assigned" %}
-                                        <form method="post"
-                                              action="{% url 'slutrengoring_start' pk=assignment.pk %}">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-primary">Start opgave</button>
-                                        </form>
+                    <div class="list-group-item p-3 border-start-0 border-end-0 border-top-0 border-bottom">
+                        <div class="d-flex w-100 justify-content-between align-items-center flex-wrap gap-2">
+                            <a href="{% url 'organization_Slutrengoring_detail' pk=assignment.pk %}"
+                               class="text-decoration-none flex-grow-1">
+                                <div class="fw-bold">{{ assignment.tjanse.title }}</div>
+                                <small class="text-muted">{{ assignment.event.name }} · {{ assignment.team.short_name|default:assignment.team.name }}</small>
+                                <div class="d-flex flex-wrap gap-2 align-items-center mt-1">
+                                    <span class="badge rounded-pill
+                                        {% if assignment.tjanse.priority == 'required' %}bg-danger
+                                        {% elif assignment.tjanse.priority == 'high' %}bg-warning text-dark
+                                        {% elif assignment.tjanse.priority == 'medium' %}bg-info text-dark
+                                        {% else %}bg-secondary{% endif %} px-2 py-1">
+                                        {{ assignment.tjanse.get_priority_display }}
+                                    </span>
+                                    {% if assignment.tjanse.area %}
+                                        <small class="text-muted"><i class="bi bi-geo-alt"></i> {{ assignment.tjanse.area }}</small>
                                     {% endif %}
-                                    <form method="post"
-                                          action="{% url 'slutrengoring_done' pk=assignment.pk %}">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-sm btn-success">Markér udført</button>
-                                    </form>
+                                    {% if assignment.tjanse.estimated_minutes %}
+                                        <small class="text-muted"><i class="bi bi-clock"></i> ca. {{ assignment.tjanse.estimated_minutes }} min.</small>
+                                    {% endif %}
                                 </div>
-                                <details class="mt-2">
-                                    <summary class="text-danger small">Kan ikke færdiggøres</summary>
-                                    <form method="post"
-                                          action="{% url 'slutrengoring_not_finished' pk=assignment.pk %}"
-                                          class="mt-2">
+                            </a>
+                            <div class="text-end d-flex align-items-center gap-2">
+                                <span class="badge rounded-pill
+                                    {% if assignment.status == 'done' %}bg-success
+                                    {% elif assignment.status == 'not_finished' %}bg-danger
+                                    {% elif assignment.status == 'in_progress' %}bg-info text-dark
+                                    {% else %}bg-warning text-dark{% endif %} px-2 py-1">
+                                    {{ assignment.get_status_display }}
+                                </span>
+                                {% if assignment.status == "assigned" %}
+                                    <form method="post" action="{% url 'slutrengoring_start' pk=assignment.pk %}">
                                         {% csrf_token %}
-                                        <label class="form-label small"
-                                               for="reason-{{ assignment.pk }}">Hvorfor?</label>
-                                        <div class="input-group input-group-sm">
-                                            <input id="reason-{{ assignment.pk }}"
-                                                   name="reason"
-                                                   class="form-control"
-                                                   required
-                                                   placeholder="F.eks. mangler udstyr">
-                                            <button type="submit"
-                                                    class="btn btn-outline-danger">Returnér til puljen</button>
-                                        </div>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">Start opgave</button>
                                     </form>
-                                </details>
+                                {% endif %}
+                                <form method="post" action="{% url 'slutrengoring_done' pk=assignment.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-success">Markér udført</button>
+                                </form>
                             </div>
                         </div>
+                        <details class="mt-2">
+                            <summary class="text-danger small">Kan ikke færdiggøres</summary>
+                            <form method="post"
+                                  action="{% url 'slutrengoring_not_finished' pk=assignment.pk %}"
+                                  class="mt-2">
+                                {% csrf_token %}
+                                <label class="form-label small" for="reason-{{ assignment.pk }}">Hvorfor?</label>
+                                <div class="input-group input-group-sm">
+                                    <input id="reason-{{ assignment.pk }}"
+                                           name="reason"
+                                           class="form-control"
+                                           required
+                                           placeholder="F.eks. mangler udstyr">
+                                    <button type="submit" class="btn btn-outline-danger">Returnér til puljen</button>
+                                </div>
+                            </form>
+                        </details>
                     </div>
                 {% empty %}
-                    <div class="col-12">
-                        <div class="card shadow-sm border-0 rounded-3">
-                            <div class="card-body text-center py-5">
-                                <p class="text-muted mb-2">I har ingen aktive slutrengøringopgaver.</p>
-                                <a href="{% url 'organization_Slutrengoring_claim_list' %}?event={{ selected_event.pk }}"
-                                   class="btn btn-primary">Vælg en opgave</a>
-                            </div>
-                        </div>
+                    <div class="list-group-item text-center py-5 bg-light">
+                        <p class="text-muted mb-2">I har ingen aktive slutrengøringopgaver.</p>
+                        <a href="{% url 'organization_Slutrengoring_claim_list' %}?event={{ selected_event.pk }}"
+                           class="btn btn-sm btn-primary">Vælg en opgave</a>
                     </div>
                 {% endfor %}
             </div>

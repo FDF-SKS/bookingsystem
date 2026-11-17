@@ -6,8 +6,9 @@
 <html lang="da">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="user-id" content="{% if user.is_authenticated %}{{ user.pk }}{% endif %}">
     <meta name="theme-color" content="#FF733C">
     <meta name="application-name" content="SKS Booking">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -39,264 +40,77 @@
             }
         })();
     </script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap-icons/bootstrap-icons.min.css' %}">
+
+    <link rel="stylesheet" href="{% static 'vendor/leaflet/leaflet.css' %}">
+    <script src="{% static 'vendor/leaflet/leaflet.js' %}"></script>
 
     <link rel="stylesheet" href="{% static 'css/custom.css' %}">
     <link rel="stylesheet" href="{% static 'css/tiptap-theme.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
 
     {% block extra_css %}{% endblock %}
 </head>
 
-<body class="pt-0">
+<body class="pt-0 {% block body_class %}{% endblock %}">
 
-    <nav class="navbar navbar-expand-lg border-bottom shadow-sm sticky-top">
+    <div id="offline-banner" class="offline-banner" role="status" aria-live="polite" hidden>
+        <i class="bi bi-cloud-slash" aria-hidden="true"></i>
+        <span data-offline-text>Offline</span>
+        <button type="button" class="btn btn-sm btn-light" data-offline-action hidden>Prøv igen</button>
+    </div>
+
+    {% block site_nav %}
+    <nav class="navbar border-bottom shadow-sm sticky-top dashboard-navbar">
         <div class="container-fluid">
             <a class="navbar-brand d-flex align-items-center" href="{% url 'index' %}">
-                <div class="navbar-logo-wrapper me-2">
-                    <svg class="sks-logo-nav" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 566.93 566.93">
-                        <g id="Kvadratisk_ikon">
-                            <rect class="logo-bg" x="0" y="0" width="566.93" height="566.93"/>
-                            <g class="logo-icon">
-                                <path d="M240.39,418.56c-38-3.03-83.54-38.22-78.33-83.03,4.59-39.48,69.6-84.3,38.92-126.53,17.91,12.61,29.53,35.05,29.94,57.83,28.89-30.31-5.13-77.49-4.77-111.54,8.61,14.78,19.64,28.02,32.41,38.91-23.46-50.5-12.85-116.33,25.09-155.74,.44,33.75,16.84,65.54,37.28,90.48,20.25,24.7,45.87,48.05,48.32,83.02,1.96,28.13-24.37,65.84-14.64,92.14,13.15,35.58,43.33-6.45,49.27-23.2,10.14,60.9-36.79,125.32-94.98,130.38,9.87-10.42,15.29-25.69,14.35-40.41-8.65,4.75-17.56-3.65-20.78-11.64-4.4-10.92,.04-21.31,4-31.59,8.83-22.9,14.55-44.26,4.34-68.34,2.53,31.12-9.23,62.95-30.31,84.62-8.37,8.61-16.17,17.67-27.34,11.78-12.54-6.61-16.31-31.33-14.21-43.77-18.3,32.06-17.72,75.13,1.43,106.63"/>
-                                <path d="M308.23,526.66c-2.59,.62-5.15,1.23-9.68,2.31-23.14-3.4-39.64-28.92-32.47-51.3,3.1-9.69,7.62-16.17,15.08-20.82-3.61,5.43-1.45,15.44,2.8,18.7,10.4,8.2,19.47-5.25,11.84-16.46-17.14-25.2-37.43-25.86-36.91-54.32,.2-11.05,6.94-23.16,15.24-32.33-2.88,9.6-1.28,16.66-.09,22.26,3.52,14.13,15.44,21.49,26.32,29.58,20.7,15.91,41.97,34.52,35.61,66.11-3.6,17.87-12.21,28.43-26.83,35.94l-.92,.32Z"/>
-                            </g>
-                        </g>
-                    </svg>
-                </div>
+                {% include "components/site_logo.html" %}
+                <span class="dashboard-navbar__tag">SKS Booking</span>
             </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    {% if user.is_authenticated %}
-                        {% if config.APP_ENABLE_CONTACTS %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Organisation
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a href="{% url 'organization_Volunteer_list' %}" class="dropdown-item">Medarbejdere</a></li>
-                                <li><a href="{% url 'organization_Key_list' %}" class="dropdown-item">Nøgler</a></li>
-                                <li><a href="{% url 'organization_TjanseOwnership_list' %}" class="dropdown-item">Tjanser</a></li>
-                                <li><a href="{% url 'organization_Slutrengoring_home' %}" class="dropdown-item">Slutrengøring</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><h6 class="dropdown-header">Områder</h6></li>
-                                <li><a href="https://docs.google.com/spreadsheets/d/1TzMOE_wE11p_s2DtMjzeDxNnXa9ENRDQZDnkm5bcqt0/edit?gid=0#gid=0" class="dropdown-item">Alle bookinger</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'organization_Program_event_list' %}">Rammeprogram</a>
-                        </li>
-
-                        {% if config.APP_ENABLE_BUTIKKEN %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link d-inline-block" href="{% url 'Butikken_dashboard' %}">Butikken</a>
-                            <a class="nav-link d-inline-block dropdown-toggle dropdown-toggle-split ps-0" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span class="visually-hidden">Vis Butikken-undermenu</span>
-                            </a>
-                            <ul class="dropdown-menu shadow">
-                                <li><a class="dropdown-item" href="{% url 'Butikken_dashboard' %}">Overblik</a></li>
-                                <li><a class="dropdown-item" href="{% url 'Butikken_ButikkenItem_list' %}">Varekatalog</a></li>
-                                <li><a class="dropdown-item" href="{% url 'Butikken_ButikkenOrder_list' %}">Varebestillinger</a></li>
-                                <li><a class="dropdown-item" href="{% url 'Butikken_TeamMealPlan_list' %}">Måltidsbestillinger</a></li>
-
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'Butikken_ButikkenOrder_create' %}"> Ny varebestilling </a></li>
-
-
-                            </ul>
-                        </li>
-                        {% endif %}
-
-                        {% if config.APP_ENABLE_AKTIVITETSTEAM %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Aktivitetsteam
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><h6 class="dropdown-header">Aktiviteter</h6></li>
-                                <li><a class="dropdown-item" href="{% url 'AktivitetsTeam_AktivitetsTeamItem_list' %}">Aktivitetskatalog</a></li>
-                                <li><a class="dropdown-item" href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_list' %}">Aktivitetsbookinger (Alle)</a></li>
-                                <li><a class="dropdown-item" href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_mine' %}">Aktivitetsbookinger (Mine)</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item " href="{% url 'AktivitetsTeam_AktivitetsTeamBooking_create' %}">Ny bestilling</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-
-                        {% if config.APP_ENABLE_LOEB %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Løb
-                            </a>
-                            <ul class="dropdown-menu">
-                                    <li>
-                                        {% if request.user.is_staff %}
-                                            <a class="dropdown-item" href="{% url 'Loeb_Loeb_list' %}">Mine løb</a>
-                                        {% else %}
-                                            <span class="dropdown-item disabled" aria-disabled="true" tabindex="-1">Mine løb</span>
-                                        {% endif %}
-                                    </li>
-                                    <li>
-                                        {% if request.user.is_staff %}
-                                            <a class="dropdown-item" href="{% url 'Loeb_Loeb_create' %}">Nyt løb</a>
-                                        {% else %}
-                                            <span class="dropdown-item disabled" aria-disabled="true" tabindex="-1">Nyt løb</span>
-                                        {% endif %}
-                                    </li>
-                            </ul>
-                        </li>
-                        {% endif %}
-
-                        {% if config.APP_ENABLE_WIKI %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'Wiki_WikiPage_list' %}">Wiki</a>
-                        </li>
-                        {% endif %}
-
-                        {% if config.APP_ENABLE_SOS %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                SOS
-                            </a>
-                            <ul class="dropdown-menu">
-
-                                <li><a class="dropdown-item" href="{% url 'SOS_SOSItem_list' %}">SOS Katalog</a></li>
-                                <li><a class="dropdown-item" href="{% url 'SOS_SOSBooking_list' %}">SOS Bookinger</a></li>
-
-                                <li><hr class="dropdown-divider"></li>
-
-                                <li><a class="dropdown-item" href="{% url 'SOS_SOSBooking_create' %}">Ny SOS booking</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-                        {% if config.APP_ENABLE_FOTO %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Foto
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'Foto_FotoItem_list' %}">Katalog</a></li>
-                                <li><a class="dropdown-item" href="{% url 'Foto_FotoBooking_list' %}">Fotobookinger</a></li>
-
-                                <li><hr class="dropdown-divider"></li>
-
-                                <li><a class="dropdown-item" href="{% url 'Foto_FotoBooking_create' %}">Opret ny booking</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-
-                        {% if config.APP_ENABLE_SJAK %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Sjak
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'Sjak_SjakItem_list' %}">Sjak's sager</a></li>
-                                <li><a class="dropdown-item" href="{% url 'Sjak_SjakBooking_list' %}">Sjak bestillinger</a></li>
-
-                                <li><hr class="dropdown-divider"></li>
-
-                                <li><a class="dropdown-item" href="{% url 'Sjak_SjakBooking_create' %}">Ny Sjak bestilling</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-                        
-                        {% if config.APP_ENABLE_TEKNIK %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Teknik
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'Teknik_TeknikItem_list' %}">Teknik's Ting</a></li>
-                                <li><a class="dropdown-item" href="{% url 'Teknik_TeknikBooking_list' %}">Teknik bestillinger</a></li>
-
-                                <li><hr class="dropdown-divider"></li>
-
-                                <li><a class="dropdown-item" href="{% url 'Teknik_TeknikBooking_create' %}">Ny Teknik bestilling</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-                        {% if config.APP_ENABLE_LEGEAFTALER %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Legeaftaler
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'organization_VolunteerAppointment_list' %}">Mine legeaftaler</a></li>
-                                
-                                <li><hr class="dropdown-divider"></li>
-
-                                <li><a class="dropdown-item" href="{% url 'organization_VolunteerAppointment_create' %}">Ny legeaftale</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-
-                        {% if config.APP_ENABLE_DEPOT %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Depot
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'Depot_DepotItem_list' %}">Inventarkatalog</a></li>
-                                <li><a class="dropdown-item" href="{% url 'Depot_DepotBooking_list' %}">Depot bookinger</a></li>
-
-                                <li><hr class="dropdown-divider"></li>
-
-                                <li><a class="dropdown-item" href="{% url 'Depot_DepotBooking_create' %}">Ny Depot booking</a></li>
-                            </ul>
-                        </li>
-                        {% endif %}
-                    {% endif %}
-                </ul>
-
-                <div class="d-flex align-items-center">
-                    {% if user.is_authenticated %}
-                        {% if request.user.is_staff %}
-                            <a class="btn btn-outline-primary btn-sm me-3" href="{% url 'admin:index' %}">Adminstrator</a>
-                        {% endif %}
-
-                        <div class="nav-item dropdown">
-                            <a class="nav-link d-flex align-items-center text-primary" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <span class="me-2">Hej {{ user.first_name }}!</span>
-                                <i class="bi bi-person-circle"></i> 
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'organization_Volunteer_detail' request.user.pk %}">Min profil</a></li>
-                                <li><a class="dropdown-item" href="{% url 'notifications_settings' %}"><i class="bi bi-bell me-2"></i>Notifikationer &amp; kalender</a></li>
-                                <li><a class="dropdown-item" href="{% url 'mfa_index' %}">Sikkerhed & login</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li class="dropdown-header">Tema</li>
-                                <li><a class="dropdown-item" href="#" data-theme-option="system">System</a></li>
-                                <li><a class="dropdown-item" href="#" data-theme-option="light">Lys</a></li>
-                                <li><a class="dropdown-item" href="#" data-theme-option="dark">Mørk</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'logout_user' %}">Log ud</a></li>
-                            </ul>
-                        </div>
-                    {% endif %}
-                </div>
+            <div class="d-flex align-items-center gap-2 ms-auto">
+                {% if user.is_staff %}
+                    <a class="btn btn-sm btn-outline-light dashboard-admin-btn"
+                       href="{% url 'admin:index' %}"
+                       aria-label="Administrator">
+                        <i class="bi bi-shield-lock" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline ms-1">Admin</span>
+                    </a>
+                {% endif %}
+                {% if user.is_authenticated %}
+                    <button class="navbar-toggler d-lg-none"
+                            type="button"
+                            data-bs-toggle="offcanvas"
+                            data-bs-target="#dashboardSidebar"
+                            aria-controls="dashboardSidebar"
+                            aria-label="Åbn menu">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                {% endif %}
             </div>
         </div>
     </nav>
+    {% endblock %}
 
-    <div class="container mt-4">
-        {% bootstrap_messages %}
+    {% block page %}
+    <div class="dashboard-shell">
+        {% if user.is_authenticated %}
+            {% include "dashboard/_sidebar.html" %}
+        {% endif %}
 
-        {% block app_content %}{% endblock %}
-        {% block content %}{% endblock %}
+        <main class="dashboard-main {% block main_class %}{% endblock %}">
+            {% block messages %}{% bootstrap_messages %}{% endblock %}
+
+            <div class="{% block page_container %}container{% endblock %}">
+                {% block app_content %}{% endblock %}
+                {% block content %}{% endblock %}
+            </div>
+        </main>
     </div>
+    {% endblock %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
     <script src="{% static 'js/loeb_map_positioning.js' %}"></script>
     {% comment %} <script src="{% static 'js/sidebars.js' %}"></script> {% endcomment %}
 

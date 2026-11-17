@@ -297,9 +297,14 @@
         calendar.querySelectorAll('[data-program-day]').forEach(function (body) {
             var day = body.getAttribute('data-program-day');
             var drag = null;
+            var touch = null;
 
             body.addEventListener('pointerdown', function (event) {
-                if (event.button !== 0 || event.target.closest('[data-program-block]')) {
+                if (
+                    event.button !== 0 ||
+                    event.isPrimary === false ||
+                    event.target.closest('[data-program-block]')
+                ) {
                     return;
                 }
                 var selection = body.querySelector('[data-program-selection]');
@@ -308,52 +313,97 @@
                 }
                 var rect = body.getBoundingClientRect();
                 var start = minutesFromOffset(event.clientY - rect.top, rect.height);
-                drag = {
-                    height: rect.height,
-                    rectTop: rect.top,
-                    start: start,
-                    selection: selection
-                };
-                drawSelection(drag, start, start);
-                if (body.setPointerCapture) {
-                    try {
-                        body.setPointerCapture(event.pointerId);
-                    } catch (error) {
-                        // Pointer capture is a nicety; dragging still works.
+
+                if (event.pointerType === 'mouse') {
+                    drag = {
+                        height: rect.height,
+                        rectTop: rect.top,
+                        start: start,
+                        selection: selection
+                    };
+                    drawSelection(drag, start, start);
+                    if (body.setPointerCapture) {
+                        try {
+                            body.setPointerCapture(event.pointerId);
+                        } catch (error) {
+                            // Pointer capture is a nicety; dragging still works.
+                        }
                     }
+                    event.preventDefault();
+                    return;
                 }
-                event.preventDefault();
+
+                // Touch/pen: do not start a selection on pointerdown. Waiting
+                // for movement lets the user swipe to scroll the calendar
+                // without accidentally opening the create modal.
+                touch = {
+                    id: event.pointerId,
+                    x: event.clientX,
+                    y: event.clientY,
+                    start: start,
+                    rectTop: rect.top,
+                    height: rect.height,
+                    moved: false,
+                    startedAt: Date.now()
+                };
             });
 
             body.addEventListener('pointermove', function (event) {
-                if (!drag) {
+                if (drag) {
+                    var current = minutesFromOffset(event.clientY - drag.rectTop, drag.height);
+                    drawSelection(drag, drag.start, current);
+                    event.preventDefault();
                     return;
                 }
-                var current = minutesFromOffset(event.clientY - drag.rectTop, drag.height);
-                drawSelection(drag, drag.start, current);
-                event.preventDefault();
+                if (!touch || event.pointerId !== touch.id) {
+                    return;
+                }
+                if (
+                    Math.abs(event.clientX - touch.x) > 10 ||
+                    Math.abs(event.clientY - touch.y) > 10
+                ) {
+                    touch.moved = true;
+                }
             });
 
             function finish(event) {
-                if (!drag) {
+                if (drag) {
+                    var current = minutesFromOffset(event.clientY - drag.rectTop, drag.height);
+                    var from = Math.min(drag.start, current);
+                    var to = Math.max(drag.start, current);
+                    if (to - from < 15) {
+                        var latestEnd = endHour >= 24 ? 23 * 60 + 45 : endHour * 60;
+                        from = Math.min(drag.start, latestEnd - 60);
+                        to = from + 60;
+                    }
+                    drag.selection.hidden = true;
+                    drag = null;
+                    openCreate(day, toTime(from), toTime(to));
+                    event.preventDefault();
                     return;
                 }
-                var current = minutesFromOffset(event.clientY - drag.rectTop, drag.height);
-                var from = Math.min(drag.start, current);
-                var to = Math.max(drag.start, current);
-                if (to - from < 15) {
-                    var latestEnd = endHour >= 24 ? 23 * 60 + 45 : endHour * 60;
-                    from = Math.min(drag.start, latestEnd - 60);
-                    to = from + 60;
+
+                if (!touch || event.pointerId !== touch.id) {
+                    return;
                 }
-                drag.selection.hidden = true;
-                drag = null;
-                openCreate(day, toTime(from), toTime(to));
-                event.preventDefault();
+                var state = touch;
+                touch = null;
+                // A swipe (or a long press) must not create a block.
+                if (state.moved || Date.now() - state.startedAt > 700) {
+                    return;
+                }
+
+                var latestEnd = endHour >= 24 ? 23 * 60 + 45 : endHour * 60;
+                var start = Math.max(startHour * 60, Math.min(state.start, latestEnd - 15));
+                var end = Math.min(start + 60, latestEnd);
+                openCreate(day, toTime(start), toTime(end));
             }
 
             body.addEventListener('pointerup', finish);
-            body.addEventListener('pointercancel', function () {
+            body.addEventListener('pointercancel', function (event) {
+                if (touch && event.pointerId === touch.id) {
+                    touch = null;
+                }
                 if (drag) {
                     drag.selection.hidden = true;
                     drag = null;

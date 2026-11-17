@@ -253,6 +253,37 @@ class PushApiTests(NotificationTestBase):
         self.assertContains(response, str(token.token))
         self.assertContains(response, 'Push-notifikationer')
 
+    def test_base_template_exposes_offline_banner_and_user_id(self):
+        self.client.force_login(self.alice)
+
+        response = self.client.get(reverse('notifications_settings'))
+
+        self.assertContains(response, 'id="offline-banner"')
+        self.assertContains(
+            response, f'name="user-id" content="{self.alice.pk}"'
+        )
+        self.assertContains(response, 'viewport-fit=cover')
+        # Bootstrap, icons and Leaflet are self-hosted so Safari can use them
+        # from the service-worker cache without CORS/SRI edge cases.
+        self.assertContains(response, 'vendor/bootstrap/css/bootstrap.min.css')
+        self.assertContains(response, 'vendor/bootstrap-icons/bootstrap-icons.min.css')
+        self.assertContains(response, 'vendor/leaflet/leaflet.js')
+        self.assertNotContains(response, 'cdn.jsdelivr.net/npm/bootstrap@')
+
+    def test_offline_page_has_last_updated_placeholder(self):
+        response = self.client.get(reverse('notifications_offline'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-offline-last-updated')
+
+    def test_service_worker_is_served_from_the_root(self):
+        response = self.client.get(reverse('pwa_service_worker'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response['Content-Type'].startswith('application/javascript'))
+        self.assertEqual(response['Service-Worker-Allowed'], '/')
+        self.assertIn(b'X-Cached-At', response.content)
+
 
 class NotificationPreferenceTests(NotificationTestBase):
     def test_settings_page_creates_defaults(self):

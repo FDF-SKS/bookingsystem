@@ -53,7 +53,7 @@
         <div class="program-toolbar d-flex flex-wrap align-items-center gap-2 flex-shrink-0">
             <form method="get" class="d-flex align-items-center gap-2">
                 <label class="small text-muted mb-0" for="program-scope">Vis</label>
-                <select id="program-scope" name="team" class="form-select form-select-sm program-scope-select" data-autosubmit>
+                <select id="program-scope" name="team" class="form-select form-select-sm program-scope-select" data-autosubmit aria-label="Vælg hvilket program der vises">
                     <option value="" {% if scope == 'base' %}selected{% endif %}>Fælles rammeprogram</option>
                     {% for option in team_options %}
                         <option value="{{ option.team.pk }}"
@@ -125,7 +125,8 @@
         {% if can_create %}
             <span class="program-legend__hint">
                 <i class="bi bi-hand-index-thumb" aria-hidden="true"></i>
-                Træk i kalenderen for at oprette en blok
+                <span class="d-none d-md-inline">Træk i kalenderen for at oprette en blok</span>
+                <span class="d-md-none">Tryk i kalenderen for at oprette en blok</span>
             </span>
         {% endif %}
     </div>
@@ -158,15 +159,20 @@
                             {% for chunk in day.blocks %}
                                 {% with block=chunk.block %}
                                 <button type="button"
-                                        class="program-block program-block--{{ block.category }}{% if not chunk.can_edit %} program-block--readonly{% endif %}{% if not block.team %} program-block--framework{% endif %}"
+                                        class="program-block program-block--{{ block.category }}{% if chunk.compact %} program-block--compact{% endif %}{% if not chunk.can_edit %} program-block--readonly{% endif %}{% if not block.team %} program-block--framework{% endif %}"
                                         style="{{ chunk.style }}"
                                         data-program-block="{{ block.pk }}"
                                         title="{{ block.title }} ({{ block.start_time|time:'H:i' }}–{{ block.end_time|time:'H:i' }})">
-                                    <span class="program-block__time">{{ block.start_time|time:"H:i" }}–{{ block.end_time|time:"H:i" }}</span>
+                                    <span class="program-block__time"><span class="program-block__time-start">{{ block.start_time|time:"H:i" }}</span><span class="program-block__time-end">–{{ block.end_time|time:"H:i" }}</span></span>
                                     <span class="program-block__title">{{ block.title }}</span>
-                                    {% if selected_team or all_teams %}
-                                        <span class="program-block__origin">
-                                            {% if block.team %}{{ block.team.short_name }}{% else %}Fælles{% endif %}
+                                    {% if selected_team or all_teams or chunk.is_preparation %}
+                                        <span class="program-block__meta">
+                                            {% if selected_team or all_teams %}
+                                                <span class="program-block__origin">{{ chunk.origin_label }}</span>
+                                            {% endif %}
+                                            {% if chunk.is_preparation %}
+                                                <span class="program-block__category">Forberedelse</span>
+                                            {% endif %}
                                         </span>
                                     {% endif %}
                                     {% with people=block.responsible.all %}

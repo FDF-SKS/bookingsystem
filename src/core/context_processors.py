@@ -30,3 +30,19 @@ def csp_nonce(request):
     return {'csp_nonce': getattr(request, 'csp_nonce', '')}
 
 
+def dashboard_sidebar(request):
+    """Render the global sidebar navigation on every authenticated page.
+
+    The sidebar used to be built only by the dashboard view. It now lives in
+    ``base.html`` so the same navigation is available everywhere; building it
+    here keeps views from having to pass ``sidebar_sections`` themselves.
+    """
+    user = getattr(request, 'user', None)
+    if user is None or not user.is_authenticated:
+        return {}
+
+    from .dashboard import build_sidebar
+
+    return {'sidebar_sections': build_sidebar(user, request.path)}
+
+
